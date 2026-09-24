@@ -33,6 +33,11 @@ export const tokens = css`
     --mh-warning: #a15c07;
     --mh-info: #0a6cd1;
     --mh-ok: #047857;
+    /* One colour per transport in the network picture; none of them amber or
+       red, which mark a weak or a broken link there. */
+    --mh-thread: #0a6cd1;
+    --mh-wifi: #7c3aed;
+    --mh-ethernet: #0e7490;
     --mh-shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 16px rgb(16 24 40 / 6%);
     --mh-radius: 16px;
     --mh-font: "Inter", "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -62,6 +67,9 @@ export const tokens = css`
     --mh-warning: #fcd07a;
     --mh-info: #6db3ff;
     --mh-ok: #6ee7b7;
+    --mh-thread: #6db3ff;
+    --mh-wifi: #b99cff;
+    --mh-ethernet: #5fd4e6;
     --mh-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 20px rgb(0 0 0 / 25%);
   }
 `;

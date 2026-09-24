@@ -1,11 +1,15 @@
-// How the network hangs together, as a tree per transport that stays put.
+// How the network hangs together, as one tree that stays put.
 //
-// Every device is drawn once, on the one way it takes into the network. What
-// that way is, each transport says: a Thread device hangs on its parent in the
-// mesh and the mesh on border routers, a Wi-Fi device on its access point, a
-// wired one on the home network. This component draws them all alike, with
-// the words each transport has for its parts. Positions are computed, not
-// simulated, so nothing moves unless the network itself changed.
+// Matter is one network whatever carries it, so every transport hangs on the
+// same home network: Thread border routers next to Wi-Fi access points next to
+// wired devices. Every device is drawn once, on the one way it takes in; what
+// that way is, its transport says. Positions are computed, not simulated, so
+// nothing moves unless the network itself changed.
+//
+// The colours answer one question at a time, chosen by the user: where
+// something is wrong (the default), which transport carries what, or how
+// strong each link is. A device's state stays on its symbol in every view, so
+// no answer depends on colour alone.
 //
 // Quiet by default: good links are thin and grey. Colour is kept for what
 // needs attention - a weak link, a device away, a device with an open
@@ -28,6 +32,23 @@ import { has, t } from "../i18n";
 import { base } from "../theme";
 
 type Status = "ok" | "resting" | "weak" | "warning" | "problem" | "offline";
+
+/** What the colours in the picture tell. */
+type ColorBy = "status" | "transport" | "signal";
+
+const COLOR_BY: ColorBy[] = ["status", "transport", "signal"];
+
+/** Where the viewer's choice of colours is kept, in their browser only. */
+const COLOR_KEY = "mh-color-by";
+
+function storedColorBy(): ColorBy {
+  try {
+    const stored = localStorage.getItem(COLOR_KEY);
+    return COLOR_BY.includes(stored as ColorBy) ? (stored as ColorBy) : "status";
+  } catch {
+    return "status";
+  }
+}
 
 interface Item {
   id: string;
@@ -103,6 +124,7 @@ export class MhTopology extends LitElement {
     topology: { attribute: false },
     findings: { attribute: false },
     onlyProblems: { state: true },
+    colorBy: { state: true },
     pointed: { state: true },
     width: { state: true },
   };
@@ -110,6 +132,7 @@ export class MhTopology extends LitElement {
   topology?: Topology;
   findings: Finding[] = [];
   onlyProblems = false;
+  colorBy: ColorBy = storedColorBy();
   pointed: string | null = null;
   width = 0;
   private resize?: ResizeObserver;
@@ -134,7 +157,6 @@ export class MhTopology extends LitElement {
         font-size: 16px;
       }
       .switch {
-        margin-left: auto;
         display: inline-flex;
         padding: 3px;
         border-radius: 999px;
@@ -186,8 +208,35 @@ export class MhTopology extends LitElement {
         stroke-dasharray: 4 4;
         stroke-width: 1.5;
       }
-      .link.resting {
+      .link.resting,
+      .link.dash-resting {
         stroke-dasharray: 3 4;
+      }
+      .link.dash-offline {
+        stroke-dasharray: 4 4;
+      }
+      /* By transport: every link in the transport's colour, softer on the
+         home network. */
+      .link.by-transport {
+        stroke: var(--c);
+        stroke-opacity: 0.7;
+      }
+      .link.by-transport.lan {
+        stroke-opacity: 0.4;
+        stroke-width: 2;
+      }
+      /* By signal: each device's link to its parent. */
+      .link.q-strong {
+        stroke: var(--mh-ok);
+        stroke-width: 2;
+      }
+      .link.q-medium {
+        stroke: var(--mh-warning);
+        stroke-width: 2;
+      }
+      .link.q-weak {
+        stroke: var(--mh-problem);
+        stroke-width: 2;
       }
       .link.no-way {
         stroke-dasharray: 2 5;
@@ -202,12 +251,12 @@ export class MhTopology extends LitElement {
       }
       .node.gateway circle,
       .node.home circle {
-        fill: var(--mh-primary);
+        fill: var(--c, var(--mh-primary));
         stroke: var(--mh-surface);
       }
       .node.relay circle {
         fill: var(--mh-surface);
-        stroke: var(--mh-primary);
+        stroke: var(--c, var(--mh-primary));
       }
       .node.device circle,
       .node.sleepy circle {
@@ -319,21 +368,10 @@ export class MhTopology extends LitElement {
       .legend svg {
         overflow: visible;
       }
-      .legend.lines {
-        margin-top: 22px;
-        padding-top: 12px;
-        border-top: 1px solid var(--mh-border);
-      }
-      h3 {
-        margin: 18px 0 8px;
-        font-size: 13px;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--mh-muted);
-      }
-      section + section h3 {
-        margin-top: 26px;
+      .legends {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 36px;
       }
       .empty {
         margin: 0;
@@ -423,13 +461,44 @@ export class MhTopology extends LitElement {
       .dot.gateway {
         width: 12px;
         height: 12px;
-        background: var(--mh-primary);
+        background: var(--c, var(--mh-primary));
       }
       .dot.relay {
         width: 11px;
         height: 11px;
         background: var(--mh-surface);
-        border: 2px solid var(--mh-primary);
+        border: 2px solid var(--c, var(--mh-primary));
+      }
+      .dot.by-transport {
+        background: var(--c, var(--mh-muted));
+      }
+      .dot.relay.by-transport {
+        background: var(--mh-surface);
+      }
+      .dot.q-strong {
+        background: var(--mh-ok);
+      }
+      .dot.q-medium {
+        background: var(--mh-warning);
+      }
+      .dot.q-weak {
+        background: var(--mh-problem);
+      }
+      .controls {
+        margin-left: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+      }
+      .controls .pair {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .controls .label {
+        font-size: 13px;
+        color: var(--mh-muted);
       }
       .dot.unknown {
         background: none;
@@ -507,12 +576,12 @@ export class MhTopology extends LitElement {
     return t("generic.device");
   }
 
-  /** One transport's tree, with every device under the one way it takes in. */
-  private tree(transport: string, statuses: Map<string, Status>): Item {
-    const nodes = (this.topology?.nodes ?? []).filter((n) => n.transport === transport);
+  /** The whole network as one tree, every device under the one way it takes in. */
+  private tree(statuses: Map<string, Status>, order: string[]): Item {
+    const nodes = this.topology?.nodes ?? [];
     const items = new Map<string, Item>();
-    const home: Item = { id: `${transport}:${HOME}`, special: "home", children: [] };
-    const noWay: Item = { id: `${transport}:no_way`, special: "no_way", children: [] };
+    const home: Item = { id: HOME, special: "home", children: [] };
+    const noWay: Item = { id: "no_way", special: "no_way", children: [] };
     for (const node of nodes) items.set(node.id, { id: node.id, node, children: [] });
     for (const item of items.values()) {
       const parent = item.node?.parent;
@@ -522,15 +591,21 @@ export class MhTopology extends LitElement {
     if (noWay.children.length) home.children.push(noWay);
     const worst = (item: Item): number =>
       Math.max(RANK[statuses.get(item.id) ?? "ok"], ...item.children.map(worst));
-    const order = (item: Item): void => {
+    // On the home network the transports stay together, the busiest first.
+    const rank = (item: Item) => {
+      const at = order.indexOf(item.node?.transport ?? "");
+      return at < 0 ? order.length : at;
+    };
+    const sort = (item: Item): void => {
       item.children.sort(
         (a, b) =>
+          (item.special === "home" ? rank(a) - rank(b) : 0) ||
           (KIND_ORDER[a.node?.kind ?? ""] ?? 9) - (KIND_ORDER[b.node?.kind ?? ""] ?? 9) ||
           this.name(a).localeCompare(this.name(b)),
       );
-      item.children.forEach(order);
+      item.children.forEach(sort);
     };
-    order(home);
+    sort(home);
     if (this.onlyProblems) {
       const keep = (item: Item): Item | null => {
         if (worst(item) === 0) return null;
@@ -540,6 +615,28 @@ export class MhTopology extends LitElement {
       return keep(home) ?? { ...home, children: [] };
     }
     return home;
+  }
+
+  /** The colour of a transport, where the view shows transports. */
+  private tint(item: Item): string {
+    const transport = item.node?.transport;
+    return this.colorBy === "transport" && transport
+      ? `--c: var(--mh-${transport}, var(--mh-muted))`
+      : "";
+  }
+
+  /** How a device's link to its parent is drawn in the chosen view. */
+  private linkClass(target: Item, fromHome: boolean, status: Status): string {
+    const dash =
+      status === "offline" ? "dash-offline" : status === "resting" ? "dash-resting" : "";
+    if (this.colorBy === "transport") {
+      return `by-transport ${fromHome ? "lan" : ""} ${dash}`;
+    }
+    if (this.colorBy === "signal") {
+      const q = target.node ? quality(target.node) : null;
+      return fromHome || !q ? dash : `q-${q} ${dash}`;
+    }
+    return fromHome ? `lan ${dash}` : status === "ok" ? "" : status;
   }
 
   private note(node: TopologyNode | undefined, status: Status): [string, string] | null {
@@ -620,7 +717,14 @@ export class MhTopology extends LitElement {
   private chart(root: Item, statuses: Map<string, Status>, depth: number): TemplateResult {
     const layout = cluster<Item>()
       .nodeSize([ROW, 1])
-      .separation((a, b) => (a.parent === b.parent ? 1 : 1.35))(
+      .separation((a, b) => {
+        // Rows of different transports keep a wider gap, so the groups on the
+        // home network read as groups.
+        const group = (n: HierarchyPointNode<Item>) =>
+          n.ancestors().find((p) => p.depth === 1)?.data.node?.transport;
+        if (group(a) !== group(b)) return 2;
+        return a.parent === b.parent ? 1 : 1.35;
+      })(
       hierarchy(root, (d) => (d.children.length ? d.children : null)),
     );
     const points = layout.descendants();
@@ -631,7 +735,9 @@ export class MhTopology extends LitElement {
     const column = Math.max(120, (this.width - LEAF_LABEL - 24) / depth);
     const top = Math.min(...points.map((p) => p.x)) - ROW;
     const pos = (p: HierarchyPointNode<Item>) => {
-      const last = !p.children && p.data.node?.kind !== "gateway";
+      // A device right on the home network - a wired one - stands with the
+      // gateways; drawn at the end, its line would cross every other.
+      const last = !p.children && p.data.node?.kind !== "gateway" && p.depth > 1;
       return { x: 12 + (last ? depth : p.depth) * column, y: p.x - top };
     };
     const height = Math.max(...points.map((p) => p.x)) - top + ROW;
@@ -649,18 +755,13 @@ export class MhTopology extends LitElement {
     const dim = (id: string) => (lit && !lit.has(id) ? "dim" : "");
 
     const links = layout.links().map((link) => {
-      const status = statuses.get(link.target.data.id) ?? "ok";
+      const target = link.target.data;
+      const status = statuses.get(target.id) ?? "ok";
       const kind =
-        link.source.data.special === "home"
-          ? link.target.data.special === "no_way"
-            ? "no-way"
-            : "lan"
-          : link.source.data.special === "no_way"
-            ? "no-way"
-            : status === "ok"
-              ? ""
-              : status;
-      return svg`<path class="link ${kind} ${dim(link.target.data.id)}"
+        target.special === "no_way" || link.source.data.special === "no_way"
+          ? "no-way"
+          : this.linkClass(target, link.source.data.special === "home", status);
+      return svg`<path class="link ${kind} ${dim(target.id)}" style=${this.tint(target)}
         d=${this.path(pos(link.source), pos(link.target))}></path>`;
     });
 
@@ -677,6 +778,7 @@ export class MhTopology extends LitElement {
       const room = inner ? column - 24 : LEAF_LABEL - 14;
       const label = fit(name, room - (extra ? width(extra, LABEL_FONT) : 0), inner);
       return svg`<g class="node ${kind} ${inner ? "inner" : ""} ${status} ${dim(item.id)}"
+          style=${this.tint(item)}
           transform="translate(${x},${y})"
           tabindex=${item.node ? 0 : -1}
           @pointerenter=${() => (this.pointed = item.id)}
@@ -723,7 +825,7 @@ export class MhTopology extends LitElement {
     const kind = item.node?.kind ?? "unknown";
     return html`<li>
       <div class="row ${item.children.length ? "inner" : ""}">
-        <span class="dot ${kind} ${status === "ok" ? "" : status}"></span>
+        <span class="dot ${kind} ${this.dotClass(item, status)}" style=${this.tint(item)}></span>
         <span class="name">${deviceName(this.name(item), item.node?.device_id)}</span>
         ${note ? html`<span class="note ${note[1]}">${note[0]}</span>` : nothing}
       </div>
@@ -733,6 +835,15 @@ export class MhTopology extends LitElement {
           </ul>`
         : nothing}
     </li>`;
+  }
+
+  /** A dot's colour in the chosen view; its state marks it in every view. */
+  private dotClass(item: Item, status: Status): string {
+    const q = item.node ? quality(item.node) : null;
+    const signal = this.colorBy === "signal" && q && item.node?.kind !== "gateway";
+    // Without lines, a device shows its transport on its own dot.
+    const transport = this.colorBy === "transport" ? "by-transport" : "";
+    return `${status === "ok" ? "" : status} ${signal ? `q-${q}` : ""} ${transport}`;
   }
 
   private outline(root: Item, statuses: Map<string, Status>): TemplateResult {
@@ -746,7 +857,13 @@ export class MhTopology extends LitElement {
           html`<li>
             <details ?open=${this.onlyProblems || troubled(bridge)}>
               <summary>
-                <span class="dot ${bridge.node?.kind ?? "unknown"}"></span>
+                <span
+                  class="dot ${bridge.node?.kind ?? "unknown"} ${this.dotClass(
+                    bridge,
+                    statuses.get(bridge.id) ?? "ok",
+                  )}"
+                  style=${this.tint(bridge)}
+                ></span>
                 <span>${this.name(bridge)}</span>
                 ${size(bridge)
                   ? html`<span class="count">${t("topology.devices", { count: size(bridge) })}</span>`
@@ -763,40 +880,59 @@ export class MhTopology extends LitElement {
     </ul>`;
   }
 
-  /** The symbols of one transport, named in its words; kinds it lacks are left out. */
-  private legend(transport: string, kinds: Set<string>): TemplateResult {
+  /** The symbols, named in the words of the transports that have them. */
+  private symbols(order: string[]): TemplateResult {
+    const nodes = this.topology?.nodes ?? [];
     const dot = (cls: string, r: number) =>
       html`<svg width="14" height="14" viewBox="-7 -7 14 14">
         ${svg`<g class="node ${cls}"><circle r=${r}></circle></g>`}
       </svg>`;
-    const symbols: [string, string, number][] = [
-      ["gateway", "gateway", 6],
-      ["relay", "relay", 5],
-      ["device", "sleepy", 4],
-    ];
+    const named = (kind: string) =>
+      order
+        .filter((transport) => nodes.some((n) => n.transport === transport && n.kind === kind))
+        .map((transport) => word(transport, `legend.${kind}`))
+        .filter((label): label is string => !!label)
+        .join(" / ");
+    const gateway = named("gateway");
+    const relay = named("relay");
     return html`<div class="legend">
-      ${symbols.map(([kind, cls, r]) => {
-        const shown = kind === "device" ? kinds.has("device") || kinds.has("sleepy") : kinds.has(kind);
-        const label = shown ? word(transport, `legend.${kind}`) : null;
-        return label ? html`<span>${dot(cls, r)}${label}</span>` : nothing;
-      })}
+      ${gateway ? html`<span>${dot("gateway", 6)}${gateway}</span>` : nothing}
+      ${relay ? html`<span>${dot("relay", 5)}${relay}</span>` : nothing}
+      <span>${dot("sleepy", 4)}${t("topology.legend.device")}</span>
     </div>`;
   }
 
-  /** What the lines mean; the same for every transport. */
-  private lines(): TemplateResult {
-    const line = (cls: string) =>
+  /** What the colours mean in the chosen view. */
+  private colors(order: string[]): TemplateResult {
+    const line = (cls: string, style = "") =>
       html`<svg width="26" height="10" viewBox="0 -5 26 10">
-        ${svg`<path class="link ${cls}" d="M0,0H26"></path>`}
+        ${svg`<path class="link ${cls}" style=${style} d="M0,0H26"></path>`}
       </svg>`;
+    const entries: [TemplateResult, string][] =
+      this.colorBy === "transport"
+        ? order.map((transport) => [
+            line("by-transport", `--c: var(--mh-${transport}, var(--mh-muted))`),
+            t(`transport.${transport}.name`),
+          ])
+        : this.colorBy === "signal"
+          ? [
+              [line("q-strong"), t("topology.legend.signal.strong")],
+              [line("q-medium"), t("topology.legend.signal.medium")],
+              [line("q-weak"), t("topology.legend.signal.weak")],
+              [line(""), t("topology.legend.signal.unknown")],
+              [line("dash-offline"), t("topology.legend.offline")],
+            ]
+          : [
+              [line(""), t("topology.legend.good")],
+              [line("weak"), t("topology.legend.weak")],
+              [line("offline"), t("topology.legend.offline")],
+            ];
     return html`<div class="legend lines">
-      <span>${line("")}${t("topology.legend.good")}</span>
-      <span>${line("weak")}${t("topology.legend.weak")}</span>
-      <span>${line("offline")}${t("topology.legend.offline")}</span>
+      ${entries.map(([symbol, label]) => html`<span>${symbol}${label}</span>`)}
     </div>`;
   }
 
-  /** Transports with the most devices first; each is drawn alike. */
+  /** Transports with the most devices first. */
   private transports(): string[] {
     const count = new Map<string, number>();
     for (const node of this.topology?.nodes ?? []) {
@@ -805,6 +941,15 @@ export class MhTopology extends LitElement {
     return [...count.keys()].sort(
       (a, b) => (count.get(b) ?? 0) - (count.get(a) ?? 0) || a.localeCompare(b),
     );
+  }
+
+  private setColorBy(colorBy: ColorBy): void {
+    this.colorBy = colorBy;
+    try {
+      localStorage.setItem(COLOR_KEY, colorBy);
+    } catch {
+      // Not remembered then; the choice still holds for this visit.
+    }
   }
 
   override render(): TemplateResult {
@@ -819,38 +964,46 @@ export class MhTopology extends LitElement {
     }
     const worst = this.findingStatus();
     const statuses = new Map(nodes.map((n) => [n.id, this.status(n, worst)] as const));
-    const trees = this.transports()
-      .map((transport) => [transport, this.tree(transport, statuses)] as const)
-      .filter(([, root]) => root.children.length);
-    const controls = html`<div class="switch" role="group">
+    const order = this.transports();
+    const root = this.tree(statuses, order);
+    const controls = html`<div class="controls">
+      <div class="switch" role="group">
         <button aria-pressed=${!this.onlyProblems} @click=${() => (this.onlyProblems = false)}>
           ${t("topology.all")}
         </button>
         <button aria-pressed=${this.onlyProblems} @click=${() => (this.onlyProblems = true)}>
           ${t("topology.only_problems")}
         </button>
-      </div>`;
-    if (this.onlyProblems && !trees.length) {
+      </div>
+      <div class="pair">
+      <span class="label" id="color-by">${t("topology.color.label")}</span>
+      <div class="switch" role="group" aria-labelledby="color-by">
+        ${COLOR_BY.map(
+          (colorBy) =>
+            html`<button
+              aria-pressed=${this.colorBy === colorBy}
+              @click=${() => this.setColorBy(colorBy)}
+            >
+              ${t(`topology.color.${colorBy}`)}
+            </button>`,
+        )}
+      </div>
+      </div>
+    </div>`;
+    if (this.onlyProblems && !root.children.length) {
       return html`${head(controls)}
         <p class="empty">${t("topology.no_problems")}</p>`;
     }
     if (!this.width) return head(controls);
+    if (this.width < NARROW) {
+      // The outline shows no lines; only colours other than state need saying.
+      return html`${head(controls)}${this.outline(root, statuses)}
+      ${this.colorBy === "status" ? nothing : this.colors(order)}`;
+    }
     const deepest = (item: Item): number => 1 + Math.max(0, ...item.children.map(deepest));
-    const depth = Math.max(1, ...trees.map(([, root]) => deepest(root) - 1));
-    const narrow = this.width < NARROW;
     return html`${head(controls)}
-      ${trees.map(([transport, root]) => {
-        const kinds = new Set(
-          nodes.filter((n) => n.transport === transport).map((n) => n.kind as string),
-        );
-        return html`<section>
-          <h3>${t(`transport.${transport}.name`)}</h3>
-          ${narrow
-            ? this.outline(root, statuses)
-            : html`${this.chart(root, statuses, depth)}${this.legend(transport, kinds)}`}
-        </section>`;
-      })}
-      ${narrow ? nothing : this.lines()}`;
+      ${this.chart(root, statuses, Math.max(1, deepest(root) - 1))}
+      <div class="legends">${this.symbols(order)}${this.colors(order)}</div>`;
   }
 }
 

@@ -351,9 +351,22 @@
     "legend": {
       "good": "Bonne liaison",
       "weak": "Faible ou constat ouvert",
-      "offline": "Injoignable"
+      "offline": "Injoignable",
+      "device": "Appareil final",
+      "signal": {
+        "strong": "Signal fort",
+        "medium": "Signal moyen",
+        "weak": "Signal faible",
+        "unknown": "Signal inconnu"
+      }
     },
-    "resting": "absent, comme d'habitude"
+    "resting": "absent, comme d'habitude",
+    "color": {
+      "label": "Couleur",
+      "status": "État",
+      "transport": "Transport",
+      "signal": "Signal"
+    }
   },
   "finding.open_device": "Ouvrir dans Home Assistant",
   "finding.open_named": "Ouvrir {device}",
@@ -373,8 +386,7 @@
       },
       "legend": {
         "gateway": "Pont",
-        "relay": "Relais",
-        "device": "Appareil final"
+        "relay": "Relais"
       }
     },
     "wifi": {
@@ -392,8 +404,7 @@
         "device": "Appareil Wi-Fi"
       },
       "legend": {
-        "gateway": "Point d'accès",
-        "device": "Appareil Wi-Fi"
+        "gateway": "Point d'accès"
       }
     },
     "ethernet": {
@@ -401,9 +412,7 @@
       "kind": {
         "device": "Relié par câble au réseau domestique"
       },
-      "legend": {
-        "device": "Appareil filaire"
-      }
+      "legend": {}
     }
   }
 }

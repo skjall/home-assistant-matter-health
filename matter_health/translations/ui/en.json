@@ -351,9 +351,22 @@
     "legend": {
       "good": "Good link",
       "weak": "Weak link or open finding",
-      "offline": "Not reachable"
+      "offline": "Not reachable",
+      "device": "End device",
+      "signal": {
+        "strong": "Strong signal",
+        "medium": "Medium signal",
+        "weak": "Weak signal",
+        "unknown": "Signal unknown"
+      }
     },
-    "resting": "away, as usual"
+    "resting": "away, as usual",
+    "color": {
+      "label": "Colour",
+      "status": "Status",
+      "transport": "Transport",
+      "signal": "Signal"
+    }
   },
   "finding.open_device": "Open in Home Assistant",
   "finding.open_named": "Open {device}",
@@ -373,8 +386,7 @@
       },
       "legend": {
         "gateway": "Bridge",
-        "relay": "Relays",
-        "device": "End device"
+        "relay": "Relays"
       }
     },
     "wifi": {
@@ -392,8 +404,7 @@
         "device": "Wi-Fi device"
       },
       "legend": {
-        "gateway": "Access point",
-        "device": "Wi-Fi device"
+        "gateway": "Access point"
       }
     },
     "ethernet": {
@@ -401,9 +412,7 @@
       "kind": {
         "device": "Wired to the home network"
       },
-      "legend": {
-        "device": "Wired device"
-      }
+      "legend": {}
     }
   }
 }

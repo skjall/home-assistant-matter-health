@@ -351,9 +351,22 @@
     "legend": {
       "good": "Enlace bueno",
       "weak": "Débil o hallazgo abierto",
-      "offline": "No responde"
+      "offline": "No responde",
+      "device": "Dispositivo final",
+      "signal": {
+        "strong": "Señal fuerte",
+        "medium": "Señal media",
+        "weak": "Señal débil",
+        "unknown": "Señal desconocida"
+      }
     },
-    "resting": "fuera, como siempre"
+    "resting": "fuera, como siempre",
+    "color": {
+      "label": "Color",
+      "status": "Estado",
+      "transport": "Transporte",
+      "signal": "Señal"
+    }
   },
   "finding.open_device": "Abrir en Home Assistant",
   "finding.open_named": "Abrir {device}",
@@ -373,8 +386,7 @@
       },
       "legend": {
         "gateway": "Puente",
-        "relay": "Reenvía",
-        "device": "Dispositivo final"
+        "relay": "Reenvía"
       }
     },
     "wifi": {
@@ -392,8 +404,7 @@
         "device": "Dispositivo Wi-Fi"
       },
       "legend": {
-        "gateway": "Punto de acceso",
-        "device": "Dispositivo Wi-Fi"
+        "gateway": "Punto de acceso"
       }
     },
     "ethernet": {
@@ -401,9 +412,7 @@
       "kind": {
         "device": "Conectado por cable a la red doméstica"
       },
-      "legend": {
-        "device": "Dispositivo con cable"
-      }
+      "legend": {}
     }
   }
 }

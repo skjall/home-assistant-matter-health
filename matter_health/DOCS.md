@@ -13,8 +13,19 @@ Open **Matter Health** from the sidebar. The page shows:
 
 ## The network picture
 
-There is one picture per way devices connect, drawn alike. Every device is
-drawn once, on the way it takes into the network.
+All devices share one picture, whatever connects them: Thread bridges, Wi-Fi
+access points and wired devices hang side by side on your home network.
+Every device is drawn once, on the way it takes into the network.
+
+**Colour** switches what the colours tell:
+
+- **Status** (the default): grey is fine, amber is a weak link or an open
+  finding, red is a device that does not respond.
+- **Transport**: Thread, Wi-Fi and Ethernet each in their own colour.
+- **Signal**: strong, medium or weak, for every device's link to the device
+  or access point it hangs on.
+
+A device that does not respond is marked on its symbol in every view.
 
 **Thread**: bridges (border routers) on your home network, devices that relay
 for others on their best path to a bridge, battery devices on the device they
@@ -33,7 +44,7 @@ signal. Pointing at it shows the channel and encryption it uses.
 
 **Ethernet**: wired devices, directly on your home network.
 
-On a phone the pictures are shown as outlines, one bridge or access point at
+On a phone the picture is shown as an outline, one bridge or access point at
 a time.
 
 Findings build up over time. Right after installing, the page is quiet

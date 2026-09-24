@@ -351,9 +351,22 @@
     "legend": {
       "good": "Gute Verbindung",
       "weak": "Schwach oder Befund offen",
-      "offline": "Nicht erreichbar"
+      "offline": "Nicht erreichbar",
+      "device": "Endgerät",
+      "signal": {
+        "strong": "Starkes Signal",
+        "medium": "Mittleres Signal",
+        "weak": "Schwaches Signal",
+        "unknown": "Signal unbekannt"
+      }
     },
-    "resting": "weg, wie üblich"
+    "resting": "weg, wie üblich",
+    "color": {
+      "label": "Farbe",
+      "status": "Zustand",
+      "transport": "Transport",
+      "signal": "Signal"
+    }
   },
   "finding.open_device": "In Home Assistant öffnen",
   "finding.open_named": "{device} öffnen",
@@ -373,8 +386,7 @@
       },
       "legend": {
         "gateway": "Brücke",
-        "relay": "Leitet weiter",
-        "device": "Endgerät"
+        "relay": "Leitet weiter"
       }
     },
     "wifi": {
@@ -392,8 +404,7 @@
         "device": "WLAN-Gerät"
       },
       "legend": {
-        "gateway": "Access Point",
-        "device": "WLAN-Gerät"
+        "gateway": "Access Point"
       }
     },
     "ethernet": {
@@ -401,9 +412,7 @@
       "kind": {
         "device": "Per Kabel im Heimnetz"
       },
-      "legend": {
-        "device": "Kabelgerät"
-      }
+      "legend": {}
     }
   }
 }

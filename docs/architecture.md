@@ -176,9 +176,12 @@ Home Assistant knows the device, its name leads to the device's page.
 
 ## The network picture
 
-Every transport draws its part as a tree with one line upwards per device;
-the page puts them under one another, with shared columns, so gateways line
-up. For Thread that takes work: the Matter Server reports every radio link
+Matter is one network whatever carries it, so the page draws one tree: every
+transport's gateways - border routers, access points - and its wired devices
+hang on the same home network, grouped by transport, and every device has
+one line upwards. The colours answer one question at a time, chosen by the
+viewer and remembered in their browser: state (the default), transport or
+signal strength. A device's state stays on its symbol in every view. For Thread that takes work: the Matter Server reports every radio link
 it knows, hundreds in a home with a few dozen mains-powered devices.
 `transports/thread/tree.py` reduces them to one way in per device: a battery
 device hangs on its parent; a relaying device takes the cheapest path to a
