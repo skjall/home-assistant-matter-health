@@ -11,14 +11,27 @@ import {
 } from "@mdi/js";
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 
-import type { BorderRouter, Overview, UnavailableDevice } from "../api";
+import type {
+  BorderRouter,
+  Finding,
+  Overview,
+  Topology,
+  UnavailableDevice,
+} from "../api";
 import { t } from "../i18n";
 import { base } from "../theme";
 import { icon } from "./mh-finding";
+import "./mh-topology";
 
 export class MhNetwork extends LitElement {
-  static override properties = { overview: { attribute: false } };
+  static override properties = {
+    overview: { attribute: false },
+    topology: { attribute: false },
+    findings: { attribute: false },
+  };
   overview?: Overview;
+  topology?: Topology;
+  findings: Finding[] = [];
 
   static override styles = [
     base,
@@ -139,7 +152,6 @@ export class MhNetwork extends LitElement {
     const known = away.filter((d) => d.known);
     const usual = away.filter((d) => !d.known && (d.usual || d.comes_and_goes === true));
     const surprising = away.filter((d) => !known.includes(d) && !usual.includes(d));
-    const own = overview.border_routers.filter((r) => r.own !== false);
     const foreign = new Map<string, BorderRouter[]>();
     for (const router of overview.border_routers.filter((r) => r.own === false)) {
       const network = router.network ?? "?";
@@ -147,12 +159,7 @@ export class MhNetwork extends LitElement {
     }
     return html`
       <section class="card">
-        <h2>${t("summary.border_routers")}</h2>
-        ${own.length
-          ? html`<ul class="grid">
-              ${own.map((router) => this.router(router))}
-            </ul>`
-          : html`<p class="empty">${t("network.border_routers_empty")}</p>`}
+        <mh-topology .topology=${this.topology} .findings=${this.findings}></mh-topology>
       </section>
 
       ${foreign.size

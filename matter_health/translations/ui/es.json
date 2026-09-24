@@ -290,7 +290,6 @@
   },
   "network": {
     "title": "Tu red ahora mismo",
-    "border_routers_empty": "Todavía no se ha anunciado ningún puente.",
     "unreachable_title": "Dispositivos que no responden",
     "unreachable_empty": "Todos los dispositivos responden.",
     "foreign_title": "Otras redes Thread",
@@ -330,5 +329,48 @@
     "minutes": "{count} minuto | {count} minutos",
     "hours": "{count} hora | {count} horas",
     "days": "{count} día | {count} días"
+  },
+  "topology": {
+    "title": "Cómo está conectada tu red",
+    "home": "Red doméstica",
+    "no_way": "Sin camino a la red",
+    "unknown_device": "Otro dispositivo Thread",
+    "stats": "{bridges} puentes · {routers} reenvían · {devices} dispositivos finales",
+    "updated": "estado {time}",
+    "all": "Todo",
+    "only_problems": "Solo problemas",
+    "empty": "La imagen de la red aparece con la primera lectura. Tarda hasta diez minutos.",
+    "no_problems": "No hay nada llamativo en la red.",
+    "offline": "no responde",
+    "finding_open": "ver hallazgos",
+    "weak": "enlace débil",
+    "devices": "{count} dispositivo | {count} dispositivos",
+    "via": "Conectado a través de {parent}",
+    "last_via": "Última conexión a través de {parent}",
+    "signal": "Recepción {rssi} dBm – {quality}",
+    "quality": {
+      "strong": "buena",
+      "medium": "regular",
+      "weak": "débil"
+    },
+    "children": "{count} dispositivo depende de él | {count} dispositivos dependen de él",
+    "alternatives": "{count} camino más a la red | {count} caminos más a la red",
+    "only_way": "Ningún otro camino a la red",
+    "kind": {
+      "border_router": "Puente a la red doméstica",
+      "router": "Reenvía para otros dispositivos",
+      "end_device": "Dispositivo final",
+      "sleepy": "Dispositivo a pilas, da señales de vez en cuando",
+      "unknown": "Dispositivo de otro sistema"
+    },
+    "legend": {
+      "bridge": "Puente",
+      "router": "Reenvía",
+      "device": "Dispositivo final",
+      "good": "Enlace bueno",
+      "weak": "Débil o hallazgo abierto",
+      "offline": "No responde"
+    },
+    "resting": "fuera, como siempre"
   }
 }

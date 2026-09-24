@@ -512,3 +512,72 @@ def test_page_version_names_the_bundle(tmp_path: Path) -> None:
         web_app.page_version(tmp_path)
         == (hashlib.sha256(b"console.log(1)").hexdigest()[:12])
     )
+
+
+async def test_topology_names_devices_and_places_the_missing(
+    aiohttp_client: AiohttpClient,
+    store: Store,
+    engine: Engine,
+    translations: Path,
+) -> None:
+    engine.ctx.names.set("node:1", "Plug")
+    engine.ctx.names.set("br:a1", "Speaker")
+    await store.set_state(
+        "thread.tree",
+        {
+            "at": T0.isoformat(),
+            "nodes": [
+                {
+                    "id": "br_A",
+                    "subject": "br:a1",
+                    "kind": "border_router",
+                    "parent": "home",
+                    "link": {},
+                    "alternatives": 0,
+                    "vendor": "Acme",
+                },
+                {
+                    "id": "1",
+                    "subject": "node:1",
+                    "kind": "router",
+                    "parent": "br_A",
+                    "link": {"rssi": -60},
+                    "alternatives": 2,
+                    "vendor": None,
+                },
+            ],
+        },
+    )
+    await store.set_state("thread.parents", {"node:2": "node:1"})
+    await store.set_state(
+        "offline.away", {"node:3": {"since": T0.isoformat(), "expected": True}}
+    )
+    await store.set_state(
+        "matter.nodes", {"total": 3, "unavailable": ["node:1", "node:2", "node:3"]}
+    )
+    client = await aiohttp_client(build(engine, translations))
+
+    body = await (await client.get("/api/topology")).json()
+
+    assert body["at"] == T0.isoformat()
+    nodes = {n["id"]: n for n in body["nodes"]}
+    assert nodes["br_A"]["name"] == "Speaker"
+    assert nodes["br_A"]["available"] is True
+    assert nodes["1"]["name"] == "Plug"
+    assert nodes["1"]["available"] is False
+    assert nodes["node:2"]["parent"] == "1"
+    assert nodes["node:2"]["missing"] is True
+    assert nodes["node:3"]["parent"] is None
+    assert nodes["node:3"]["resting"] is True
+    assert nodes["node:2"]["resting"] is False
+    assert nodes["br_A"]["resting"] is False
+
+
+async def test_topology_before_the_first_reading(
+    aiohttp_client: AiohttpClient, engine: Engine, translations: Path
+) -> None:
+    client = await aiohttp_client(build(engine, translations))
+
+    body = await (await client.get("/api/topology")).json()
+
+    assert body == {"at": None, "nodes": []}

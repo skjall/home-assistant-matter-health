@@ -290,7 +290,6 @@
   },
   "network": {
     "title": "Dein Netz gerade jetzt",
-    "border_routers_empty": "Noch keine Brücke hat sich gemeldet.",
     "unreachable_title": "Geräte, die nicht reagieren",
     "unreachable_empty": "Alle Geräte reagieren.",
     "foreign_title": "Andere Thread-Netze",
@@ -330,5 +329,48 @@
     "minutes": "{count} Minute | {count} Minuten",
     "hours": "{count} Stunde | {count} Stunden",
     "days": "{count} Tag | {count} Tage"
+  },
+  "topology": {
+    "title": "So hängt dein Netz zusammen",
+    "home": "Heimnetz",
+    "no_way": "Ohne Weg ins Netz",
+    "unknown_device": "Fremdes Thread-Gerät",
+    "stats": "{bridges} Brücken · {routers} leiten weiter · {devices} Endgeräte",
+    "updated": "Stand {time}",
+    "all": "Alles",
+    "only_problems": "Nur Probleme",
+    "empty": "Das Netzbild entsteht beim ersten Abruf. Das dauert bis zu zehn Minuten.",
+    "no_problems": "Im Netz fällt nichts auf.",
+    "offline": "nicht erreichbar",
+    "finding_open": "siehe Befunde",
+    "weak": "schwache Verbindung",
+    "devices": "{count} Gerät | {count} Geräte",
+    "via": "Verbunden über {parent}",
+    "last_via": "Zuletzt verbunden über {parent}",
+    "signal": "Empfang {rssi} dBm – {quality}",
+    "quality": {
+      "strong": "gut",
+      "medium": "mittel",
+      "weak": "schwach"
+    },
+    "children": "{count} Gerät hängt daran | {count} Geräte hängen daran",
+    "alternatives": "{count} weiterer Weg ins Netz | {count} weitere Wege ins Netz",
+    "only_way": "Kein anderer Weg ins Netz",
+    "kind": {
+      "border_router": "Brücke ins Heimnetz",
+      "router": "Leitet für andere Geräte weiter",
+      "end_device": "Endgerät",
+      "sleepy": "Batteriegerät, meldet sich in Abständen",
+      "unknown": "Gerät eines anderen Systems"
+    },
+    "legend": {
+      "bridge": "Brücke",
+      "router": "Leitet weiter",
+      "device": "Endgerät",
+      "good": "Gute Verbindung",
+      "weak": "Schwach oder Befund offen",
+      "offline": "Nicht erreichbar"
+    },
+    "resting": "weg, wie üblich"
   }
 }

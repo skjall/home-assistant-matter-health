@@ -290,7 +290,6 @@
   },
   "network": {
     "title": "Ton réseau en ce moment",
-    "border_routers_empty": "Aucune passerelle ne s'est encore annoncée.",
     "unreachable_title": "Appareils qui ne répondent pas",
     "unreachable_empty": "Tous les appareils répondent.",
     "foreign_title": "Autres réseaux Thread",
@@ -330,5 +329,48 @@
     "minutes": "{count} minute | {count} minutes",
     "hours": "{count} heure | {count} heures",
     "days": "{count} jour | {count} jours"
+  },
+  "topology": {
+    "title": "Comment ton réseau est relié",
+    "home": "Réseau domestique",
+    "no_way": "Sans chemin vers le réseau",
+    "unknown_device": "Autre appareil Thread",
+    "stats": "{bridges} ponts · {routers} relais · {devices} appareils finaux",
+    "updated": "état {time}",
+    "all": "Tout",
+    "only_problems": "Problèmes seulement",
+    "empty": "L'image du réseau apparaît au premier relevé. Cela prend jusqu'à dix minutes.",
+    "no_problems": "Rien ne se remarque dans le réseau.",
+    "offline": "injoignable",
+    "finding_open": "voir les constats",
+    "weak": "liaison faible",
+    "devices": "{count} appareil | {count} appareils",
+    "via": "Relié via {parent}",
+    "last_via": "Dernière liaison via {parent}",
+    "signal": "Réception {rssi} dBm – {quality}",
+    "quality": {
+      "strong": "bonne",
+      "medium": "moyenne",
+      "weak": "faible"
+    },
+    "children": "{count} appareil en dépend | {count} appareils en dépendent",
+    "alternatives": "{count} autre chemin vers le réseau | {count} autres chemins vers le réseau",
+    "only_way": "Aucun autre chemin vers le réseau",
+    "kind": {
+      "border_router": "Pont vers le réseau domestique",
+      "router": "Relaie pour d'autres appareils",
+      "end_device": "Appareil final",
+      "sleepy": "Appareil sur pile, se manifeste de temps en temps",
+      "unknown": "Appareil d'un autre système"
+    },
+    "legend": {
+      "bridge": "Pont",
+      "router": "Relais",
+      "device": "Appareil final",
+      "good": "Bonne liaison",
+      "weak": "Faible ou constat ouvert",
+      "offline": "Injoignable"
+    },
+    "resting": "absent, comme d'habitude"
   }
 }

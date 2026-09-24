@@ -125,6 +125,21 @@ def is_dismissed(finding: Finding, dismissed: dict[str, str]) -> bool:
     return dismissed.get(finding.key) == finding.started_at.isoformat()
 
 
+async def absences(
+    store: Any, findings: list[Finding], dismissed: dict[str, str]
+) -> tuple[set[str], set[str]]:
+    """Devices away as they usually are, and those whose absence the user knows."""
+    away = await store.get_state("offline.away") or {}
+    usual = {s for s, entry in away.items() if entry.get("expected")}
+    known = {
+        subject
+        for f in findings
+        if f.rule == "offline" and f.ended_at is None and is_dismissed(f, dismissed)
+        for subject in f.subjects
+    }
+    return usual, known
+
+
 async def overview(request: web.Request) -> web.Response:
     """Everything the header of the page needs in one answer."""
     engine = request.app[ENGINE]
@@ -135,20 +150,13 @@ async def overview(request: web.Request) -> web.Response:
         f for f in findings if f.ended_at is None and not is_dismissed(f, dismissed)
     ]
     nodes = await store.get_state("matter.nodes") or {}
-    away = await store.get_state("offline.away") or {}
     habits = await store.get_state(HABITS) or {}
-    # Devices whose current absence the user acknowledged.
-    known = {
-        subject
-        for f in findings
-        if f.rule == "offline" and f.ended_at is None and is_dismissed(f, dismissed)
-        for subject in f.subjects
-    }
+    usual, known = await absences(store, findings, dismissed)
     unavailable = [
         {
             "subject": s,
             "name": engine.ctx.names.get(s),
-            "usual": bool(away.get(s, {}).get("expected")),
+            "usual": s in usual,
             "known": s in known,
             "comes_and_goes": habits.get(s),
         }
@@ -168,6 +176,45 @@ async def overview(request: web.Request) -> web.Response:
             "build": request.app[BUILD],
         }
     )
+
+
+async def topology(request: web.Request) -> web.Response:
+    """Return the mesh as a tree, with names and who is away now.
+
+    Devices away are usually missing from the latest picture of the mesh;
+    they are shown under the parent they had when last seen.
+    """
+    engine = request.app[ENGINE]
+    store = engine.ctx.store
+    names = engine.ctx.names
+    tree = await store.get_state("thread.tree") or {}
+    parents: dict[str, str] = await store.get_state("thread.parents") or {}
+    nodes = await store.get_state("matter.nodes") or {}
+    away = set(nodes.get("unavailable", []))
+    entries = [dict(entry) for entry in tree.get("nodes", [])]
+    by_subject = {e["subject"]: e["id"] for e in entries if e.get("subject")}
+    for subject in sorted(away - by_subject.keys()):
+        entries.append(
+            {
+                "id": subject,
+                "subject": subject,
+                "kind": "end_device",
+                "parent": by_subject.get(parents.get(subject, "")),
+                "link": {},
+                "alternatives": 0,
+                "vendor": None,
+                "missing": True,
+            }
+        )
+    dismissed = await store.get_state(DISMISSED) or {}
+    usual, known = await absences(store, await store.findings(), dismissed)
+    for entry in entries:
+        subject = entry.get("subject")
+        entry["name"] = names.get(subject)
+        entry["available"] = subject not in away
+        # Away, but as expected or as the user knows: no alarm in the picture.
+        entry["resting"] = subject in away and (subject in usual or subject in known)
+    return web.json_response({"at": tree.get("at"), "nodes": entries})
 
 
 async def findings(request: web.Request) -> web.Response:
@@ -369,6 +416,7 @@ def create_app(
     app.router.add_get("/", index)
     app.router.add_get("/api/overview", overview)
     app.router.add_get("/api/findings", findings)
+    app.router.add_get("/api/topology", topology)
     app.router.add_post("/api/dismiss", dismiss)
     app.router.add_post("/api/habit", habit)
     app.router.add_get("/api/events", events)

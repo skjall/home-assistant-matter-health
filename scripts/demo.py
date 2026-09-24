@@ -28,6 +28,7 @@ from matter_health import kinds, rules
 from matter_health.config import Options
 from matter_health.engine import RULES, Context, Engine, utcnow
 from matter_health.store import Store
+from matter_health.topology import build_tree
 from matter_health.web import create_app
 
 PLUGINS = (rules,)
@@ -55,6 +56,48 @@ BORDER_ROUTERS = [
         ("br:0a1b2c3d4e5f6071", "Living Room TV", "Acme"),
     )
 ]
+
+
+def _link(a: str, b: str, cost: int, lqi: int = 3, rssi: int = -60) -> dict[str, Any]:
+    return {
+        "source": a,
+        "target": b,
+        "path_cost": cost,
+        "source_to_target": {"lqi": lqi, "rssi": rssi},
+    }
+
+
+#: A small mesh as the Matter Server would report it.
+TOPOLOGY: dict[str, Any] = {
+    "nodes": [
+        *(
+            {"id": f"br_{ext}", "kind": "border_router", "ext_address": ext}
+            for ext in (
+                "3D4E5F6071829304",
+                "2C3D4E5F60718293",
+                "1B2C3D4E5F607182",
+                "0A1B2C3D4E5F6071",
+            )
+        ),
+        {"id": "3", "kind": "matter", "node_id": 3, "role": "router"},
+        {"id": "21", "kind": "matter", "node_id": 21, "role": "router"},
+        {"id": "7", "kind": "matter", "node_id": 7, "role": "sleepy_end_device"},
+        {"id": "9", "kind": "matter", "node_id": 9, "role": "sleepy_end_device"},
+        {"id": "12", "kind": "matter", "node_id": 12, "role": "sleepy_end_device"},
+        {"id": "30", "kind": "matter", "node_id": 30, "role": "end_device"},
+        {"id": "31", "kind": "matter", "node_id": 31, "role": "sleepy_end_device"},
+    ],
+    "connections": [
+        _link("3", "br_1B2C3D4E5F607182", 1),
+        _link("3", "br_3D4E5F6071829304", 1, lqi=2),
+        _link("21", "br_2C3D4E5F60718293", 1),
+        _link("7", "3", 0, lqi=1, rssi=-93),
+        _link("9", "br_3D4E5F6071829304", 0),
+        _link("12", "21", 0),
+        _link("30", "3", 0, rssi=-55),
+        _link("31", "21", 0),
+    ],
+}
 
 PAIRING_STEPS = (
     "GetInitialData",
@@ -226,6 +269,9 @@ async def seed(engine: Engine, clock: Clock) -> None:
         },
     )
     await store.set_state("border_routers", BORDER_ROUTERS)
+    await store.set_state(
+        "thread.tree", {"at": clock.at.isoformat(), "nodes": build_tree(TOPOLOGY)}
+    )
     await store.set_state(
         "matter.nodes",
         {"total": 24, "unavailable": ["node:9", "node:30", "node:31"]},

@@ -2,7 +2,7 @@ from typing import Any, cast
 
 import pytest
 from aiohttp import web
-from conftest import FakeSupervisor, source_for, start_supervisor
+from conftest import T0, FakeSupervisor, source_for, start_supervisor
 from pytest_aiohttp import AiohttpServer
 
 from matter_health import kinds
@@ -156,6 +156,8 @@ async def test_device_changes_become_events(
     ]
     assert await store.get_state("matter.nodes") == {"total": 3, "unavailable": []}
     assert await store.get_state("thread.links") == []
+    assert await store.get_state("thread.tree") == {"at": T0.isoformat(), "nodes": []}
+    assert await store.get_state("thread.parents") == {}
     assert fake.commands == [
         "start_listening",
         "get_thread_border_routers",

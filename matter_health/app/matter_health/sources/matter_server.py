@@ -23,6 +23,7 @@ from .. import kinds
 from ..config import MATTER_SERVER_PORT, MATTER_SERVER_SLUG
 from ..engine import SOURCES, Source
 from ..supervisor import Supervisor
+from ..topology import build_tree, remember_parents
 
 #: Border routers come and go with power; a minute is quick enough to tie a
 #: disappearance to a switch that was turned off just before.
@@ -202,9 +203,20 @@ class MatterServerSource(Source):
                 links = link_summary(topology)
                 # Kept for rules that ask later who hung on whom.
                 await self.ctx.store.set_state("thread.links", links)
+                await self._tree(topology)
                 await self.emit(kinds.THREAD_TOPOLOGY, devices=links)
                 next_topology = time.monotonic() + TOPOLOGY_POLL_S
             await asyncio.sleep(BORDER_ROUTER_POLL_S)
+
+    async def _tree(self, topology: dict[str, Any]) -> None:
+        """Keep the mesh as a tree for the page, and who hung on whom."""
+        home = await self._home_network(self._border_routers.values())
+        tree = build_tree(topology, home)
+        await self.ctx.store.set_state(
+            "thread.tree", {"at": self.ctx.now().isoformat(), "nodes": tree}
+        )
+        known = await self.ctx.store.get_state("thread.parents") or {}
+        await self.ctx.store.set_state("thread.parents", remember_parents(tree, known))
 
     async def _command(self, ws: aiohttp.ClientWebSocketResponse, command: str) -> Any:
         if command not in READ_COMMANDS:

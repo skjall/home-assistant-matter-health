@@ -30,9 +30,11 @@ PLURAL = " | "
 # the key parity check.
 USED_KEY = re.compile(
     r"""["'`]((?:app|nav|status|summary|role|confidence|finding|link|origin|"""
-    r"""cause|fix|phase|timeline|network|source|thread_role|generic|time)"""
+    r"""cause|fix|phase|timeline|network|source|thread_role|generic|time|topology)"""
     r"""\.[a-z0-9_.]+)["'`]"""
 )
+# File names share it too ("app.js").
+FILE_NAME = re.compile(r"\.(js|json|html|css)$")
 # Event kinds share the dotted look of keys ("source.status") but are not.
 KINDS = ADDON / "app" / "matter_health" / "kinds.py"
 CODE = [
@@ -116,6 +118,8 @@ def check_used(errors: list[str], reference: dict[str, str]) -> None:
                 continue
             for key in USED_KEY.findall(path.read_text("utf-8")):
                 if key.endswith(".") or key in reference or key in kinds:
+                    continue
+                if FILE_NAME.search(key):
                     continue
                 # A key may name a subtree that the code completes itself.
                 if any(known.startswith(f"{key}.") for known in reference):

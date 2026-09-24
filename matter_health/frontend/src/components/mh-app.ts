@@ -10,7 +10,14 @@ import {
 } from "@mdi/js";
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 
-import { api, follow, type Finding, type Overview, type TimelineEvent } from "../api";
+import {
+  api,
+  follow,
+  type Finding,
+  type Overview,
+  type TimelineEvent,
+  type Topology,
+} from "../api";
 import { t } from "../i18n";
 import { base, tokens } from "../theme";
 import { icon } from "./mh-finding";
@@ -27,6 +34,7 @@ const SEVERITY_RANK = { problem: 0, warning: 1, info: 2 };
 export class MhApp extends LitElement {
   static override properties = {
     overview: { state: true },
+    topology: { state: true },
     findings: { state: true },
     events: { state: true },
     tab: { state: true },
@@ -37,6 +45,7 @@ export class MhApp extends LitElement {
   };
 
   overview?: Overview;
+  topology?: Topology;
   findings: Finding[] = [];
   events: TimelineEvent[] = [];
   tab: Tab = "findings";
@@ -311,12 +320,14 @@ export class MhApp extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      const [overview, findings, events] = await Promise.all([
+      const [overview, findings, events, topology] = await Promise.all([
         api.overview(),
         api.findings(),
         api.events(),
+        api.topology(),
       ]);
       this.overview = overview;
+      this.topology = topology;
       this.findings = findings;
       this.events = events;
       this.failed = false;
@@ -328,7 +339,7 @@ export class MhApp extends LitElement {
   private scheduleOverview(): void {
     window.clearTimeout(this.refresh);
     this.refresh = window.setTimeout(async () => {
-      this.overview = await api.overview();
+      [this.overview, this.topology] = await Promise.all([api.overview(), api.topology()]);
     }, 1500);
   }
 
@@ -562,7 +573,11 @@ export class MhApp extends LitElement {
         ? this.findingList()
         : this.tab === "timeline"
           ? html`<mh-timeline .events=${this.events}></mh-timeline>`
-          : html`<mh-network .overview=${this.overview}></mh-network>`}
+          : html`<mh-network
+              .overview=${this.overview}
+              .topology=${this.topology}
+              .findings=${this.findings}
+            ></mh-network>`}
     </div>`;
   }
 }

@@ -290,7 +290,6 @@
   },
   "network": {
     "title": "Your network right now",
-    "border_routers_empty": "No bridge has announced itself yet.",
     "unreachable_title": "Devices that don't respond",
     "unreachable_empty": "Every device responds.",
     "foreign_title": "Other Thread networks",
@@ -330,5 +329,48 @@
     "minutes": "{count} minute | {count} minutes",
     "hours": "{count} hour | {count} hours",
     "days": "{count} day | {count} days"
+  },
+  "topology": {
+    "title": "How your network hangs together",
+    "home": "Home network",
+    "no_way": "No way into the network",
+    "unknown_device": "Other Thread device",
+    "stats": "{bridges} bridges · {routers} relay · {devices} end devices",
+    "updated": "as of {time}",
+    "all": "All",
+    "only_problems": "Problems only",
+    "empty": "The picture of the network appears with the first reading. That takes up to ten minutes.",
+    "no_problems": "Nothing stands out in the network.",
+    "offline": "not reachable",
+    "finding_open": "see findings",
+    "weak": "weak link",
+    "devices": "{count} device | {count} devices",
+    "via": "Connected through {parent}",
+    "last_via": "Last connected through {parent}",
+    "signal": "Reception {rssi} dBm – {quality}",
+    "quality": {
+      "strong": "good",
+      "medium": "fair",
+      "weak": "weak"
+    },
+    "children": "{count} device hangs on it | {count} devices hang on it",
+    "alternatives": "{count} other way into the network | {count} other ways into the network",
+    "only_way": "No other way into the network",
+    "kind": {
+      "border_router": "Bridge to the home network",
+      "router": "Relays for other devices",
+      "end_device": "End device",
+      "sleepy": "Battery device, checks in now and then",
+      "unknown": "Device of another system"
+    },
+    "legend": {
+      "bridge": "Bridge",
+      "router": "Relays",
+      "device": "End device",
+      "good": "Good link",
+      "weak": "Weak link or open finding",
+      "offline": "Not reachable"
+    },
+    "resting": "away, as usual"
   }
 }

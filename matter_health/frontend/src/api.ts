@@ -58,6 +58,29 @@ export interface BorderRouter {
   own?: boolean;
 }
 
+export interface TopologyNode {
+  id: string;
+  subject: string | null;
+  kind: "border_router" | "router" | "end_device" | "sleepy" | "unknown";
+  /** The node this one takes its way in through; "home" for a border router. */
+  parent: string | null;
+  link: { rssi?: number | null; lqi?: number | null; strength?: string | null };
+  /** Other relaying neighbours a relaying device could switch to. */
+  alternatives: number;
+  vendor: string | null;
+  name: string | null;
+  available: boolean;
+  /** Away and missing from the latest picture; shown where it was last. */
+  missing?: boolean;
+  /** Away as it usually is, or as the user knows. */
+  resting?: boolean;
+}
+
+export interface Topology {
+  at: string | null;
+  nodes: TopologyNode[];
+}
+
 export interface UnavailableDevice {
   subject: string;
   name: string | null;
@@ -130,6 +153,7 @@ export const api = {
     reloadIfOutdated(overview.build);
     return overview;
   },
+  topology: () => get<Topology>("api/topology"),
   findings: (days = 7) => get<Finding[]>(`api/findings?days=${days}`),
   events: (limit = 300) => get<TimelineEvent[]>(`api/events?limit=${limit}`),
   dismiss: (keys: string[], dismissed: boolean) =>
