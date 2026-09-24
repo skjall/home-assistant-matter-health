@@ -11,6 +11,7 @@ stage-specific guesses.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
@@ -34,6 +35,42 @@ FAILURE_SETTLES = timedelta(seconds=30)
 
 #: Mesh trouble this close to an attempt counts as the likely reason.
 MESH_WINDOW = timedelta(minutes=2)
+
+#: Causes the Matter Server names in its failure message, in the order they
+#: are checked. Each has its own explanation and fix; a failure without one of
+#: them is explained by the stage it reached.
+REASONS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "credentials",
+        re.compile(r"No Wi-?Fi/Thread network credentials", re.IGNORECASE),
+    ),
+    (
+        "already_paired",
+        re.compile(r"fabric that already exists|already commissioned", re.I),
+    ),
+    ("untrusted", re.compile(r"PAA not found|Failed Device Attestation", re.I)),
+    ("invalid_noc", re.compile(r"InvalidNoc", re.I)),
+    (
+        "unreachable",
+        re.compile(
+            r"ENETUNREACH|address (?:is )?unreachable|Network is unreachable", re.I
+        ),
+    ),
+    (
+        "not_found",
+        re.compile(r"No commissionable device|Discovery timed out", re.I),
+    ),
+    ("timeout", re.compile(r"fail-?safe timer expired", re.I)),
+)
+
+
+def reason_of(reasons: list[str]) -> str | None:
+    """Return the cause a failure message names, if it is a known one."""
+    text = " ".join(reasons)
+    for code, pattern in REASONS:
+        if pattern.search(text):
+            return code
+    return None
 
 
 @dataclass
@@ -201,7 +238,16 @@ class PairingRule(Rule):
                     evidence=[event.id for event in trouble if event.id],
                 )
             )
-        else:
+        reason = reason_of(attempt.reasons)
+        if not trouble and reason:
+            chain.append(
+                Link(
+                    Role.CAUSE,
+                    f"cause.pairing_reason.{reason}",
+                    confidence=Confidence.LIKELY,
+                )
+            )
+        elif not trouble:
             chain.append(
                 Link(
                     Role.CAUSE,
@@ -221,7 +267,10 @@ class PairingRule(Rule):
         chain.append(Link(Role.IMPACT, "link.pairing_failed_impact"))
         if trouble:
             chain.append(Link(Role.FIX, "fix.pairing_wait_for_mesh"))
-        chain.append(Link(Role.FIX, f"fix.pairing.{attempt.phase}"))
+        if reason:
+            chain.append(Link(Role.FIX, f"fix.pairing_reason.{reason}"))
+        else:
+            chain.append(Link(Role.FIX, f"fix.pairing.{attempt.phase}"))
         chain.append(Link(Role.FIX, "fix.pairing_reset_and_retry"))
         return Finding(
             key=attempt.key,

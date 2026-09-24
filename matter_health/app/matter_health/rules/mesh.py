@@ -21,6 +21,7 @@ from ..engine import RULES, Rule
 from ..model import Confidence, Event, Finding, Link, Role, Severity
 from .common import (
     POWER_CAUSE_WINDOW,
+    cause_or_update,
     last_border_router_gone,
     last_power_off,
     power_off_link,
@@ -138,8 +139,7 @@ class MeshRule(Rule):
                     confidence=Confidence.LIKELY,
                 )
             )
-        if not power and not router:
-            chain.append(Link(Role.CAUSE, "link.cause_unknown"))
+        await cause_or_update(ctx, chain, episode.start)
 
         duration = seconds(episode.start, episode.last)
         chain.append(

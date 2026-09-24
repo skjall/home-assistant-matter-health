@@ -103,26 +103,36 @@ def chain_keys(finding: Finding) -> list[str]:
 
 
 class FakeSupervisor:
-    """Answers the two Supervisor endpoints the add-on reads.
+    """Answers the Supervisor endpoints the add-on reads.
 
     ``addons`` maps a slug to its ``data`` block; a missing slug is a 404.
     ``logs`` maps a slug to the lines its log stream sends before ending.
+    ``paths`` maps any other path, such as ``/docker/info``, to its ``data``.
     """
 
     def __init__(
         self,
         addons: dict[str, dict[str, Any]] | None = None,
         logs: dict[str, list[str]] | None = None,
+        paths: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         self.addons = addons or {}
         self.logs = logs or {}
+        self.paths = paths or {}
         self.requests: list[tuple[str, dict[str, str]]] = []
 
     def app(self) -> web.Application:
         app = web.Application()
         app.router.add_get("/addons/{slug}/info", self.info)
         app.router.add_get("/addons/{slug}/logs/follow", self.follow)
+        app.router.add_get("/{path:.*}", self.other)
         return app
+
+    async def other(self, request: web.Request) -> web.Response:
+        self.requests.append((request.path, dict(request.headers)))
+        if request.path not in self.paths:
+            return web.json_response({"result": "error"}, status=404)
+        return web.json_response({"result": "ok", "data": self.paths[request.path]})
 
     def _record(self, request: web.Request) -> str:
         self.requests.append((request.path, dict(request.headers)))

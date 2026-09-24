@@ -9,6 +9,10 @@ What is away is kept in the store, not only in memory, and compared with the
 Matter Server's current list on every tick. A device that was unreachable
 before the add-on started, or while it was restarting, is reported all the
 same, and one that came back unseen is closed.
+
+A device that comes and goes by habit (see :mod:`.habits`) is reported only
+once it stays away clearly longer than usual; until then the overview lists
+it as away, as expected.
 """
 
 from __future__ import annotations
@@ -19,10 +23,11 @@ from typing import Any, ClassVar
 from .. import kinds
 from ..engine import RULES, Context, Rule
 from ..model import Confidence, Event, Finding, Link, Role, Severity
-from .common import last_power_off, mesh_trouble, power_off_link
+from .common import cause_or_update, last_power_off, mesh_trouble, power_off_link
+from .habits import LONG_ABSENCE, marked, pattern
 
 #: Short drop-outs heal by themselves; after this long they do not.
-UNREACHABLE_FOR = timedelta(minutes=10)
+UNREACHABLE_FOR = LONG_ABSENCE
 
 #: A switch turned off this shortly before the device went away may have been
 #: its power.
@@ -47,7 +52,7 @@ class OfflineRule(Rule):
     """Reports devices that have been unreachable for a while."""
 
     name: ClassVar[str] = "offline"
-    part_of: ClassVar[frozenset[str]] = frozenset({"mesh"})
+    part_of: ClassVar[frozenset[str]] = frozenset({"mesh", "wave", "relay"})
     listens: ClassVar[frozenset[str]] = frozenset(
         {
             kinds.MATTER_NODE_UNAVAILABLE,
@@ -95,12 +100,22 @@ class OfflineRule(Rule):
                 # before taking a missing entry as a return nobody saw.
                 if now - datetime.fromisoformat(away[subject]["since"]) >= GRACE:
                     await self._back(subject, away.pop(subject), now)
+        marks = await marked(self.ctx)
         # Publishing awaits, and a device may come or go meanwhile.
         for subject, entry in list(away.items()):
-            since = datetime.fromisoformat(entry["since"])
-            if not entry.get("reported") and now - since >= UNREACHABLE_FOR:
-                entry["reported"] = True
-                await self.ctx.publish(await self.describe(subject, entry))
+            gone_for = now - datetime.fromisoformat(entry["since"])
+            if entry.get("reported") or gone_for < UNREACHABLE_FOR:
+                continue
+            usual = await pattern(self.ctx, subject, marks)
+            expected = usual.expected_for
+            if expected is not None and gone_for < expected:
+                entry["expected"] = True
+                continue
+            entry.pop("expected", None)
+            if expected is not None:
+                entry["usual"] = int((usual.longest or timedelta()).total_seconds())
+            entry["reported"] = True
+            await self.ctx.publish(await self.describe(subject, entry))
         await self._save(away)
 
     async def _away(self) -> dict[str, dict[str, Any]]:
@@ -138,8 +153,7 @@ class OfflineRule(Rule):
             )
         if power:
             chain.append(power_off_link(power, Confidence.POSSIBLE))
-        if not chain:
-            chain.append(Link(Role.CAUSE, "link.cause_unknown"))
+        await cause_or_update(self.ctx, chain, since)
         chain.append(
             Link(
                 Role.EFFECT,
@@ -149,13 +163,20 @@ class OfflineRule(Rule):
                 evidence=[entry["event"]] if entry.get("event") else [],
             )
         )
+        usual = entry.get("usual")
+        if usual:
+            chain.append(
+                Link(Role.EFFECT, "link.usually_back", {"duration": int(usual)})
+            )
         chain.append(Link(Role.IMPACT, "link.device_unreachable_impact"))
         chain.append(Link(Role.FIX, "fix.device_unreachable", {"device": device}))
         return Finding(
             key=f"offline:{subject}:{entry['since']}",
             rule=self.name,
             severity=Severity.WARNING,
-            title="finding.device_unreachable.title",
+            title="finding.device_away_long.title"
+            if "usual" in entry
+            else "finding.device_unreachable.title",
             params={"device": device},
             started_at=since,
             chain=chain,

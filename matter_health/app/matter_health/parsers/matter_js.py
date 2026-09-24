@@ -1,5 +1,8 @@
 """The Matter Server's log: how adding a device went, step by step.
 
+It also says when the host has no route to a device's address, which is
+how a missing route into the Thread mesh shows up.
+
 The Matter Server (matter.js) reports the steps of commissioning only in its
 log, and only from log level ``info`` up. At ``warning`` the final failure is
 still there, so a parser that knows both still gives an answer - just a
@@ -18,6 +21,10 @@ from .. import kinds
 from . import PARSERS, LineParser, Parsed, clean, peer_node_id
 
 PEER = r"(@\d+:[0-9a-f]+)"
+
+#: The host has no route to a device's address: the device lives in a network
+#: (usually the Thread mesh) Home Assistant's host cannot reach.
+UNREACHABLE = r"address is unreachable|ENETUNREACH|Network is unreachable"
 
 #: (pattern, kind, names of the captured groups). Order matters: the first
 #: match wins, so the specific failure lines come before the generic step line.
@@ -70,6 +77,12 @@ PATTERNS: list[tuple[re.Pattern[str], str, tuple[str, ...]]] = [
         kinds.COMMISSIONING_COMPLETED,
         ("peer",),
     ),
+    (
+        re.compile(rf"{PEER}\b.*(?:{UNREACHABLE})"),
+        kinds.MATTER_ROUTE_UNREACHABLE,
+        ("peer",),
+    ),
+    (re.compile(UNREACHABLE), kinds.MATTER_ROUTE_UNREACHABLE, ()),
 ]
 
 

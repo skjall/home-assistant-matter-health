@@ -10,6 +10,7 @@ const NAMED: Record<string, string> = {
   neighbour: "generic.device",
   border_router: "generic.border_router",
   switch: "generic.switch",
+  relay: "generic.device",
 };
 
 function subjectName(finding: Finding): string | undefined {
@@ -66,7 +67,8 @@ export function happening(event: TimelineEvent): string {
     return t(`timeline.source.status.${state}`, { source: t(`source.${source}`) });
   }
   const name = event.name ?? fallbackName(event.subject);
-  return t(`timeline.${event.kind}`, { name });
+  const version = typeof event.data.current === "string" ? event.data.current : "";
+  return t(`timeline.${event.kind}`, { name, version });
 }
 
 function fallbackName(subject: string | null): string {

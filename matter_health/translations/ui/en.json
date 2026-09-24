@@ -77,7 +77,45 @@
     "dismissed": "dealt with",
     "acknowledge": "Mark as seen",
     "acknowledge_all": "Mark all as seen",
-    "done": "Dealt with ({count})"
+    "done": "Dealt with ({count})",
+    "known": "I know",
+    "comes_and_goes": "Comes and goes",
+    "device_away_long": {
+      "title": "{device} has been away longer than usual"
+    },
+    "device_flaky": {
+      "title": "{device} keeps losing its connection"
+    },
+    "forwarding_off": {
+      "title": "Home Assistant does not pass messages on to the Thread network"
+    },
+    "ipv6_off": {
+      "title": "IPv6 is switched off in Home Assistant"
+    },
+    "ipv6_static": {
+      "title": "IPv6 is set by hand in Home Assistant"
+    },
+    "channel_busy": {
+      "title": "The Thread radio channel is crowded"
+    },
+    "radio_fault": {
+      "title": "Home Assistant's Thread radio keeps dropping out"
+    },
+    "otbr_detached": {
+      "title": "Home Assistant's bridge lost touch with the Thread network"
+    },
+    "otbr_disabled": {
+      "title": "Home Assistant's bridge is in no Thread network"
+    },
+    "thread_wave": {
+      "title": "Home Assistant cannot reach your Thread devices"
+    },
+    "relay_gone": {
+      "title": "{relay} went away and took {count} devices with it"
+    },
+    "server_forgot": {
+      "title": "The Matter Server no longer knows your devices"
+    }
   },
   "link": {
     "power_off": "{switch} was switched off {origin}.",
@@ -100,7 +138,37 @@
     "weak_signal_battery": "Battery devices also run down faster, because they have to repeat themselves.",
     "mesh_disturbed": "Your Thread network was unsettled at that moment.",
     "device_unreachable": "{device} stopped responding.",
-    "device_unreachable_impact": "You cannot control it and its values are not updated."
+    "device_unreachable_impact": "You cannot control it and its values are not updated.",
+    "updated_before": "Shortly before, {software} was updated to {version}.",
+    "usually_back": "Usually it is back within {duration}.",
+    "weak_signal_cause": "{device} has a weak radio link.",
+    "device_flaky": "{device} was briefly away {count} times in the last 24 hours.",
+    "device_flaky_impact": "Commands sent in those moments get lost, and its values lag behind.",
+    "docker_ipv6_off": "IPv6 is switched off for Docker. Home Assistant OS then does not forward IPv6.",
+    "forwarding_off_seen": "When it started, Home Assistant's Thread bridge reported that IPv6 forwarding is off.",
+    "forwarding_off": "Home Assistant does not pass messages between your home network and the Thread network.",
+    "forwarding_off_impact": "New Thread devices cannot be added – the phone stops while checking the Thread connection. Existing devices usually keep working.",
+    "ipv6_disabled": "IPv6 is switched off on {interface}.",
+    "ipv6_static": "IPv6 is set by hand on {interface}.",
+    "ipv6_no_routes": "Home Assistant then ignores the ways into the Thread network that your bridges announce in your home network.",
+    "ipv6_impact": "Home Assistant cannot reach Thread devices, and new ones cannot be added.",
+    "channel_busy_cause": "A lot is going on on the same radio channel – usually Wi-Fi or Zigbee, sometimes a microwave oven.",
+    "channel_busy": "Home Assistant's bridge could not send {count} times in {minutes} minutes because the channel was busy.",
+    "channel_busy_impact": "Messages get lost or arrive late; devices react sluggishly.",
+    "radio_fault": "Home Assistant's Thread bridge lost contact with its radio stick.",
+    "radio_fault_impact": "While that lasts, nothing goes through this bridge. Without another bridge, no Thread device can be reached.",
+    "otbr_detached": "Home Assistant's bridge no longer hears any other Thread device.",
+    "otbr_disabled": "Home Assistant's bridge is not part of any Thread network.",
+    "otbr_outside_impact": "Home Assistant reaches no Thread device through this bridge. Other bridges step in if you have any.",
+    "route_missing": "Home Assistant found no way to the addresses of your Thread devices.",
+    "route_probably_missing": "Your Thread network itself was calm, and no bridge disappeared. Home Assistant has probably lost its way into the Thread network.",
+    "thread_wave": "{count} of {total} Thread devices became unreachable almost at the same moment.",
+    "thread_wave_impact": "You cannot control these devices from Home Assistant. In your phone's home app they often still work.",
+    "relay_gone": "{relay} is no longer reachable. Other devices were connected to your network through it.",
+    "relay_children_gone": "Shortly after, {devices} were gone too.",
+    "relay_impact": "These devices have to find a new way into the network. Some manage within minutes, some only after a long time, some not at all.",
+    "server_forgot": "The Matter Server knew {count} devices and now knows none.",
+    "server_forgot_impact": "No Matter device can be reached. The devices themselves are fine, but the keys to them are gone."
   },
   "origin": {
     "person": "by {by}",
@@ -118,6 +186,15 @@
       "network": "The device could not join your Thread or Wi-Fi network. Often no router is close enough where the device is.",
       "find_again": "The device joined your network, but Home Assistant could not find it there afterwards. Usually the device is too far from the nearest Thread router or bridge.",
       "finish": "Everything was nearly done, but the last confirmation did not arrive."
+    },
+    "pairing_reason": {
+      "credentials": "The Matter Server does not know your Thread network's credentials and could not hand them to the device.",
+      "already_paired": "The device is still tied to an earlier setup.",
+      "untrusted": "The device's certificate is not recognised – it may be a test or development device.",
+      "invalid_noc": "The device rejected the key Home Assistant gave it.",
+      "unreachable": "Home Assistant had no way to the device's address.",
+      "not_found": "The device could not be found in the network.",
+      "timeout": "Setting it up took too long, and the device gave up."
     }
   },
   "fix": {
@@ -136,7 +213,27 @@
     },
     "pairing_reset_and_retry": "Before trying again: reset the device to factory settings, then scan the code again.",
     "weak_signal": "Put a Thread device that is always powered (for example a smart plug) between {device} and {neighbour}, or move {device} a little closer.",
-    "device_unreachable": "Check that {device} has power - or fresh batteries. If it runs on batteries, take them out for ten seconds and put them back."
+    "device_unreachable": "Check that {device} has power - or fresh batteries. If it runs on batteries, take them out for ten seconds and put them back.",
+    "device_flaky": "Check where {device} sits: a mains-powered Thread device nearby (a smart plug, for example) almost always helps. If not, look for a firmware update.",
+    "enable_docker_ipv6": "Open the terminal in Home Assistant, enter ha docker options --enable-ipv6=true and then restart the whole system (Settings → System → Restart → Reboot system).",
+    "forwarding_update_os": "This affects certain versions of Home Assistant OS. Check whether an update is available, then restart the system.",
+    "ipv6_automatic": "Set IPv6 to “Automatic”: Settings → System → Network → {interface} → IPv6.",
+    "channel_busy": "Move the Thread channel away from Wi-Fi and Zigbee: Settings → Devices & services → Thread → Configure → change channel. Channel 25 sits between the usual Wi-Fi channels.",
+    "radio_fault": "Plug the radio stick into a USB extension cable, away from the computer and from USB 3 ports. Update its firmware. If it keeps happening, replace the stick.",
+    "otbr_detached": "This usually sorts itself out. If it lasts, restart the OpenThread Border Router app and check that its radio stick is plugged in.",
+    "otbr_disabled": "The bridge has no Thread network. Open Settings → Devices & services → Thread and check that a preferred network is set.",
+    "thread_wave": "Restart your bridges (a HomePod or Apple TV, for example). If that does not help, restart Home Assistant. If it happens again, check that IPv6 in Home Assistant is set to “Automatic”.",
+    "relay": "Check that {relay} has power. A second mains-powered Thread device nearby means the others no longer depend on this one.",
+    "server_restore_backup": "Restore the backup of the Matter Server app (Settings → System → Backups). All devices come back at once – pairing each one again is the last resort.",
+    "pairing_reason": {
+      "credentials": "Set a preferred Thread network in Home Assistant (Settings → Devices & services → Thread) and add the device through the companion app again.",
+      "already_paired": "Reset the device to factory settings, or first remove it from the app it was in before.",
+      "untrusted": "Look for a firmware update. The Matter Server only accepts devices with a recognised certificate.",
+      "invalid_noc": "Reset the device to factory settings and try again. If it happens again, ask the manufacturer for a firmware update.",
+      "unreachable": "Check that IPv6 in Home Assistant is set to “Automatic” and that a bridge is in the same network as Home Assistant.",
+      "not_found": "Put the device into pairing mode again and keep the phone close to it. Are the phone and Home Assistant in the same network?",
+      "timeout": "Try again closer to a bridge or a mains-powered Thread device."
+    }
   },
   "phase": {
     "first_contact": {
@@ -187,7 +284,9 @@
     "commissioning.completed": "A device was added",
     "commissioning.failed": "Adding a device failed",
     "source.status.ok": "{source} – connected again",
-    "source.status.down": "{source} – connection lost"
+    "source.status.down": "{source} – connection lost",
+    "system.updated": "{name} updated to {version}",
+    "matter.nodes_lost": "Matter Server knows no devices any more"
   },
   "network": {
     "title": "Your network right now",
@@ -197,8 +296,11 @@
     "foreign_title": "Other Thread networks",
     "foreign_hint": "Separate from yours – your devices cannot use them.",
     "foreign_network": "Network “{network}”",
-    "facts": "Home Assistant: {role} · {count} routers in the network",
-    "sources_missing": "Not connected"
+    "sources_missing": "Not connected",
+    "usual_title": "Comes and goes",
+    "usual_hint": "These devices are often away. Only an absence clearly longer than usual is reported.",
+    "always_report": "Always report",
+    "known_title": "Known"
   },
   "source": {
     "matter_server": "Matter Server",
@@ -207,7 +309,8 @@
     "otbr_log": "OpenThread Border Router: log",
     "home_assistant": "Home Assistant",
     "down": "not reachable",
-    "waiting": "connecting…"
+    "waiting": "connecting…",
+    "system": "Supervisor"
   },
   "thread_role": {
     "leader": "coordinator",

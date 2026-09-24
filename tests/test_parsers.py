@@ -3,7 +3,13 @@ import pytest
 from matter_health import kinds
 from matter_health.parsers import PARSERS, Parsed, clean, peer_node_id
 from matter_health.parsers.matter_js import MatterJsParser
-from matter_health.parsers.openthread import REPEAT_WINDOW_S, OpenThreadParser
+from matter_health.parsers.openthread import (
+    BUSY_AFTER,
+    BUSY_REPEAT_S,
+    BUSY_WINDOW_S,
+    REPEAT_WINDOW_S,
+    OpenThreadParser,
+)
 
 PREFIX = "2030-05-04 12:00:00.123 INFO ControllerCommissioningFlow "
 
@@ -84,6 +90,14 @@ PREFIX = "2030-05-04 12:00:00.123 INFO ControllerCommissioningFlow "
             Parsed(kinds.COMMISSIONING_COMPLETED, "node:255", {"node_id": 255}),
         ),
         ("Subscription to @1:1e established", None),
+        (
+            "IpServiceStatus      @1:7d Resolving (address is unreachable)",
+            Parsed(kinds.MATTER_ROUTE_UNREACHABLE, "node:125", {"node_id": 125}),
+        ),
+        (
+            "Failed to advertise records: OS Error 0x02000065: Network is unreachable",
+            Parsed(kinds.MATTER_ROUTE_UNREACHABLE),
+        ),
     ],
 )
 def test_matter_js_lines(line: str, expected: Parsed | None) -> None:
@@ -137,3 +151,80 @@ def test_openthread_default_clock() -> None:
     assert OpenThreadParser().parse("Mle-: Leader age timeout") == [
         Parsed(kinds.THREAD_LEADER_LOST)
     ]
+
+
+BUSY = "5d.02:12:25.649 [W] P-RadioSpinel-: Handle transmit done failed: " + (
+    "ChannelAccessFailure"
+)
+
+
+def test_openthread_counts_a_busy_channel() -> None:
+    clock = FakeClock()
+    parser = OpenThreadParser(clock)
+    # The two companion lines of each failure are not counted.
+    other = (
+        "[I] Mac-----------: Frame tx attempt 16/16 failed, error:ChannelAccessFailure"
+    )
+
+    for _ in range(BUSY_AFTER - 1):
+        assert parser.parse(BUSY) == []
+        assert parser.parse(other) == []
+        clock.now += 10
+    assert parser.parse(BUSY) == [
+        Parsed(
+            kinds.THREAD_CHANNEL_BUSY,
+            data={"count": BUSY_AFTER, "minutes": int(BUSY_WINDOW_S // 60)},
+        )
+    ]
+    # While it lasts, it is reported again only after a while.
+    clock.now += 10
+    assert parser.parse(BUSY) == []
+    clock.now += BUSY_REPEAT_S
+    for _ in range(BUSY_AFTER - 1):
+        parser.parse(BUSY)
+        clock.now += 1
+    assert parser.parse(BUSY)[0].kind == kinds.THREAD_CHANNEL_BUSY
+
+
+def test_openthread_forgets_old_busy_failures() -> None:
+    clock = FakeClock()
+    parser = OpenThreadParser(clock)
+
+    for _ in range(BUSY_AFTER * 2):
+        assert parser.parse(BUSY) == []
+        clock.now += BUSY_WINDOW_S / (BUSY_AFTER - 2.5)
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        (
+            "[W] P-RadioSpinel-: RCP failure detected",
+            Parsed(kinds.THREAD_RADIO_FAULT, data={"reason": "RCP failure detected"}),
+        ),
+        (
+            "Failed to communicate with RCP - no response from RCP during init",
+            Parsed(
+                kinds.THREAD_RADIO_FAULT,
+                data={"reason": "Failed to communicate with RCP"},
+            ),
+        ),
+        (
+            "[W] P-SpinelDrive-: Wait for response timeout",
+            Parsed(
+                kinds.THREAD_RADIO_FAULT, data={"reason": "Wait for response timeout"}
+            ),
+        ),
+        (
+            "[12:00:00] WARNING: IPv6 routing/forwarding is not enabled! Make sure "
+            "the Home Assistant host has IPv6 forwarding enabled.",
+            Parsed(kinds.HOST_FORWARDING_OFF),
+        ),
+        (
+            "[12:00:01] INFO: Starting otbr-agent...",
+            Parsed(kinds.THREAD_AGENT_STARTED),
+        ),
+    ],
+)
+def test_openthread_radio_and_host_lines(line: str, expected: Parsed) -> None:
+    assert OpenThreadParser(FakeClock()).parse(line) == [expected]

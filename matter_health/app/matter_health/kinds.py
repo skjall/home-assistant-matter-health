@@ -26,6 +26,17 @@ THREAD_FOREIGN_PARTITION: Final = "thread.foreign_partition"
 #: Best radio link per device. data: devices: list of {subject, neighbour,
 #: role, rssi, lqi, strength}
 THREAD_TOPOLOGY: Final = "thread.topology"
+#: The border router's radio could not send because the channel was busy, many
+#: times in a short while. data: count, minutes
+THREAD_CHANNEL_BUSY: Final = "thread.channel_busy"
+#: The border router lost contact with its radio (the USB stick or module).
+#: data: reason
+THREAD_RADIO_FAULT: Final = "thread.radio_fault"
+#: The border router add-on found IPv6 forwarding switched off on the host.
+#: data: -
+HOST_FORWARDING_OFF: Final = "host.forwarding_off"
+#: The border router add-on started its agent. data: -
+THREAD_AGENT_STARTED: Final = "thread.agent_started"
 
 # --- Border routers ---------------------------------------------------------
 
@@ -46,6 +57,21 @@ MATTER_NODE_UNAVAILABLE: Final = "matter.node_unavailable"
 MATTER_NODE_ADDED: Final = "matter.node_added"
 #: subject: ``node:<id>``. data: name
 MATTER_NODE_REMOVED: Final = "matter.node_removed"
+#: The Matter Server knew devices before and now knows none. data: previous
+MATTER_NODES_LOST: Final = "matter.nodes_lost"
+#: The Matter Server has no route to a device's address. subject:
+#: ``node:<id>`` when known. data: -
+MATTER_ROUTE_UNREACHABLE: Final = "matter.route_unreachable"
+
+# --- The system Home Assistant runs on, from the Supervisor ----------------
+
+#: A piece of software was updated. subject: ``software:<slug>``. data: name,
+#: previous, current
+SYSTEM_UPDATED: Final = "system.updated"
+#: What the Supervisor says about the host's network. data: docker_ipv6
+#: (true, false or null), ipv6_method (of the primary interface), interface,
+#: haos (whether Home Assistant OS runs the host)
+SYSTEM_NETWORK: Final = "system.network"
 
 # --- Adding a device (commissioning), from the Matter Server's log ------------
 

@@ -352,6 +352,17 @@ export class MhFinding extends LitElement {
     );
   }
 
+  /** Say the device of this finding comes and goes, so it is not reported. */
+  private habit(): void {
+    this.dispatchEvent(
+      new CustomEvent("mh-habit", {
+        detail: { subject: this.finding.subjects[0], comesAndGoes: true },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
   private toggle(): void {
     this.open = !this.open;
   }
@@ -419,6 +430,8 @@ export class MhFinding extends LitElement {
       (role) => [role, finding.chain.filter((link) => link.role === role)] as const,
     ).filter(([, links]) => links.length > 0);
     const teaser = this.teaser();
+    // A device away right now: the user may know why, or know it does that.
+    const absence = finding.rule === "offline" && !ended && finding.subjects.length > 0;
     return html`<article class="card">
       <header
         role="button"
@@ -482,7 +495,14 @@ export class MhFinding extends LitElement {
                     ? t("finding.undismiss")
                     : finding.ended_at
                       ? t("finding.acknowledge")
-                      : t("finding.dismiss")}
+                      : absence
+                        ? t("finding.known")
+                        : t("finding.dismiss")}
+                </button>`
+              : nothing}
+            ${absence && !this.nested && !finding.dismissed
+              ? html`<button class="details-toggle dismiss" @click=${this.habit}>
+                  ${t("finding.comes_and_goes")}
                 </button>`
               : nothing}
             <button class="details-toggle" @click=${() => (this.details = !this.details)}>

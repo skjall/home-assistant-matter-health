@@ -36,12 +36,25 @@ def test_plugins_register_themselves_on_import() -> None:
 
     assert rules.__all__ and sources.__all__
 
-    assert RULES.names() == ["border_router", "mesh", "offline", "pairing", "signal"]
+    assert RULES.names() == [
+        "border_router",
+        "flaky",
+        "host",
+        "mesh",
+        "offline",
+        "pairing",
+        "radio",
+        "relay",
+        "server",
+        "signal",
+        "wave",
+    ]
     assert SOURCES.names() == [
         "home_assistant",
         "matter_server",
         "matter_server_log",
         "otbr",
         "otbr_log",
+        "system",
     ]
     assert PARSERS.names() == ["matter_js", "openthread"]

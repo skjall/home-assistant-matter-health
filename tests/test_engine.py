@@ -381,7 +381,12 @@ async def test_start_runs_sources_ticks_and_housekeeping(
     await store.add_event(old)
 
     async def ticked() -> bool:
-        return Waiting.started.is_set() and "tracing:tick" in Tracing.seen
+        # Housekeeping runs in its own task; wait for its report too.
+        return (
+            Waiting.started.is_set()
+            and "tracing:tick" in Tracing.seen
+            and "removed 1 entries" in caplog.text
+        )
 
     await run_engine_briefly(engine, ticked)
 

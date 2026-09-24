@@ -22,6 +22,7 @@ from aiohttp import web
 from .. import kinds
 from ..engine import Engine, event_payload
 from ..model import Finding
+from ..rules.habits import HABITS
 from ..stories import stories
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,6 +51,8 @@ TIMELINE_KINDS: tuple[str, ...] = (
     kinds.COMMISSIONING_COMPLETED,
     kinds.COMMISSIONING_FAILED,
     kinds.SOURCE_STATUS,
+    kinds.SYSTEM_UPDATED,
+    kinds.MATTER_NODES_LOST,
 )
 
 ENGINE: web.AppKey[Engine] = web.AppKey("engine", Engine)
@@ -130,8 +133,23 @@ async def overview(request: web.Request) -> web.Response:
         f for f in findings if f.ended_at is None and not is_dismissed(f, dismissed)
     ]
     nodes = await store.get_state("matter.nodes") or {}
+    away = await store.get_state("offline.away") or {}
+    habits = await store.get_state(HABITS) or {}
+    # Devices whose current absence the user acknowledged.
+    known = {
+        subject
+        for f in findings
+        if f.rule == "offline" and f.ended_at is None and is_dismissed(f, dismissed)
+        for subject in f.subjects
+    }
     unavailable = [
-        {"subject": s, "name": engine.ctx.names.get(s)}
+        {
+            "subject": s,
+            "name": engine.ctx.names.get(s),
+            "usual": bool(away.get(s, {}).get("expected")),
+            "known": s in known,
+            "comes_and_goes": habits.get(s),
+        }
         for s in nodes.get("unavailable", [])
     ]
     return web.json_response(
@@ -203,6 +221,45 @@ async def dismiss(request: web.Request) -> web.Response:
             dismissed.pop(key, None)
     await store.set_state(DISMISSED, dismissed)
     return web.json_response({"keys": keys, "dismissed": wanted})
+
+
+async def habit(request: web.Request) -> web.Response:
+    """Say whether a device comes and goes by habit, or forget what was said.
+
+    Takes ``{subject, comes_and_goes}`` with true, false or null. A device
+    marked as coming and going is reported only once it stays away longer
+    than usual, so its current absence is taken as known.
+    """
+    engine = request.app[ENGINE]
+    store = engine.ctx.store
+    wrong = web.HTTPBadRequest(
+        text="expected {subject, comes_and_goes: true, false or null}"
+    )
+    try:
+        body = await request.json()
+        subject = str(body["subject"])
+        value = body.get("comes_and_goes")
+    except ValueError, KeyError, TypeError:
+        raise wrong from None
+    if value is not None and not isinstance(value, bool):
+        raise wrong
+    habits = dict(await store.get_state(HABITS) or {})
+    if value is None:
+        habits.pop(subject, None)
+    else:
+        habits[subject] = value
+    await store.set_state(HABITS, habits)
+    if value:
+        dismissed = dict(await store.get_state(DISMISSED) or {})
+        for finding in await store.findings():
+            if (
+                finding.rule == "offline"
+                and finding.ended_at is None
+                and subject in finding.subjects
+            ):
+                dismissed[finding.key] = finding.started_at.isoformat()
+        await store.set_state(DISMISSED, dismissed)
+    return web.json_response({"subject": subject, "comes_and_goes": value})
 
 
 async def events(request: web.Request) -> web.Response:
@@ -298,6 +355,7 @@ def create_app(
     app.router.add_get("/api/overview", overview)
     app.router.add_get("/api/findings", findings)
     app.router.add_post("/api/dismiss", dismiss)
+    app.router.add_post("/api/habit", habit)
     app.router.add_get("/api/events", events)
     app.router.add_get("/api/languages", languages)
     app.router.add_get("/api/i18n/{language}", translation)

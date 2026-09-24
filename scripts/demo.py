@@ -38,6 +38,8 @@ NAMES = {
     "node:9": "Bathroom Sensor",
     "node:12": "Hallway Motion Sensor",
     "node:21": "Desk Lamp Plug",
+    "node:30": "Coffee Machine",
+    "node:31": "Drawer Button",
     "br:0a1b2c3d4e5f6071": "Living Room TV",
     "br:1b2c3d4e5f607182": "Kitchen Speaker",
     "br:2c3d4e5f60718293": "Bedroom Speaker",
@@ -167,6 +169,22 @@ async def seed(engine: Engine, clock: Clock) -> None:
     await pairing(21, None)
     await tick(3)
 
+    # All week: the coffee machine is plugged in only when it is used.
+    clock.at = utcnow() - timedelta(days=4)
+    for _ in range(3):
+        await emit(kinds.MATTER_NODE_UNAVAILABLE, "node:30", name="Coffee Machine")
+        clock.go(hours=20)
+        await emit(kinds.MATTER_NODE_AVAILABLE, "node:30", name="Coffee Machine")
+        clock.go(hours=4)
+    clock.at = utcnow() - timedelta(hours=2)
+    await emit(kinds.MATTER_NODE_UNAVAILABLE, "node:30", name="Coffee Machine")
+    await tick(12)
+
+    # A button without batteries; its owner knows.
+    clock.at = utcnow() - timedelta(hours=5)
+    await emit(kinds.MATTER_NODE_UNAVAILABLE, "node:31", name="Drawer Button")
+    await tick(12)
+
     # This morning: a bathroom sensor stops answering and does not come back.
     clock.at = utcnow() - timedelta(hours=3)
     await emit(kinds.MATTER_NODE_UNAVAILABLE, "node:9", name="Bathroom Sensor")
@@ -208,7 +226,13 @@ async def seed(engine: Engine, clock: Clock) -> None:
         },
     )
     await store.set_state("border_routers", BORDER_ROUTERS)
-    await store.set_state("matter.nodes", {"total": 24, "unavailable": ["node:9"]})
+    await store.set_state(
+        "matter.nodes",
+        {"total": 24, "unavailable": ["node:9", "node:30", "node:31"]},
+    )
+    found = await store.findings()
+    button = next(f for f in found if f.subjects == ["node:31"] and not f.ended_at)
+    await store.set_state("dismissed", {button.key: button.started_at.isoformat()})
     for source in ("home_assistant", "matter_server", "matter_server_log", "otbr"):
         await engine.set_status(source, True)
     await engine.set_status("otbr_log", True)

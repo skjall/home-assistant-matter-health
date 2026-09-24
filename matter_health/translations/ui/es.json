@@ -77,7 +77,45 @@
     "dismissed": "resuelto",
     "acknowledge": "Marcar como visto",
     "acknowledge_all": "Marcar todo como visto",
-    "done": "Resuelto ({count})"
+    "done": "Resuelto ({count})",
+    "known": "Ya lo sé",
+    "comes_and_goes": "Va y viene",
+    "device_away_long": {
+      "title": "{device} lleva más tiempo fuera de lo habitual"
+    },
+    "device_flaky": {
+      "title": "{device} pierde la conexión una y otra vez"
+    },
+    "forwarding_off": {
+      "title": "Home Assistant no reenvía mensajes a la red Thread"
+    },
+    "ipv6_off": {
+      "title": "IPv6 está desactivado en Home Assistant"
+    },
+    "ipv6_static": {
+      "title": "IPv6 está configurado a mano en Home Assistant"
+    },
+    "channel_busy": {
+      "title": "El canal de radio Thread está saturado"
+    },
+    "radio_fault": {
+      "title": "La radio Thread de Home Assistant falla"
+    },
+    "otbr_detached": {
+      "title": "El puente de Home Assistant perdió el contacto con la red Thread"
+    },
+    "otbr_disabled": {
+      "title": "El puente de Home Assistant no está en ninguna red Thread"
+    },
+    "thread_wave": {
+      "title": "Home Assistant no llega a tus dispositivos Thread"
+    },
+    "relay_gone": {
+      "title": "{relay} desapareció y se llevó {count} dispositivos"
+    },
+    "server_forgot": {
+      "title": "El servidor Matter ya no conoce tus dispositivos"
+    }
   },
   "link": {
     "power_off": "{switch} fue apagado {origin}.",
@@ -100,7 +138,37 @@
     "weak_signal_battery": "Además, los dispositivos a pilas se gastan antes, porque tienen que repetir los mensajes.",
     "mesh_disturbed": "Tu red Thread estaba inestable en ese momento.",
     "device_unreachable": "{device} dejó de responder.",
-    "device_unreachable_impact": "No puedes controlarlo y sus valores no se actualizan."
+    "device_unreachable_impact": "No puedes controlarlo y sus valores no se actualizan.",
+    "updated_before": "Poco antes, {software} se actualizó a {version}.",
+    "usually_back": "Normalmente vuelve en {duration} como mucho.",
+    "weak_signal_cause": "{device} tiene un enlace de radio débil.",
+    "device_flaky": "{device} desapareció brevemente {count} veces en las últimas 24 horas.",
+    "device_flaky_impact": "Las órdenes enviadas en esos momentos se pierden y sus valores van con retraso.",
+    "docker_ipv6_off": "IPv6 está desactivado para Docker. Home Assistant OS entonces no reenvía IPv6.",
+    "forwarding_off_seen": "Al arrancar, el puente Thread de Home Assistant avisó de que el reenvío IPv6 está desactivado.",
+    "forwarding_off": "Home Assistant no pasa mensajes entre tu red doméstica y la red Thread.",
+    "forwarding_off_impact": "No se pueden añadir dispositivos Thread nuevos: el móvil se queda parado al comprobar la conexión Thread. Los que ya tienes suelen seguir funcionando.",
+    "ipv6_disabled": "IPv6 está desactivado en {interface}.",
+    "ipv6_static": "IPv6 está configurado a mano en {interface}.",
+    "ipv6_no_routes": "Home Assistant ignora entonces los caminos hacia la red Thread que tus puentes anuncian en tu red doméstica.",
+    "ipv6_impact": "Home Assistant no llega a los dispositivos Thread y no se pueden añadir nuevos.",
+    "channel_busy_cause": "Hay mucho tráfico en el mismo canal de radio: normalmente Wi-Fi o Zigbee, a veces un microondas.",
+    "channel_busy": "El puente de Home Assistant no pudo enviar {count} veces en {minutes} minutos porque el canal estaba ocupado.",
+    "channel_busy_impact": "Los mensajes se pierden o llegan tarde; los dispositivos responden con lentitud.",
+    "radio_fault": "El puente Thread de Home Assistant perdió el contacto con su adaptador de radio.",
+    "radio_fault_impact": "Mientras dure, nada pasa por este puente. Sin otro puente, ningún dispositivo Thread es accesible.",
+    "otbr_detached": "El puente de Home Assistant ya no oye a ningún otro dispositivo Thread.",
+    "otbr_disabled": "El puente de Home Assistant no forma parte de ninguna red Thread.",
+    "otbr_outside_impact": "Home Assistant no llega a ningún dispositivo Thread por este puente. Otros puentes toman el relevo si los hay.",
+    "route_missing": "Home Assistant no encontró camino hacia las direcciones de tus dispositivos Thread.",
+    "route_probably_missing": "Tu red Thread estaba tranquila y no desapareció ningún puente. Probablemente Home Assistant perdió el camino hacia la red Thread.",
+    "thread_wave": "{count} de {total} dispositivos Thread dejaron de responder casi a la vez.",
+    "thread_wave_impact": "No puedes controlar estos dispositivos desde Home Assistant. En la app Casa de tu móvil suelen seguir funcionando.",
+    "relay_gone": "{relay} ya no responde. Otros dispositivos estaban conectados a tu red a través de él.",
+    "relay_children_gone": "Poco después desaparecieron también {devices}.",
+    "relay_impact": "Estos dispositivos tienen que buscar un nuevo camino a la red. Algunos lo logran en minutos, otros mucho después y otros nunca.",
+    "server_forgot": "El servidor Matter conocía {count} dispositivos y ahora no conoce ninguno.",
+    "server_forgot_impact": "Ningún dispositivo Matter es accesible. Los dispositivos están bien, pero las llaves para llegar a ellos han desaparecido."
   },
   "origin": {
     "person": "por {by}",
@@ -118,6 +186,15 @@
       "network": "El dispositivo no pudo unirse a tu red Thread o Wi-Fi. A menudo no hay ningún router lo bastante cerca de donde está el dispositivo.",
       "find_again": "El dispositivo se unió a tu red, pero después Home Assistant no pudo encontrarlo en ella. Normalmente el dispositivo está demasiado lejos del router Thread o del puente más cercano.",
       "finish": "Ya casi estaba todo listo, pero no llegó la confirmación final."
+    },
+    "pairing_reason": {
+      "credentials": "El servidor Matter no conoce las credenciales de tu red Thread y no pudo dárselas al dispositivo.",
+      "already_paired": "El dispositivo sigue vinculado a una configuración anterior.",
+      "untrusted": "El certificado del dispositivo no se reconoce; quizá sea un dispositivo de pruebas o de desarrollo.",
+      "invalid_noc": "El dispositivo rechazó la clave que le dio Home Assistant.",
+      "unreachable": "Home Assistant no tenía camino hacia la dirección del dispositivo.",
+      "not_found": "No se encontró el dispositivo en la red.",
+      "timeout": "La configuración tardó demasiado y el dispositivo se rindió."
     }
   },
   "fix": {
@@ -136,7 +213,27 @@
     },
     "pairing_reset_and_retry": "Antes de volver a intentarlo: restablece el dispositivo a los ajustes de fábrica y escanea el código otra vez.",
     "weak_signal": "Pon un dispositivo Thread que esté siempre enchufado (por ejemplo, un enchufe inteligente) entre {device} y {neighbour}, o acerca un poco {device}.",
-    "device_unreachable": "Comprueba que {device} tenga corriente o pilas nuevas. Si funciona con pilas, sácalas durante diez segundos y vuelve a ponerlas."
+    "device_unreachable": "Comprueba que {device} tenga corriente o pilas nuevas. Si funciona con pilas, sácalas durante diez segundos y vuelve a ponerlas.",
+    "device_flaky": "Revisa dónde está {device}: un dispositivo Thread con corriente cerca (un enchufe inteligente, por ejemplo) casi siempre ayuda. Si no, busca una actualización de firmware.",
+    "enable_docker_ipv6": "Abre el terminal en Home Assistant, escribe ha docker options --enable-ipv6=true y reinicia todo el sistema (Ajustes → Sistema → Reiniciar → Reiniciar el sistema).",
+    "forwarding_update_os": "Esto afecta a ciertas versiones de Home Assistant OS. Comprueba si hay una actualización y reinicia el sistema.",
+    "ipv6_automatic": "Pon IPv6 en «Automático»: Ajustes → Sistema → Red → {interface} → IPv6.",
+    "channel_busy": "Aleja el canal Thread del Wi-Fi y de Zigbee: Ajustes → Dispositivos y servicios → Thread → Configurar → cambiar canal. El canal 25 queda entre los canales Wi-Fi habituales.",
+    "radio_fault": "Conecta el adaptador de radio con un alargador USB, lejos del ordenador y de los puertos USB 3. Actualiza su firmware. Si sigue pasando, cambia el adaptador.",
+    "otbr_detached": "Normalmente se arregla solo. Si dura, reinicia la app OpenThread Border Router y comprueba que su adaptador de radio está conectado.",
+    "otbr_disabled": "El puente no tiene red Thread. Abre Ajustes → Dispositivos y servicios → Thread y comprueba que hay una red preferida.",
+    "thread_wave": "Reinicia tus puentes (un HomePod o un Apple TV, por ejemplo). Si no ayuda, reinicia Home Assistant. Si vuelve a pasar, comprueba que IPv6 en Home Assistant está en «Automático».",
+    "relay": "Comprueba que {relay} tiene corriente. Un segundo dispositivo Thread con corriente cerca evita que los demás dependan solo de este.",
+    "server_restore_backup": "Restaura la copia de seguridad de la app Matter Server (Ajustes → Sistema → Copias de seguridad). Todos los dispositivos vuelven de golpe; volver a emparejarlos uno a uno es el último recurso.",
+    "pairing_reason": {
+      "credentials": "Define una red Thread preferida en Home Assistant (Ajustes → Dispositivos y servicios → Thread) y vuelve a añadir el dispositivo desde la app complementaria.",
+      "already_paired": "Restablece el dispositivo de fábrica, o quítalo antes de la app en la que estaba.",
+      "untrusted": "Busca una actualización de firmware. El servidor Matter solo acepta dispositivos con un certificado reconocido.",
+      "invalid_noc": "Restablece el dispositivo de fábrica y vuelve a intentarlo. Si se repite, pide al fabricante una actualización de firmware.",
+      "unreachable": "Comprueba que IPv6 en Home Assistant está en «Automático» y que hay un puente en la misma red que Home Assistant.",
+      "not_found": "Vuelve a poner el dispositivo en modo de emparejamiento y acerca el móvil. ¿Están el móvil y Home Assistant en la misma red?",
+      "timeout": "Inténtalo más cerca de un puente o de un dispositivo Thread con corriente."
+    }
   },
   "phase": {
     "first_contact": {
@@ -187,7 +284,9 @@
     "commissioning.completed": "Se añadió un dispositivo",
     "commissioning.failed": "No se pudo añadir un dispositivo",
     "source.status.ok": "{source} – conectado de nuevo",
-    "source.status.down": "{source} – conexión perdida"
+    "source.status.down": "{source} – conexión perdida",
+    "system.updated": "{name} actualizado a {version}",
+    "matter.nodes_lost": "El servidor Matter ya no conoce ningún dispositivo"
   },
   "network": {
     "title": "Tu red ahora mismo",
@@ -197,8 +296,11 @@
     "foreign_title": "Otras redes Thread",
     "foreign_hint": "Separada de la tuya – tus dispositivos no pueden usarlos.",
     "foreign_network": "Red «{network}»",
-    "facts": "Home Assistant: {role} · {count} routers en la red",
-    "sources_missing": "Sin conexión"
+    "sources_missing": "Sin conexión",
+    "usual_title": "Va y viene",
+    "usual_hint": "Estos dispositivos faltan a menudo. Solo se avisa si uno falta bastante más de lo habitual.",
+    "always_report": "Avisar siempre",
+    "known_title": "Conocidos"
   },
   "source": {
     "matter_server": "Servidor Matter",
@@ -207,7 +309,8 @@
     "otbr_log": "OpenThread Border Router: registro",
     "home_assistant": "Home Assistant",
     "down": "no accesible",
-    "waiting": "conectando…"
+    "waiting": "conectando…",
+    "system": "Supervisor"
   },
   "thread_role": {
     "leader": "coordinador",

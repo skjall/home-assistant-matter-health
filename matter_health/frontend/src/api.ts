@@ -58,6 +58,17 @@ export interface BorderRouter {
   own?: boolean;
 }
 
+export interface UnavailableDevice {
+  subject: string;
+  name: string | null;
+  /** Away, but no longer than this device usually is. */
+  usual?: boolean;
+  /** The user acknowledged this absence. */
+  known?: boolean;
+  /** What the user said: comes and goes (true), always report (false). */
+  comes_and_goes?: boolean | null;
+}
+
 export interface Overview {
   sources: Record<string, SourceStatus>;
   thread: {
@@ -68,7 +79,7 @@ export interface Overview {
   border_routers: BorderRouter[];
   devices: {
     total: number | null;
-    unavailable: { subject: string; name: string | null }[];
+    unavailable: UnavailableDevice[];
   };
   open: Record<Severity, number>;
   now: string;
@@ -96,6 +107,8 @@ export const api = {
   events: (limit = 300) => get<TimelineEvent[]>(`api/events?limit=${limit}`),
   dismiss: (keys: string[], dismissed: boolean) =>
     post<{ keys: string[]; dismissed: boolean }>("api/dismiss", { keys, dismissed }),
+  habit: (subject: string, comesAndGoes: boolean | null) =>
+    post<{ subject: string }>("api/habit", { subject, comes_and_goes: comesAndGoes }),
 };
 
 export type StreamHandlers = {

@@ -217,3 +217,54 @@ async def test_a_disturbed_mesh_is_the_likely_cause(
     ]
     assert finding.chain[0].confidence is Confidence.LIKELY
     assert finding.chain[0].at == at(0)
+
+
+@pytest.mark.parametrize(
+    ("reason", "code"),
+    [
+        (
+            "No Wi-Fi/Thread network credentials are configured for commissioning",
+            "credentials",
+        ),
+        ("Trying to add a NOC for a fabric that already exists", "already_paired"),
+        ("PAA not found in trust store for authority key identifier 6afd", "untrusted"),
+        ('Commission error for "addNoc": InvalidNoc (3)', "invalid_noc"),
+        ("[network-unreachable] send ENETUNREACH", "unreachable"),
+        ("No commissionable device was discovered", "not_found"),
+        ("Failsafe timer expired", "timeout"),
+    ],
+)
+async def test_a_cause_the_server_names_is_explained(
+    ctx: Context, store: Store, clock: Clock, engine: Engine, reason: str, code: str
+) -> None:
+    await emit_at(ctx, clock, 0, kinds.COMMISSIONING_CONTACT)
+    await emit_at(ctx, clock, 0.5, kinds.COMMISSIONING_FAILED, reason=reason)
+
+    finding = await only_finding(store)
+    assert chain_keys(finding) == [
+        f"cause.pairing_reason.{code}",
+        "link.pairing_stopped",
+        "link.pairing_failed_impact",
+        f"fix.pairing_reason.{code}",
+        "fix.pairing_reset_and_retry",
+    ]
+    assert finding.chain[0].confidence is Confidence.LIKELY
+
+
+async def test_a_disturbed_mesh_wins_over_the_named_cause(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 0, kinds.THREAD_LEADER_LOST)
+    await emit_at(ctx, clock, 1, kinds.COMMISSIONING_CONTACT)
+    await emit_at(
+        ctx, clock, 1.5, kinds.COMMISSIONING_FAILED, reason="Failsafe timer expired"
+    )
+
+    assert chain_keys(await only_finding(store)) == [
+        "link.mesh_disturbed_during_pairing",
+        "link.pairing_stopped",
+        "link.pairing_failed_impact",
+        "fix.pairing_wait_for_mesh",
+        "fix.pairing_reason.timeout",
+        "fix.pairing_reset_and_retry",
+    ]

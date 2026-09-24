@@ -199,7 +199,10 @@ class MatterServerSource(Source):
             )
             if time.monotonic() >= next_topology:
                 topology = await self._command(ws, "get_network_topology")
-                await self.emit(kinds.THREAD_TOPOLOGY, devices=link_summary(topology))
+                links = link_summary(topology)
+                # Kept for rules that ask later who hung on whom.
+                await self.ctx.store.set_state("thread.links", links)
+                await self.emit(kinds.THREAD_TOPOLOGY, devices=links)
                 next_topology = time.monotonic() + TOPOLOGY_POLL_S
             await asyncio.sleep(BORDER_ROUTER_POLL_S)
 
@@ -251,6 +254,11 @@ class MatterServerSource(Source):
             )
 
     async def _nodes_known(self, nodes: list[dict[str, Any]]) -> None:
+        before = await self.ctx.store.get_state("matter.nodes") or {}
+        if not nodes and before.get("total"):
+            # A server that forgot every device lost its storage; the
+            # devices themselves are still out there, paired to nobody.
+            await self.emit(kinds.MATTER_NODES_LOST, previous=before["total"])
         for node in nodes or []:
             self._available[int(node["node_id"])] = bool(node.get("available"))
         await self._save_availability()

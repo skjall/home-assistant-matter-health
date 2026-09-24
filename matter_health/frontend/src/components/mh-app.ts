@@ -274,6 +274,7 @@ export class MhApp extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener("mh-dismiss", (e) => void this.dismiss(e as CustomEvent));
+    this.addEventListener("mh-habit", (e) => void this.habit(e as CustomEvent));
     void this.load();
     // Some embedded browsers hold back live updates; asking now and then
     // keeps the page current until the live connection is back.
@@ -341,6 +342,14 @@ export class MhApp extends LitElement {
     this.overview = await api.overview();
   }
 
+  private async habit(
+    event: CustomEvent<{ subject: string; comesAndGoes: boolean | null }>,
+  ) {
+    const { subject, comesAndGoes } = event.detail;
+    await api.habit(subject, comesAndGoes);
+    await this.load();
+  }
+
   private acknowledgeAll(findings: Finding[]): void {
     this.dispatchEvent(
       new CustomEvent("mh-dismiss", {
@@ -398,7 +407,10 @@ export class MhApp extends LitElement {
   private tiles(): TemplateResult {
     const overview = this.overview;
     if (!overview) return html``;
-    const unreachable = overview.devices.unavailable.length;
+    // Devices away as usual, or whose absence the user knows, are no news.
+    const unreachable = overview.devices.unavailable.filter(
+      (d) => !d.usual && !d.known,
+    ).length;
     const role = overview.thread?.role;
     return html`<div class="tiles">
       <div class="card tile">

@@ -155,6 +155,7 @@ async def test_device_changes_become_events(
         (kinds.THREAD_TOPOLOGY, None, {"devices": []}),
     ]
     assert await store.get_state("matter.nodes") == {"total": 3, "unavailable": []}
+    assert await store.get_state("thread.links") == []
     assert fake.commands == [
         "start_listening",
         "get_thread_border_routers",
@@ -427,3 +428,34 @@ def test_home_assistants_own_border_router_is_named_after_it() -> None:
         == "Home Assistant"
     )
     assert matter_server.display_name({"vendorName": "Acme"}) is None
+
+
+async def test_a_server_that_forgot_every_device(
+    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+) -> None:
+    await store.set_state("matter.nodes", {"total": 12, "unavailable": []})
+    fake = FakeMatterServer({"start_listening": [[result([])]]})
+    source = source_for(
+        MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
+    )
+
+    with pytest.raises(ConnectionError):
+        await source.run()
+
+    found = [(e.kind, e.data) for e in await store.events()]
+    assert found == [(kinds.MATTER_NODES_LOST, {"previous": 12})]
+    assert await store.get_state("matter.nodes") == {"total": 0, "unavailable": []}
+
+
+async def test_an_empty_server_that_was_empty_before_is_fine(
+    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+) -> None:
+    fake = FakeMatterServer({"start_listening": [[result([])]]})
+    source = source_for(
+        MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
+    )
+
+    with pytest.raises(ConnectionError):
+        await source.run()
+
+    assert await store.events() == []

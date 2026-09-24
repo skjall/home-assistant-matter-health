@@ -165,3 +165,27 @@ async def test_a_router_of_another_network_explains_nothing(
 
     assert found is not None
     assert found.data["name"] == "Ours"
+
+
+async def test_an_update_the_day_before_is_a_possible_cause(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(
+        ctx,
+        clock,
+        -120,
+        kinds.SYSTEM_UPDATED,
+        "software:core_openthread_border_router",
+        name="OpenThread Border Router",
+        previous="2.1",
+        current="2.2",
+    )
+    await emit_at(ctx, clock, 0, kinds.THREAD_LEADER_LOST)
+
+    finding = await only_finding(store)
+    assert finding.chain[0].key == "link.updated_before"
+    assert finding.chain[0].params == {
+        "software": "OpenThread Border Router",
+        "version": "2.2",
+    }
+    assert finding.chain[0].confidence is Confidence.POSSIBLE

@@ -37,6 +37,17 @@ class Supervisor:
             data: dict[str, Any] = body.get("data") or {}
             return data if data.get("version") else None
 
+    async def data(self, path: str) -> dict[str, Any] | None:
+        """Return the ``data`` of a Supervisor endpoint, or None if refused."""
+        async with self._session.get(
+            f"{self._base}{path}", headers=self._headers
+        ) as response:
+            if response.status != 200:
+                return None
+            body: dict[str, Any] = await response.json()
+            data: dict[str, Any] | None = body.get("data")
+            return data
+
     async def addon_url(
         self, slug: str, port: int, scheme: str, override: str | None
     ) -> str | None:

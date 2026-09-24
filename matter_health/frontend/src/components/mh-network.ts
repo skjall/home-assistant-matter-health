@@ -1,14 +1,17 @@
-// The network right now: bridges, devices that don't respond, and whether
-// Matter Health itself can see everything it needs.
+// The network right now: bridges, devices that don't respond - split into
+// news, devices away as they often are, and absences the user already knows -
+// and whether Matter Health itself can see everything it needs.
 
 import {
   mdiCloseCircleOutline,
+  mdiEyeOffOutline,
   mdiLinkVariantOff,
+  mdiPowerPlugOffOutline,
   mdiRouterWireless,
 } from "@mdi/js";
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 
-import type { BorderRouter, Overview } from "../api";
+import type { BorderRouter, Overview, UnavailableDevice } from "../api";
 import { t } from "../i18n";
 import { base } from "../theme";
 import { icon } from "./mh-finding";
@@ -84,10 +87,14 @@ export class MhNetwork extends LitElement {
         font-size: 14px;
         font-weight: 600;
       }
-      p.facts {
-        margin: 12px 0 0;
-        font-size: 14px;
-        color: var(--mh-muted);
+      button.link {
+        border: 0;
+        background: none;
+        padding: 0;
+        font: inherit;
+        font-size: 13px;
+        color: var(--mh-primary);
+        cursor: pointer;
       }
     `,
   ];
@@ -100,12 +107,38 @@ export class MhNetwork extends LitElement {
     </li>`;
   }
 
+  private device(
+    device: UnavailableDevice,
+    symbol: string,
+    tone: string,
+    action: TemplateResult | typeof nothing = nothing,
+  ): TemplateResult {
+    return html`<li>
+      <span class=${tone}>${icon(symbol)}</span>
+      <span>${device.name ?? t("generic.device")}</span>
+      ${action !== nothing ? html`<span class="sub">${action}</span>` : nothing}
+    </li>`;
+  }
+
+  private habit(device: UnavailableDevice, comesAndGoes: boolean | null): void {
+    this.dispatchEvent(
+      new CustomEvent("mh-habit", {
+        detail: { subject: device.subject, comesAndGoes },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
   override render(): TemplateResult {
     const overview = this.overview;
     if (!overview) return html``;
-    const thread = overview.thread;
     // Only what is missing is worth a line; all present is the normal case.
     const missing = Object.entries(overview.sources).filter(([, status]) => !status.ok);
+    const away = overview.devices.unavailable;
+    const known = away.filter((d) => d.known);
+    const usual = away.filter((d) => !d.known && (d.usual || d.comes_and_goes === true));
+    const surprising = away.filter((d) => !known.includes(d) && !usual.includes(d));
     const own = overview.border_routers.filter((r) => r.own !== false);
     const foreign = new Map<string, BorderRouter[]>();
     for (const router of overview.border_routers.filter((r) => r.own === false)) {
@@ -120,14 +153,6 @@ export class MhNetwork extends LitElement {
               ${own.map((router) => this.router(router))}
             </ul>`
           : html`<p class="empty">${t("network.border_routers_empty")}</p>`}
-        ${thread?.role
-          ? html`<p class="facts">
-              ${t("network.facts", {
-                role: t(`thread_role.${thread.role}`),
-                count: thread.router_count ?? "–",
-              })}
-            </p>`
-          : nothing}
       </section>
 
       ${foreign.size
@@ -146,17 +171,33 @@ export class MhNetwork extends LitElement {
 
       <section class="card">
         <h2>${t("network.unreachable_title")}</h2>
-        ${overview.devices.unavailable.length
+        ${surprising.length
           ? html`<ul>
-              ${overview.devices.unavailable.map(
-                (device) =>
-                  html`<li>
-                    <span class="down">${icon(mdiLinkVariantOff)}</span>
-                    <span>${device.name ?? t("generic.device")}</span>
-                  </li>`,
-              )}
+              ${surprising.map((device) => this.device(device, mdiLinkVariantOff, "down"))}
             </ul>`
           : html`<p class="empty">${t("network.unreachable_empty")}</p>`}
+        ${usual.length
+          ? html`<h3>${t("network.usual_title")}</h3>
+              <p class="hint muted">${t("network.usual_hint")}</p>
+              <ul>
+                ${usual.map((device) =>
+                  this.device(
+                    device,
+                    mdiPowerPlugOffOutline,
+                    "muted",
+                    html`<button class="link" @click=${() => this.habit(device, false)}>
+                      ${t("network.always_report")}
+                    </button>`,
+                  ),
+                )}
+              </ul>`
+          : nothing}
+        ${known.length
+          ? html`<h3>${t("network.known_title")}</h3>
+              <ul>
+                ${known.map((device) => this.device(device, mdiEyeOffOutline, "muted"))}
+              </ul>`
+          : nothing}
       </section>
 
       ${missing.length

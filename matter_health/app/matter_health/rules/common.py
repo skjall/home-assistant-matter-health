@@ -67,3 +67,47 @@ def power_off_link(event: Event, confidence: Confidence) -> Link:
 def seconds(start: datetime, end: datetime) -> int:
     """Whole seconds between two times, never negative."""
     return max(0, int((end - start).total_seconds()))
+
+
+#: Software updated this shortly before trouble began may have brought it.
+UPDATE_WINDOW = timedelta(days=1)
+
+
+async def recent_update(
+    ctx: Context, before: datetime, window: timedelta = UPDATE_WINDOW
+) -> Event | None:
+    """Return the last update within ``window`` before ``before``."""
+    events = await ctx.store.events(
+        (kinds.SYSTEM_UPDATED,), since=before - window, until=before
+    )
+    return events[-1] if events else None
+
+
+def update_link(event: Event) -> Link:
+    """Build the chain link "<software> was updated to <version> shortly before"."""
+    return Link(
+        role=Role.CAUSE,
+        key="link.updated_before",
+        params={
+            "software": event.data.get("name") or event.subject,
+            "version": event.data.get("current"),
+        },
+        at=event.at,
+        confidence=Confidence.POSSIBLE,
+        evidence=[event.id] if event.id else [],
+    )
+
+
+async def cause_or_update(ctx: Context, chain: list[Link], before: datetime) -> None:
+    """Add an update as the possible cause, or say no cause was found.
+
+    Only for chains that found nothing more specific: an update the day
+    before is a weak lead and would crowd out a switch turned off a minute
+    earlier.
+    """
+    if chain:
+        return
+    update = await recent_update(ctx, before)
+    chain.append(
+        update_link(update) if update else Link(Role.CAUSE, "link.cause_unknown")
+    )
