@@ -9,7 +9,7 @@ import {
 } from "@mdi/js";
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 
-import type { Overview } from "../api";
+import type { BorderRouter, Overview } from "../api";
 import { t } from "../i18n";
 import { base } from "../theme";
 import { icon } from "./mh-finding";
@@ -76,6 +76,11 @@ export class MhNetwork extends LitElement {
         font-size: 14px;
         color: var(--mh-muted);
       }
+      h3 {
+        margin: 12px 0 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
       p.facts {
         margin: 12px 0 0;
         font-size: 14px;
@@ -84,24 +89,31 @@ export class MhNetwork extends LitElement {
     `,
   ];
 
+  private router(router: BorderRouter): TemplateResult {
+    return html`<li>
+      <span class="router">${icon(mdiRouterWireless)}</span>
+      <span>${router.name}</span>
+      <span class="sub">${router.vendor ?? ""}</span>
+    </li>`;
+  }
+
   override render(): TemplateResult {
     const overview = this.overview;
     if (!overview) return html``;
     const thread = overview.thread;
+    const own = overview.border_routers.filter((r) => r.own !== false);
+    const foreign = new Map<string, BorderRouter[]>();
+    for (const router of overview.border_routers.filter((r) => r.own === false)) {
+      const network = router.network ?? "?";
+      foreign.set(network, [...(foreign.get(network) ?? []), router]);
+    }
     return html`
       <section class="card">
         <h2>${t("summary.border_routers")}</h2>
         <p class="hint muted">${t("summary.border_routers_hint")}</p>
-        ${overview.border_routers.length
+        ${own.length
           ? html`<ul class="grid">
-              ${overview.border_routers.map(
-                (router) =>
-                  html`<li>
-                    <span class="router">${icon(mdiRouterWireless)}</span>
-                    <span>${router.name}</span>
-                    <span class="sub">${router.vendor ?? ""}</span>
-                  </li>`,
-              )}
+              ${own.map((router) => this.router(router))}
             </ul>`
           : html`<p class="empty">${t("network.border_routers_empty")}</p>`}
         ${thread?.role
@@ -115,6 +127,20 @@ export class MhNetwork extends LitElement {
             </p>`
           : nothing}
       </section>
+
+      ${foreign.size
+        ? html`<section class="card">
+            <h2>${t("network.foreign_title")}</h2>
+            <p class="hint muted">${t("network.foreign_hint")}</p>
+            ${[...foreign].map(
+              ([network, routers]) =>
+                html`<h3>${t("network.foreign_network", { network })}</h3>
+                  <ul class="grid">
+                    ${routers.map((router) => this.router(router))}
+                  </ul>`,
+            )}
+          </section>`
+        : nothing}
 
       <section class="card">
         <h2>${t("network.unreachable_title")}</h2>

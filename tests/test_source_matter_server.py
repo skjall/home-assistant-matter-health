@@ -166,6 +166,56 @@ async def test_device_changes_become_events(
     assert source.ctx._engine.status["matter_server"]["ok"] is True
 
 
+def in_network(raw: dict[str, Any], name: str, pan: str) -> dict[str, Any]:
+    return {**raw, "networkName": name, "extendedPanIdHex": pan}
+
+
+@pytest.mark.parametrize(
+    ("otbr_network", "own"),
+    [
+        # Home Assistant's own border router names the network.
+        ("SmallNet", {"Living Room TV (Wall)": False, "Hub Mini": True}),
+        # Without it, most border routers decide.
+        (None, {"Living Room TV (Wall)": True, "Hub Mini": False}),
+    ],
+)
+async def test_border_routers_of_another_thread_network(
+    ctx: Context,
+    store: Store,
+    aiohttp_server: AiohttpServer,
+    otbr_network: str | None,
+    own: dict[str, bool],
+) -> None:
+    if otbr_network:
+        await store.set_state("otbr.node", {"network_name": otbr_network})
+    routers = [
+        in_network(TV, "HomeNet", "00AA00AA00AA00AA"),
+        in_network(router("99", hostname="Speaker"), "HomeNet", "00AA00AA00AA00AA"),
+        in_network(HUB, "SmallNet", "00BB00BB00BB00BB"),
+        router("77", hostname="Unannounced"),
+    ]
+    fake = FakeMatterServer(
+        {
+            "start_listening": [[result(None)]],
+            "get_thread_border_routers": [[result(routers)]],
+            "get_network_topology": [[result({})]],
+        }
+    )
+    source = source_for(
+        MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
+    )
+    ctx.names.know_device("Living Room TV (Wall)")
+
+    with pytest.raises(ConnectionError):
+        await source.run()
+
+    stored = {r["name"]: r for r in await store.get_state("border_routers")}
+    assert {name: stored[name]["own"] for name in own} == own
+    assert stored["Unannounced"]["own"] is True
+    assert stored["Hub Mini"]["network"] == "SmallNet"
+    assert stored["Hub Mini"]["pan"] == "00bb00bb00bb00bb"
+
+
 async def test_border_routers_come_and_go(
     ctx: Context, store: Store, aiohttp_server: AiohttpServer
 ) -> None:
@@ -199,8 +249,10 @@ async def test_border_routers_come_and_go(
         for e in await store.events()
         if e.kind != kinds.THREAD_TOPOLOGY
     ]
+    unknown = {"network": None, "pan": None, "own": True}
     tv = {"name": "Living Room TV (Wall)", "vendor": "Acme", "model": "TV Box"}
-    hub = {"name": "Hub Mini", "vendor": "Acme", "model": "Hub Mini"}
+    tv |= unknown
+    hub = {"name": "Hub Mini", "vendor": "Acme", "model": "Hub Mini"} | unknown
     assert found[:2] == [
         (kinds.BORDER_ROUTER_GONE, "br:1122334455667788", hub),
         (kinds.BORDER_ROUTER_APPEARED, "br:8877665544332211", hub),

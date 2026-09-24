@@ -16,7 +16,7 @@
     "sources_down": "Certaines informations manquent",
     "live": "En direct",
     "reconnecting": "Reconnexion…",
-    "unavailable": "Le module complémentaire est injoignable. Rechargez la page dans un instant."
+    "unavailable": "Le module complémentaire est injoignable. Recharge la page dans un instant."
   },
   "summary": {
     "devices": "Appareils",
@@ -197,7 +197,10 @@
     "unreachable_empty": "Tous les appareils répondent.",
     "sources_title": "Ce que Matter Health peut voir",
     "role": "La passerelle de Home Assistant est actuellement {role} dans ton réseau Thread.",
-    "routers": "{count} appareils relaient actuellement des messages pour les autres."
+    "routers": "{count} appareils relaient actuellement des messages pour les autres.",
+    "foreign_title": "Autres réseaux Thread",
+    "foreign_hint": "Ces appareils font tourner leur propre réseau Thread. Les appareils qui y sont ne peuvent pas utiliser tes routeurs de bordure, et inversement.",
+    "foreign_network": "Réseau « {network} »"
   },
   "source": {
     "matter_server": "Serveur Matter",

@@ -71,6 +71,9 @@ class BorderRouterRule(Rule):
         if event.kind == kinds.HA_POWER_OFF:
             await self._switch_off(event)
             return
+        if event.data.get("own") is False:
+            # A router of another Thread network carries none of ours.
+            return
         name = str(event.data.get("name") or event.subject)
         if event.kind == kinds.BORDER_ROUTER_GONE:
             self.gone[name] = event

@@ -304,3 +304,16 @@ async def test_other_routers_leave_the_suspicion_alone(
 
     (finding,) = switched(await store.findings())
     assert finding.ended_at is None
+
+
+async def test_routers_of_another_thread_network_are_ignored(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    hub = {"name": "Hub", "own": False}
+    await power_off(ctx, clock, 0)
+    await emit_at(ctx, clock, 1, kinds.BORDER_ROUTER_GONE, "br:ff", **hub)
+    await tick_at(engine, clock, 20)
+    await emit_at(ctx, clock, 21, kinds.BORDER_ROUTER_APPEARED, "br:ff", **hub)
+
+    assert await store.findings() == []
+    assert not await store.get_state("border_router.suspects")

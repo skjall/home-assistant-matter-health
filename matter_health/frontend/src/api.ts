@@ -52,6 +52,10 @@ export interface BorderRouter {
   name: string;
   vendor: string | null;
   model: string | null;
+  /** Name of the Thread network the router belongs to. */
+  network?: string | null;
+  /** Whether that is the network Home Assistant uses. */
+  own?: boolean;
 }
 
 export interface Overview {

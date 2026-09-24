@@ -35,11 +35,12 @@ async def last_power_off(
 async def last_border_router_gone(
     ctx: Context, since: datetime, until: datetime
 ) -> Event | None:
-    """Return the last border router that disappeared in the given time."""
+    """Return the last border router of our network that disappeared."""
     events = await ctx.store.events(
         (kinds.BORDER_ROUTER_GONE,), since=since, until=until
     )
-    return events[-1] if events else None
+    ours = [event for event in events if event.data.get("own") is not False]
+    return ours[-1] if ours else None
 
 
 async def mesh_trouble(ctx: Context, since: datetime, until: datetime) -> list[Event]:

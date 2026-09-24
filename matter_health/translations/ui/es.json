@@ -197,7 +197,10 @@
     "unreachable_empty": "Todos los dispositivos responden.",
     "sources_title": "Qué puede ver Matter Health",
     "role": "El puente de Home Assistant es ahora mismo {role} en tu red Thread.",
-    "routers": "{count} dispositivos reenvían ahora mismo mensajes para otros."
+    "routers": "{count} dispositivos reenvían ahora mismo mensajes para otros.",
+    "foreign_title": "Otras redes Thread",
+    "foreign_hint": "Estos dispositivos tienen su propia red Thread. Los dispositivos de esa red no pueden usar tus routers de borde, ni los tuyos los suyos.",
+    "foreign_network": "Red «{network}»"
   },
   "source": {
     "matter_server": "Servidor Matter",

@@ -197,7 +197,10 @@
     "unreachable_empty": "Alle Geräte reagieren.",
     "sources_title": "Was Matter Health sieht",
     "role": "Die Brücke von Home Assistant ist in deinem Thread-Netz gerade {role}.",
-    "routers": "{count} Geräte reichen gerade Nachrichten für andere weiter."
+    "routers": "{count} Geräte reichen gerade Nachrichten für andere weiter.",
+    "foreign_title": "Andere Thread-Netze",
+    "foreign_hint": "Diese Geräte betreiben ein eigenes Thread-Netz. Geräte darin können deine Border Router nicht mitbenutzen – und deine Geräte nicht diese.",
+    "foreign_network": "Netz „{network}“"
   },
   "source": {
     "matter_server": "Matter-Server",

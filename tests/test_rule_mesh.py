@@ -4,6 +4,7 @@ from conftest import Clock, at, chain_keys, emit_at, make_engine, only_finding, 
 from matter_health import kinds
 from matter_health.engine import Context, Engine
 from matter_health.model import Confidence, Severity
+from matter_health.rules.common import last_border_router_gone
 from matter_health.rules.mesh import MeshRule
 from matter_health.store import Store
 
@@ -150,3 +151,17 @@ async def test_a_failed_pairing_meanwhile_is_mentioned(
         "link.pairing_failed_meanwhile",
         "fix.mesh_trouble_rare",
     ]
+
+
+async def test_a_router_of_another_network_explains_nothing(
+    ctx: Context, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 0, kinds.BORDER_ROUTER_GONE, "br:aa", name="Ours")
+    await emit_at(
+        ctx, clock, 1, kinds.BORDER_ROUTER_GONE, "br:ff", name="Hub", own=False
+    )
+
+    found = await last_border_router_gone(ctx, at(-1), at(5))
+
+    assert found is not None
+    assert found.data["name"] == "Ours"

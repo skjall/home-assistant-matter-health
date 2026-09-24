@@ -13,6 +13,8 @@ import contextlib
 import itertools
 import json
 import time
+from collections import Counter
+from collections.abc import Iterable
 from typing import Any, ClassVar
 
 import aiohttp
@@ -266,8 +268,15 @@ class MatterServerSource(Source):
                 "name": self.ctx.names.match(name) or name,
                 "vendor": raw.get("vendorName"),
                 "model": raw.get("modelName"),
+                "network": raw.get("networkName"),
+                "pan": str(raw.get("extendedPanIdHex") or "").lower() or None,
             }
             self.ctx.names.set(f"br:{ext}", current[name]["name"])
+        home = await self._home_network(current.values())
+        for info in current.values():
+            # A router whose network is not announced is given the benefit of
+            # the doubt; wrongly hiding a real bridge would be worse.
+            info["own"] = home is None or info["pan"] in (None, home)
         # Only the very first answer is a baseline. Deciding by an empty list
         # instead would swallow the return of the last router that went away.
         first_round, self._first_round = self._first_round, False
@@ -285,6 +294,24 @@ class MatterServerSource(Source):
         await self.ctx.store.set_state(
             "border_routers", sorted(self._border_routers.values(), key=_by_name)
         )
+
+    async def _home_network(self, routers: Iterable[dict[str, Any]]) -> str | None:
+        """Return the Extended PAN ID of the Thread network Home Assistant uses.
+
+        Other products - some hubs, for instance - run a Thread network of
+        their own next to it. Their border routers are announced alike but
+        carry nothing for the devices Home Assistant controls. The network
+        of Home Assistant's own border router decides; without one, the
+        network most border routers belong to.
+        """
+        routers = [r for r in routers if r["pan"]]
+        node = await self.ctx.store.get_state("otbr.node") or {}
+        own_name = node.get("network_name")
+        for router in routers:
+            if own_name and router["network"] == own_name:
+                return str(router["pan"])
+        counted = Counter(str(r["pan"]) for r in routers)
+        return counted.most_common(1)[0][0] if counted else None
 
     async def _border_router_event(self, kind: str, info: dict[str, Any]) -> None:
         details = {key: value for key, value in info.items() if key != "subject"}

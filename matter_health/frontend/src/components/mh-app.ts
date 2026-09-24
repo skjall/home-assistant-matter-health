@@ -378,7 +378,9 @@ export class MhApp extends LitElement {
       <div class="card tile">
         <span class="ic">${icon(mdiRouterWireless)}</span>
         <div>
-          <div class="v">${overview.border_routers.length}</div>
+          <div class="v">
+            ${overview.border_routers.filter((r) => r.own !== false).length}
+          </div>
           <div class="l">${t("summary.border_routers")}</div>
         </div>
       </div>

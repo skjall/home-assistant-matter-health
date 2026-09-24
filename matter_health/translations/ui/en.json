@@ -197,7 +197,10 @@
     "unreachable_empty": "Every device responds.",
     "sources_title": "What Matter Health can see",
     "role": "Home Assistant's bridge is currently a {role} in your Thread network.",
-    "routers": "{count} devices currently pass messages on for others."
+    "routers": "{count} devices currently pass messages on for others.",
+    "foreign_title": "Other Thread networks",
+    "foreign_hint": "These devices run a Thread network of their own. Devices in it cannot use your border routers, and yours cannot use them.",
+    "foreign_network": "Network “{network}”"
   },
   "source": {
     "matter_server": "Matter Server",
