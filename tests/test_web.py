@@ -717,21 +717,7 @@ async def test_topology_tells_how_gateways_reach_the_home_network(
     await store.set_state(
         state_key("unifi"),
         Knowledge(
-            [
-                Client(
-                    "02:00:00:00:00:00", "192.0.2.3", "Hallway AP", True, "Switch", 8
-                ),
-                Client(
-                    "02:00:00:00:10:11",
-                    "192.0.2.11",
-                    "Speaker",
-                    False,
-                    "Hallway AP",
-                    ssid="Home",
-                    signal=-58,
-                ),
-            ],
-            {"02:00:00:00:00:01": "02:00:00:00:00:00"},
+            [Client("02:00:00:00:10:11", "192.0.2.11", "Speaker", False, "AP", "Home")]
         ).dump(),
     )
     client = await aiohttp_client(build(engine, translations))
@@ -739,12 +725,12 @@ async def test_topology_tells_how_gateways_reach_the_home_network(
     body = await (await client.get("/api/topology")).json()
 
     nodes = {n["id"]: n for n in body["nodes"]}
-    access_point = nodes["wifi:ap:02:00:00:00:00:01"]
-    assert access_point["name"] == "Hallway AP"
-    assert access_point["uplink"]["port"] == 8
-    speaker = nodes["thread:br_0A"]
-    assert speaker["uplink"]["wired"] is False
-    assert speaker["uplink"]["quality"] == "strong"
-    # Nothing is known of the other border router's connection.
+    assert nodes["thread:br_0A"]["uplink"] == {
+        "wired": False,
+        "via": "AP",
+        "ssid": "Home",
+    }
+    # Nothing is known of the other border router's or the access point's.
     assert nodes["thread:br_0B"]["uplink"] is None
+    assert nodes["wifi:ap:02:00:00:00:00:01"]["uplink"] is None
     assert "uplink" not in nodes["wifi:node:4"]

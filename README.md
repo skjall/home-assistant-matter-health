@@ -68,8 +68,9 @@ known to it.
 
 Everything stays on your Home Assistant host. Matter Health reads logs and
 state; it never changes a device, the network or another add-on. It never
-reads the Thread network key. If you connect a UniFi controller, it only
-reads which devices are connected how.
+reads the Thread network key. It reaches nothing outside Home Assistant:
+what it knows about your home network, it takes from integrations you
+already have, such as UniFi Network.
 
 ## Languages
 

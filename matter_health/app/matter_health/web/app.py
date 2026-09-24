@@ -224,10 +224,8 @@ async def topology(request: web.Request) -> web.Response:
         subject = entry.get("subject")
         entry["name"] = names.get(subject)
         if entry.get("parent") == ROOT:
-            # How it reaches the home network, where the equipment tells.
-            entry["uplink"] = network.uplink(entry.get("addresses"), entry.get("mac"))
-        if entry["name"] is None and entry.get("mac"):
-            entry["name"] = network.access_point_name(str(entry["mac"]))
+            # How it reaches the home network, where an integration tells.
+            entry["uplink"] = network.uplink(entry.get("addresses"))
         entry["device_id"] = names.device(subject)
         entry["available"] = subject not in away
         # Away, but as expected or as the user knows: no alarm in the picture.

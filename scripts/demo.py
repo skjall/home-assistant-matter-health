@@ -65,29 +65,19 @@ BORDER_ROUTERS = [
     )
 ]
 
-#: What a network controller would tell: two speakers on Wi-Fi, one of them
-#: far from the access point, the rest on cables.
+#: What a network integration would tell: two speakers on Wi-Fi, the rest on
+#: cables.
 NETWORK = Knowledge(
     [
-        Client(
-            "02:00:00:00:10:02", "192.0.2.2", "Home Assistant", True, "Office Switch", 1
-        ),
-        Client(
-            "02:00:00:00:10:10",
-            "192.0.2.10",
-            "Living Room TV",
-            True,
-            "Office Switch",
-            4,
-        ),
+        Client("02:00:00:00:10:02", "192.0.2.2", "Home Assistant"),
+        Client("02:00:00:00:10:10", "192.0.2.10", "Living Room TV"),
         Client(
             "02:00:00:00:10:11",
             "192.0.2.11",
             "Kitchen Speaker",
             False,
             "Hallway AP",
-            ssid="Home",
-            signal=-58,
+            "Home",
         ),
         Client(
             "02:00:00:00:10:12",
@@ -95,14 +85,9 @@ NETWORK = Knowledge(
             "Bedroom Speaker",
             False,
             "Hallway AP",
-            ssid="Home",
-            signal=-78,
+            "Home",
         ),
-        Client(
-            "02:00:00:00:00:00", "192.0.2.3", "Hallway AP", True, "Office Switch", 8
-        ),
-    ],
-    {"02:00:00:00:00:01": "02:00:00:00:00:00"},
+    ]
 )
 
 

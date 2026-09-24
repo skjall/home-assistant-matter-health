@@ -305,7 +305,7 @@
     "down": "injoignable",
     "waiting": "connexion…",
     "system": "Superviseur",
-    "unifi": "Contrôleur UniFi"
+    "unifi": "Intégration UniFi"
   },
   "thread_role": {
     "leader": "coordinateur",
@@ -378,7 +378,6 @@
       "wired": "Relié au réseau domestique par câble",
       "wireless": "Relié au réseau domestique par Wi-Fi",
       "via": "via {via}",
-      "port": "port {port}",
       "short_wired": "Câble",
       "short_wireless": "Wi-Fi"
     }

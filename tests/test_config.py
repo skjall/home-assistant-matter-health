@@ -39,12 +39,6 @@ def test_load_options_from_file_and_environment(tmp_path: Path) -> None:
         supervisor_token="secret",
         data_dir=tmp_path,
         port=8123,
-        extra={
-            "retention_days": "14",
-            "log_level": "debug",
-            "matter_server_url": "ws://192.0.2.10:5580",
-            "otbr_url": "",
-        },
     )
     assert options.core_websocket_url == "ws://192.0.2.20/core/websocket"
 

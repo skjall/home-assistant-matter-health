@@ -109,26 +109,27 @@ such a device by a registry identifier ending in its endpoint instead of
 ## Enrichers
 
 Matter and Thread say nothing about the home network underneath them:
-whether a border router is on a cable or on Wi-Fi, or what the access point
-behind a BSSID is called. Network equipment knows. An enricher reads one
-kind of it and answers in words every enricher shares: the clients it sees,
-each with how it is connected (`wired`, `via`, `port`, `ssid`, `signal`),
-and which access point sends which BSSID.
+whether a border router is on a cable or on Wi-Fi, and through which access
+point. A router or controller integration in Home Assistant often knows; its
+device trackers carry it. An enricher reads one such integration - never the
+equipment itself - and answers in words every enricher shares: the clients
+it sees, each with its address and whether it is wired or on Wi-Fi, through
+which access point and network.
 
 ```
 enrichers/
   __init__.py  Enricher base, Client and Knowledge, merging
-  unifi.py     a UniFi Network controller
+  unifi.py     the UniFi Network integration
 ```
 
-An enricher is a source subclassing `Enricher`: it runs only when its own
-options - a mapping under its name in the add-on options - are set, polls
-read-only and stores what it learned under `enrich.<name>`. The page asks
-the merged knowledge for each node hanging on the home network, by MAC or
-by IP address; border routers bring the addresses they announce, access
-points their BSSID. Without an enricher the uplink is simply unknown and
-drawn neutral. Another enricher - a router of another make - is a module
-next to `unifi.py` with the same answers.
+An enricher is a source subclassing `Enricher`. It reads Home Assistant's
+entity and device registries and states over the same connection as the
+Home Assistant source and stores what it learned under `enrich.<name>`.
+Without its integration it finds nothing and leaves itself out of the
+status, since nothing is missing. The page looks up each gateway by the
+addresses it announces. Unknown connections are drawn neutral. Another
+integration - a router of another make - is a module next to `unifi.py`
+with the same answers.
 
 ## Rules
 
@@ -254,6 +255,7 @@ package, if it is about one transport - register it and import it in the
 package's `__init__.py`. If it needs configuration, add an option to
 `config.yaml`, the `Options` dataclass and the option translations.
 
-**A new enricher.** Add a module to `enrichers/` with an `Enricher` subclass,
-import it in `enrichers/__init__.py`, and give it a mapping of options under
-its name in `config.yaml` (with `{}` as default) and the option translations.
+**A new enricher.** Add a module to `enrichers/` with an `Enricher` subclass
+that reads its integration from Home Assistant, import it in
+`enrichers/__init__.py`, and name it under `source.<name>` in the UI
+translations.

@@ -94,15 +94,12 @@ export interface TopologyNode {
   uplink?: Uplink | null;
 }
 
-/** A gateway's or wired device's connection to the home network. */
+/** A gateway's connection to the home network, as an integration tells it. */
 export interface Uplink {
   wired: boolean;
-  /** The switch or access point it is connected to. */
+  /** The access point, for a Wi-Fi connection. */
   via: string | null;
-  port: number | null;
   ssid: string | null;
-  signal: number | null;
-  quality: "strong" | "medium" | "weak" | null;
 }
 
 export interface Topology {

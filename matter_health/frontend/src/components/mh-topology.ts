@@ -659,11 +659,8 @@ export class MhTopology extends LitElement {
     if (!up) return nothing;
     const parts = [t(up.wired ? "topology.uplink.wired" : "topology.uplink.wireless")];
     if (up.via) parts.push(t("topology.uplink.via", { via: up.via }));
-    if (up.port !== null) parts.push(t("topology.uplink.port", { port: up.port }));
-    if (typeof up.signal === "number" && up.quality) {
-      parts.push(`${up.signal} dBm – ${t(`topology.quality.${up.quality}`)}`);
-    }
-    return html`<p class=${up.quality === "weak" ? "meh" : ""}>${parts.join(" · ")}</p>`;
+    if (up.ssid) parts.push(t("transport.wifi.detail.ssid", { ssid: up.ssid }));
+    return html`<p>${parts.join(" · ")}</p>`;
   }
 
   /** How a device's link to its parent is drawn in the chosen view. */
@@ -671,16 +668,12 @@ export class MhTopology extends LitElement {
     const dash =
       status === "offline" ? "dash-offline" : status === "resting" ? "dash-resting" : "";
     // A gateway's way into the home network is not its transport's; a wired
-    // device's is. Where network equipment tells how it is connected, that
-    // is shown like any link.
+    // device's is. Where an integration tells how it is connected, the
+    // transport view shows that.
     if (fromHome && target.node?.kind === "gateway") {
-      const up = target.node.uplink;
-      if (!up) return `lan ${dash}`;
-      if (this.colorBy === "transport") return `by-transport ${dash}`;
-      if (this.colorBy === "signal") {
-        return up.quality ? `q-${up.quality} ${dash}` : `lan ${dash}`;
-      }
-      return up.quality === "weak" ? `weak ${dash}` : `lan ${dash}`;
+      return this.colorBy === "transport" && target.node.uplink
+        ? `by-transport ${dash}`
+        : `lan ${dash}`;
     }
     if (this.colorBy === "transport") {
       return `${target.node?.bridged ? "bridged" : "by-transport"} ${dash}`;

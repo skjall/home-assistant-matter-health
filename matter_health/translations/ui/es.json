@@ -305,7 +305,7 @@
     "down": "no accesible",
     "waiting": "conectando…",
     "system": "Supervisor",
-    "unifi": "Controlador UniFi"
+    "unifi": "Integración UniFi"
   },
   "thread_role": {
     "leader": "coordinador",
@@ -378,7 +378,6 @@
       "wired": "En la red doméstica por cable",
       "wireless": "En la red doméstica por Wi-Fi",
       "via": "a través de {via}",
-      "port": "puerto {port}",
       "short_wired": "Cable",
       "short_wireless": "Wi-Fi"
     }

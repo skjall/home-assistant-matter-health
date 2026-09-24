@@ -7,143 +7,128 @@ from conftest import source_for
 from pytest_aiohttp import AiohttpServer
 
 from matter_health import enrichers
-from matter_health.config import Options
 from matter_health.engine import Context
 from matter_health.enrichers import Client, Knowledge, known, state_key
 from matter_health.enrichers.unifi import UnifiEnricher, parse
 from matter_health.store import Store
 
-SWITCH = "02:00:00:00:00:0a"
 AP = "02:00:00:00:00:0b"
-BSSID = "02:00:00:00:00:0c"
+
+TRACKERS = {
+    "device_tracker.tv",
+    "device_tracker.speaker",
+    "device_tracker.laptop",
+    "device_tracker.access_point",
+    "device_tracker.no_mac",
+}
+
+STATES: list[dict[str, Any]] = [
+    {
+        "entity_id": "device_tracker.tv",
+        "state": "home",
+        "attributes": {
+            "mac": "02:00:00:00:10:01",
+            "ip": "192.0.2.10",
+            "host_name": "tv",
+            "is_guest": False,
+        },
+    },
+    {
+        "entity_id": "device_tracker.speaker",
+        "state": "home",
+        "attributes": {
+            "mac": "02:00:00:00:10:02",
+            "ip": "192.0.2.11",
+            "name": "Speaker",
+            "is_guest": False,
+            "ap_mac": AP.upper(),
+            "essid": "Home",
+        },
+    },
+    {
+        # Away: where it was is no news.
+        "entity_id": "device_tracker.laptop",
+        "state": "not_home",
+        "attributes": {"mac": "02:00:00:00:10:03", "host_name": "laptop"},
+    },
+    {
+        # The integration's own access point: no client details.
+        "entity_id": "device_tracker.access_point",
+        "state": "home",
+        "attributes": {"mac": AP, "ip": "192.0.2.3"},
+    },
+    {"entity_id": "device_tracker.no_mac", "state": "home", "attributes": {}},
+    {
+        "entity_id": "device_tracker.phone",
+        "state": "home",
+        "attributes": {"mac": "02:00:00:00:10:04", "host_name": "phone"},
+    },
+]
 
 DEVICES: list[dict[str, Any]] = [
-    {"mac": SWITCH.upper(), "name": "Office Switch", "uplink": {"type": "wire"}},
-    {
-        "mac": AP,
-        "model": "AP-1",
-        "uplink": {"type": "wire", "uplink_mac": SWITCH, "uplink_remote_port": 8},
-        "vap_table": [{"bssid": BSSID.upper(), "essid": "Home"}, {"essid": "x"}],
-    },
-    {"mac": "02:00:00:00:00:0d", "name": "Console"},
-    {"name": "no mac"},
-]
-
-STATIONS: list[dict[str, Any]] = [
-    {
-        "mac": "02:00:00:00:10:01",
-        "ip": "192.0.2.10",
-        "hostname": "tv",
-        "is_wired": True,
-        "sw_mac": SWITCH,
-        "sw_port": 4,
-    },
-    {
-        "mac": "02:00:00:00:10:02",
-        "last_ip": "192.0.2.11",
-        "name": "Speaker",
-        "is_wired": False,
-        "ap_mac": AP,
-        "essid": "Home",
-        "signal": -78,
-    },
-    {"ip": "192.0.2.99"},
+    {"name": "AP-1", "name_by_user": "Hallway AP", "connections": [["mac", AP]]},
+    {"name": "Hub", "connections": [["zigbee", "0x01"]]},
+    {"connections": [["mac", "02:00:00:00:00:0c"]]},
 ]
 
 
-def test_what_a_unifi_controller_tells() -> None:
-    knowledge = parse(DEVICES, STATIONS)
+def test_what_the_unifi_integration_tells() -> None:
+    knowledge = parse(TRACKERS, STATES, DEVICES)
 
-    assert knowledge.access_points == {BSSID: AP}
-    assert knowledge.uplink(["192.0.2.10"]) == {
+    assert knowledge.clients == [
+        Client("02:00:00:00:10:01", "192.0.2.10", "tv"),
+        Client(
+            "02:00:00:00:10:02", "192.0.2.11", "Speaker", False, "Hallway AP", "Home"
+        ),
+    ]
+    assert knowledge.uplink(["fe80::1", "192.0.2.10"]) == {
         "wired": True,
-        "via": "Office Switch",
-        "port": 4,
+        "via": None,
         "ssid": None,
-        "signal": None,
-        "quality": None,
     }
-    assert knowledge.uplink(["fe80::1", "192.0.2.11"]) == {
-        "wired": False,
-        "via": "AP-1",
-        "port": None,
-        "ssid": "Home",
-        "signal": -78,
-        "quality": "weak",
-    }
-    # An access point is found by the BSSID it sends.
-    assert knowledge.access_point_name(BSSID.upper()) == "AP-1"
-    uplink = knowledge.uplink(mac=BSSID)
-    assert uplink is not None
-    assert (uplink["via"], uplink["port"]) == ("Office Switch", 8)
-    # A device whose way in is not told says nothing.
-    assert knowledge.uplink(mac="02:00:00:00:00:0d") is None
-    assert knowledge.uplink(["192.0.2.50"]) is None
-    assert knowledge.access_point_name("02:00:00:00:00:ff") is None
-
-
-def test_a_mac_beats_an_address() -> None:
-    knowledge = Knowledge(
-        [
-            Client("02:00:00:00:00:01", "192.0.2.1", "old", True),
-            Client("02:00:00:00:00:02", "192.0.2.1", "new", False),
-        ],
-        {},
-    )
-
-    found = knowledge.client(["192.0.2.1"], "02:00:00:00:00:02")
-    assert found is not None
-    assert found.name == "new"
+    assert knowledge.uplink(["192.0.2.3"]) is None
+    assert knowledge.uplink(None) is None
 
 
 async def test_what_every_enricher_learned_is_merged(
     ctx: Context, store: Store
 ) -> None:
     assert (await known(ctx)).clients == []
-    await store.set_state(state_key("unifi"), parse(DEVICES, STATIONS).dump())
+    await store.set_state(state_key("unifi"), parse(TRACKERS, STATES, DEVICES).dump())
 
-    merged = await known(ctx)
-
-    assert len(merged.clients) == 5
-    assert merged.access_points == {BSSID: AP}
+    assert len((await known(ctx)).clients) == 2
 
 
-def unifi_options(options: Options, **settings: Any) -> dict[str, Any]:
-    return {"extra": {**options.extra, "unifi": settings}}
+class FakeCore:
+    """Home Assistant's websocket, answering the registry and state lists."""
 
+    def __init__(self, entities: list[dict[str, Any]]) -> None:
+        self.entities = entities
+        self.asked: list[str] = []
 
-class FakeController:
-    """A UniFi controller: UniFi OS, or the standalone application."""
-
-    def __init__(self, unifi_os: bool = True, accept: bool = True) -> None:
-        self.unifi_os = unifi_os
-        self.accept = accept
-        self.seen: list[tuple[str, str | None]] = []
-
-    def app(self) -> web.Application:
-        app = web.Application()
-        prefix = "/proxy/network" if self.unifi_os else ""
-        app.router.add_post(
-            "/api/auth/login" if self.unifi_os else "/api/login", self.login
-        )
-        app.router.add_get(prefix + "/api/s/{site}/stat/{what}", self.stat)
-        return app
-
-    async def login(self, request: web.Request) -> web.Response:
-        body = await request.json()
-        if not self.accept or body["password"] != "secret":
-            return web.Response(status=401)
-        response = web.json_response({})
-        response.set_cookie("TOKEN", "t")
-        return response
-
-    async def stat(self, request: web.Request) -> web.Response:
-        key = request.headers.get("X-API-KEY")
-        if key is None and "TOKEN" not in request.cookies:
-            return web.Response(status=401)
-        self.seen.append((request.match_info["site"], key))
-        data = DEVICES if request.match_info["what"] == "device" else STATIONS
-        return web.json_response({"data": data})
+    async def handle(self, request: web.Request) -> web.WebSocketResponse:
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        await ws.send_json({"type": "auth_required"})
+        await ws.receive_json()
+        await ws.send_json({"type": "auth_ok"})
+        answers = {
+            "config/entity_registry/list": self.entities,
+            "get_states": STATES,
+            "config/device_registry/list": DEVICES,
+        }
+        async for message in ws:
+            command = message.json()
+            self.asked.append(command["type"])
+            await ws.send_json(
+                {
+                    "id": command["id"],
+                    "type": "result",
+                    "success": True,
+                    "result": answers[command["type"]],
+                }
+            )
+        return ws
 
 
 async def run_once(source: UnifiEnricher, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -158,70 +143,55 @@ async def run_once(source: UnifiEnricher, monkeypatch: pytest.MonkeyPatch) -> No
         await source.run()
 
 
-@pytest.mark.parametrize(
-    ("unifi_os", "settings", "seen"),
-    [
-        (True, {"api_key": "k"}, ("default", "k")),
-        (True, {"username": "u", "password": "secret"}, ("default", None)),
-        (False, {"username": "u", "password": "secret", "site": "s"}, ("s", None)),
-    ],
-)
-async def test_the_controller_is_read_however_it_lets_in(
+async def serve_core(aiohttp_server: AiohttpServer, core: FakeCore) -> str:
+    app = web.Application()
+    app.router.add_get("/core/websocket", core.handle)
+    server = await aiohttp_server(app)
+    return str(server.make_url("")).rstrip("/")
+
+
+async def test_the_integration_is_read_from_home_assistant(
     ctx: Context,
     store: Store,
     aiohttp_server: AiohttpServer,
     monkeypatch: pytest.MonkeyPatch,
-    unifi_os: bool,
-    settings: dict[str, Any],
-    seen: tuple[str, str | None],
 ) -> None:
-    controller = FakeController(unifi_os)
-    server = await aiohttp_server(controller.app())
-    url = str(server.make_url("/"))
-    source = source_for(
-        UnifiEnricher, ctx, **unifi_options(ctx.options, url=url, **settings)
+    core = FakeCore(
+        [{"entity_id": e, "platform": "unifi"} for e in sorted(TRACKERS)]
+        + [
+            {"entity_id": "sensor.speaker_uptime", "platform": "unifi"},
+            {"entity_id": "device_tracker.phone", "platform": "mobile_app"},
+        ]
     )
+    url = await serve_core(aiohttp_server, core)
+    source = source_for(UnifiEnricher, ctx, supervisor_url=url)
 
     await run_once(source, monkeypatch)
 
-    assert controller.seen == [seen, seen]
-    stored = await store.get_state(state_key("unifi"))
-    assert Knowledge.load(stored).access_points == {BSSID: AP}
+    assert core.asked == [
+        "config/entity_registry/list",
+        "get_states",
+        "config/device_registry/list",
+    ]
+    stored = Knowledge.load(await store.get_state(state_key("unifi")))
+    assert [c.name for c in stored.clients] == ["tv", "Speaker"]
     assert source.ctx._engine is not None
     assert source.ctx._engine.status["unifi"]["ok"] is True
 
 
-async def test_a_refused_login_is_said_plainly(
-    ctx: Context, aiohttp_server: AiohttpServer
+async def test_without_the_integration_nothing_is_missing(
+    ctx: Context,
+    store: Store,
+    aiohttp_server: AiohttpServer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    server = await aiohttp_server(FakeController(accept=False).app())
-    source = source_for(
-        UnifiEnricher,
-        ctx,
-        **unifi_options(ctx.options, url=str(server.make_url("")), password="x"),
-    )
+    core = FakeCore([{"entity_id": "light.x", "platform": "hue"}])
+    url = await serve_core(aiohttp_server, core)
+    source = source_for(UnifiEnricher, ctx, supervisor_url=url)
 
-    with pytest.raises(PermissionError):
-        await source.run()
+    await run_once(source, monkeypatch)
 
-
-async def test_something_that_is_no_controller(
-    ctx: Context, aiohttp_server: AiohttpServer
-) -> None:
-    server = await aiohttp_server(web.Application())
-    source = source_for(
-        UnifiEnricher, ctx, **unifi_options(ctx.options, url=str(server.make_url("")))
-    )
-
-    with pytest.raises(ConnectionError):
-        await source.run()
-
-
-def test_the_enricher_runs_only_when_configured(options: Options) -> None:
-    assert not UnifiEnricher.enabled(options)
-    assert not UnifiEnricher.enabled(
-        Options(extra={"unifi": "not a dict"}, data_dir=options.data_dir)
-    )
-    assert UnifiEnricher.enabled(
-        Options(extra={"unifi": {"url": "https://unifi"}}, data_dir=options.data_dir)
-    )
+    assert core.asked == ["config/entity_registry/list"]
+    assert await store.get_state(state_key("unifi")) == []
+    assert source.ctx._engine is not None
+    assert "unifi" not in source.ctx._engine.status

@@ -44,6 +44,12 @@ signal. Pointing at it shows the channel and encryption it uses.
 
 **Ethernet**: wired devices, directly on your home network.
 
+With the **UniFi Network** integration set up in Home Assistant, the picture
+also shows how bridges are connected to your home network: in the
+**Transport** view the line from your home network is drawn in the Wi-Fi or
+Ethernet colour, and pointing at a bridge names the access point it uses.
+Only devices the integration tracks can be shown this way.
+
 The grey lines from your home network to a bridge or access point are how
 that one is connected - by cable or Wi-Fi, which the add-on cannot tell.
 
@@ -82,28 +88,6 @@ does not hide them for good; it tells them apart:
 | `log_level`         | `info`    | How much the add-on writes to its own log.              |
 | `matter_server_url` | automatic | Only if the Matter Server does not run as an add-on.    |
 | `otbr_url`          | automatic | Only if the border router does not run as an add-on.    |
-| `unifi`             | off       | A UniFi controller to read; see below.                  |
-
-### Network equipment
-
-Matter and Thread do not tell whether a bridge (a speaker or TV box) or an
-access point is connected by cable or by Wi-Fi. A UniFi Network controller
-does. With `unifi` set, the network picture shows it: in the **Transport**
-view the line from your home network is drawn in the Wi-Fi or Ethernet
-colour, in the **Signal** view a Wi-Fi connection shows its strength, and
-pointing at a bridge names the switch port or access point it uses. Access
-points are shown by the names you gave them.
-
-| Setting      | Meaning                                                              |
-|--------------|----------------------------------------------------------------------|
-| `url`        | The controller, e.g. `https://192.168.1.1`.                          |
-| `api_key`    | An API key (UniFi consoles). Or use `username` and `password`.       |
-| `username`   | A local account; the read-only role is enough.                       |
-| `password`   | Its password.                                                        |
-| `site`       | Leave empty for the default site.                                    |
-| `verify_ssl` | Leave off when the controller uses a self-signed certificate.        |
-
-Matter Health only reads the controller's device and client lists.
 
 ## What it reads
 
@@ -113,7 +97,8 @@ Matter Health only reads the controller's device and client lists.
 - The Supervisor: versions of Home Assistant, its operating system and the
   two add-ons, whether Docker has IPv6, and the IPv6 setting of the primary
   network interface.
-- If configured, a UniFi controller: its device and client lists.
+- If set up, the UniFi Network integration in Home Assistant: its device
+  trackers.
 
 It changes nothing. It does not read the Thread network key.
 

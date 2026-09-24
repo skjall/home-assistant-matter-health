@@ -305,7 +305,7 @@
     "down": "not reachable",
     "waiting": "connecting…",
     "system": "Supervisor",
-    "unifi": "UniFi controller"
+    "unifi": "UniFi integration"
   },
   "thread_role": {
     "leader": "coordinator",
@@ -378,7 +378,6 @@
       "wired": "On the home network by cable",
       "wireless": "On the home network by Wi-Fi",
       "via": "via {via}",
-      "port": "port {port}",
       "short_wired": "Cable",
       "short_wireless": "Wi-Fi"
     }

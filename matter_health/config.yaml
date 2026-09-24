@@ -25,18 +25,8 @@ homeassistant_api: true
 options:
   retention_days: 30
   log_level: info
-  unifi: {}
 schema:
   retention_days: int(1,365)
   log_level: list(debug|info|warning|error)
   matter_server_url: url?
   otbr_url: url?
-  # Optional: a UniFi Network controller, read to tell how border routers
-  # and access points are connected to the home network.
-  unifi:
-    url: url?
-    api_key: password?
-    username: str?
-    password: password?
-    site: str?
-    verify_ssl: bool?

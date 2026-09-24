@@ -182,6 +182,11 @@ class Source(ABC):
         if self.ctx._engine is not None:
             await self.ctx._engine.set_status(self.name, ok=True)
 
+    def unused(self) -> None:
+        """Tell the engine there is nothing here to observe, so nothing is missing."""
+        if self.ctx._engine is not None:
+            self.ctx._engine.status.pop(self.name, None)
+
     @abstractmethod
     async def run(self) -> None:
         """Observe until cancelled; raising means "retry later"."""

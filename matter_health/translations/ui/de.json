@@ -305,7 +305,7 @@
     "down": "nicht erreichbar",
     "waiting": "verbinde …",
     "system": "Supervisor",
-    "unifi": "UniFi-Controller"
+    "unifi": "UniFi-Integration"
   },
   "thread_role": {
     "leader": "Koordinator",
@@ -378,7 +378,6 @@
       "wired": "Per Kabel im Heimnetz",
       "wireless": "Per WLAN im Heimnetz",
       "via": "über {via}",
-      "port": "Port {port}",
       "short_wired": "Kabel",
       "short_wireless": "WLAN"
     }
