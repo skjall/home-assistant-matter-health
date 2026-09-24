@@ -247,6 +247,10 @@ class Engine:
         while True:
             try:
                 await source.run()
+                # A stream that ends - Home Assistant restarting, an add-on
+                # being updated - is a connection lost like any other.
+                await self.set_status(source.name, ok=False, detail="connection closed")
+                _LOGGER.info("source %s ended; reconnecting", source.name)
                 delay = RETRY_FIRST_S
             except asyncio.CancelledError:
                 raise

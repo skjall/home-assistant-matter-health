@@ -10,6 +10,7 @@ ADDONS = {
     "running": {"version": "1.0", "state": "started", "hostname": "matter-host"},
     "stopped": {"version": "1.0", "state": "stopped", "hostname": "otbr-host"},
     "unversioned": {"state": "started"},
+    "nameless": {"version": "1.0", "state": "started"},
 }
 
 
@@ -28,6 +29,8 @@ async def test_addon_info_and_url(aiohttp_server: AiohttpServer) -> None:
             == "ws://matter-host:5580"
         )
         assert await supervisor.addon_url("stopped", 8081, "http", None) is None
+        with pytest.raises(ConnectionError, match="no host name for nameless"):
+            await supervisor.addon_url("nameless", 5580, "ws", None)
         assert await supervisor.addon_url("absent", 8081, "http", None) is None
         assert (
             await supervisor.addon_url("absent", 8081, "http", "http://192.0.2.10/")

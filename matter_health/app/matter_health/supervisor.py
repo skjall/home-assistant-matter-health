@@ -51,7 +51,10 @@ class Supervisor:
         info = await self.addon_info(slug)
         if not info or info.get("state") != "started":
             return None
-        return f"{scheme}://{info['hostname']}:{port}"
+        hostname = info.get("hostname")
+        if not hostname:
+            raise ConnectionError(f"the Supervisor gave no host name for {slug}")
+        return f"{scheme}://{hostname}:{port}"
 
     async def follow_logs(
         self, slug: str, on_open: Callable[[], Awaitable[None]] | None = None

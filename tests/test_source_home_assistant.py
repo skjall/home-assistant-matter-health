@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 import pytest
@@ -97,8 +98,10 @@ class FakeHomeAssistant:
         greeting: str = "auth_required",
         failing: str | None = None,
         binary_at_end: bool = False,
+        early: list[dict[str, Any]] | None = None,
     ) -> None:
         self.events = events or []
+        self.early = early or []
         self.greeting = greeting
         self.failing = failing
         self.binary_at_end = binary_at_end
@@ -152,6 +155,11 @@ class FakeHomeAssistant:
                     }
                 )
                 continue
+            if command["type"] == "subscribe_events" and subscriptions == 0:
+                # Home Assistant starts sending as soon as it subscribed, even
+                # before the next subscription has been answered.
+                for event in self.early:
+                    await ws.send_json({"id": number, "type": "event", "event": event})
             await ws.send_json(
                 {
                     "id": number,
@@ -350,3 +358,43 @@ async def test_remembers_only_recent_automation_runs(ctx: Context) -> None:
     assert source.origin({"id": "ctx-1"}) == ("automation", "automation.run_1")
     assert source.origin({"id": 5}) == ("unknown", None)
     assert source.origin({"user_id": "user-unknown"}) == ("person", None)
+
+
+async def test_events_during_subscribing_are_not_lost(
+    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+) -> None:
+    fake = FakeHomeAssistant(
+        early=[switched("switch.tv_outlet", "on", "off", None, name="TV Outlet")]
+    )
+    source = source_for(
+        HomeAssistantSource, ctx, supervisor_url=await serve(aiohttp_server, fake)
+    )
+
+    await source.run()
+
+    assert [(e.kind, e.subject) for e in await store.events()] == [
+        (kinds.HA_POWER_OFF, "entity:switch.tv_outlet")
+    ]
+
+
+async def test_a_failed_name_refresh_is_logged(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def failing() -> None:
+        raise ConnectionError("gone")
+
+    async def fine() -> None:
+        return None
+
+    for job in (failing, fine):
+        task = asyncio.create_task(job())
+        await asyncio.wait([task])
+        home_assistant._log_failure(task)
+    cancelled = asyncio.create_task(fine())
+    cancelled.cancel()
+    await asyncio.wait([cancelled])
+    home_assistant._log_failure(cancelled)
+
+    assert [r.getMessage() for r in caplog.records] == [
+        "could not refresh device names: gone"
+    ]

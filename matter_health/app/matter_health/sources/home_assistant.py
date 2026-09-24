@@ -10,6 +10,7 @@ did it is usually the missing piece of the explanation.
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from collections import OrderedDict
 from typing import Any, ClassVar
@@ -18,6 +19,8 @@ import aiohttp
 
 from .. import kinds
 from ..engine import SOURCES, Source
+
+_LOGGER = logging.getLogger(__name__)
 
 #: Matter devices are identified in the device registry as
 #: ``deviceid_<compressed fabric id>-<node id in hex>-MatterNodeDevice``.
@@ -42,6 +45,9 @@ class HomeAssistantApi:
         """Use an already opened websocket."""
         self._ws = ws
         self._next = 1
+        #: Events that arrived while waiting for a command's result; the
+        #: caller handles them once it listens, so none is lost in between.
+        self.pending: list[dict[str, Any]] = []
 
     async def authenticate(self, token: str) -> None:
         """Log in; raises when the token is refused."""
@@ -65,10 +71,18 @@ class HomeAssistantApi:
         message_id = await self.send(message)
         while True:
             answer = await self._ws.receive_json()
-            if answer.get("id") == message_id and answer.get("type") == "result":
+            if answer.get("type") == "event":
+                self.pending.append(answer)
+            elif answer.get("id") == message_id and answer.get("type") == "result":
                 if not answer.get("success"):
                     raise RuntimeError(str(answer.get("error")))
                 return answer.get("result")
+
+
+def _log_failure(task: asyncio.Task[None]) -> None:
+    """Report a failed name refresh; the old names stay in use meanwhile."""
+    if not task.cancelled() and (err := task.exception()) is not None:
+        _LOGGER.warning("could not refresh device names: %s", err)
 
 
 @SOURCES.register("home_assistant")
@@ -111,6 +125,9 @@ class HomeAssistantSource(Source):
             await api.call(
                 {"type": "subscribe_events", "event_type": "device_registry_updated"}
             )
+            for raw in api.pending:
+                await self.on_event(raw["event"])
+            api.pending.clear()
             async for message in ws:
                 if message.type is not aiohttp.WSMsgType.TEXT:
                     break
@@ -190,6 +207,7 @@ class HomeAssistantSource(Source):
         """Re-read device names soon; several updates in a row cost one read."""
         if self._refresh is None or self._refresh.done():
             self._refresh = asyncio.create_task(self.refresh_names())
+            self._refresh.add_done_callback(_log_failure)
 
     async def refresh_names(self) -> None:
         """Read the device registry again over a connection of its own.

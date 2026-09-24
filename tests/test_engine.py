@@ -292,6 +292,21 @@ async def test_keep_running_backs_off_and_resets_after_success(
     assert engine.status["scripted"]["detail"] == "x"
 
 
+async def test_keep_running_reports_a_stream_that_ended(
+    ctx: Context, store: Store, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    engine = make_engine(ctx, sources=[Scripted])
+    await engine.set_status("scripted", ok=True)
+    Scripted.script = [None]
+    fake_sleep(monkeypatch, stop_after=1)
+
+    with pytest.raises(asyncio.CancelledError):
+        await engine._keep_running(engine.sources[0])
+
+    details = [e.data for e in await store.events((kinds.SOURCE_STATUS,))]
+    assert details == [{"ok": False, "detail": "connection closed"}]
+
+
 async def test_keep_running_caps_the_delay(
     ctx: Context, monkeypatch: pytest.MonkeyPatch
 ) -> None:
