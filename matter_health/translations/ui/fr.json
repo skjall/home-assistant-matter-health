@@ -194,12 +194,11 @@
     "border_routers_empty": "Aucune passerelle ne s'est encore annoncée.",
     "unreachable_title": "Appareils qui ne répondent pas",
     "unreachable_empty": "Tous les appareils répondent.",
-    "sources_title": "Ce que Matter Health peut voir",
     "foreign_title": "Autres réseaux Thread",
     "foreign_hint": "Séparé du tien – tes appareils ne peuvent pas les utiliser.",
     "foreign_network": "Réseau « {network} »",
     "facts": "Home Assistant : {role} · {count} routeurs dans le réseau",
-    "sources_ok": "Tout est connecté"
+    "sources_missing": "Informations manquantes"
   },
   "source": {
     "matter_server": "Serveur Matter",
@@ -207,7 +206,6 @@
     "otbr": "OpenThread Border Router",
     "otbr_log": "OpenThread Border Router : journal",
     "home_assistant": "Home Assistant",
-    "ok": "connecté",
     "down": "injoignable",
     "waiting": "connexion…"
   },

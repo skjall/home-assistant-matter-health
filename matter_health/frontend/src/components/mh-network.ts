@@ -2,7 +2,6 @@
 // Matter Health itself can see everything it needs.
 
 import {
-  mdiCheckCircleOutline,
   mdiCloseCircleOutline,
   mdiLinkVariantOff,
   mdiRouterWireless,
@@ -105,6 +104,8 @@ export class MhNetwork extends LitElement {
     const overview = this.overview;
     if (!overview) return html``;
     const thread = overview.thread;
+    // Only what is missing is worth a line; all present is the normal case.
+    const missing = Object.entries(overview.sources).filter(([, status]) => !status.ok);
     const own = overview.border_routers.filter((r) => r.own !== false);
     const foreign = new Map<string, BorderRouter[]>();
     for (const router of overview.border_routers.filter((r) => r.own === false)) {
@@ -158,35 +159,25 @@ export class MhNetwork extends LitElement {
           : html`<p class="empty">${t("network.unreachable_empty")}</p>`}
       </section>
 
-      <section class="card">
-        <h2>${t("network.sources_title")}</h2>
-        ${Object.values(overview.sources).every((status) => status.ok)
-          ? html`<p class="empty">
-              <span class="ok">${icon(mdiCheckCircleOutline)}</span>
-              ${t("network.sources_ok")}
-            </p>`
-          : html`<ul>
-              ${Object.entries(overview.sources).map(
+      ${missing.length
+        ? html`<section class="card">
+            <h2>${t("network.sources_missing")}</h2>
+            <ul>
+              ${missing.map(
                 ([name, status]) =>
                   html`<li>
-                    <span
-                      class=${status.ok ? "ok" : status.ok === false ? "down" : "muted"}
-                      >${icon(
-                        status.ok === false ? mdiCloseCircleOutline : mdiCheckCircleOutline,
-                      )}</span
+                    <span class=${status.ok === false ? "down" : "muted"}
+                      >${icon(mdiCloseCircleOutline)}</span
                     >
                     <span>${t(`source.${name}`)}</span>
                     <span class="sub"
-                      >${status.ok
-                        ? t("source.ok")
-                        : status.ok === false
-                          ? t("source.down")
-                          : t("source.waiting")}</span
+                      >${status.ok === false ? t("source.down") : t("source.waiting")}</span
                     >
                   </li>`,
               )}
-            </ul>`}
-      </section>
+            </ul>
+          </section>`
+        : nothing}
     `;
   }
 }

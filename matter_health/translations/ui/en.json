@@ -194,12 +194,11 @@
     "border_routers_empty": "No bridge has announced itself yet.",
     "unreachable_title": "Devices that don't respond",
     "unreachable_empty": "Every device responds.",
-    "sources_title": "What Matter Health can see",
     "foreign_title": "Other Thread networks",
     "foreign_hint": "Separate from yours – your devices cannot use them.",
     "foreign_network": "Network “{network}”",
     "facts": "Home Assistant: {role} · {count} routers in the network",
-    "sources_ok": "All connected"
+    "sources_missing": "Missing information"
   },
   "source": {
     "matter_server": "Matter Server",
@@ -207,7 +206,6 @@
     "otbr": "OpenThread Border Router",
     "otbr_log": "OpenThread Border Router: log",
     "home_assistant": "Home Assistant",
-    "ok": "connected",
     "down": "not reachable",
     "waiting": "connecting…"
   },
