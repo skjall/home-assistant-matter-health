@@ -4,6 +4,11 @@ A Wi-Fi device reports its own link in the Wi-Fi Network Diagnostics cluster
 (``0/54``): the access point it is associated with (BSSID), the channel and
 the signal strength. Nothing needs polling; the Matter Server passes the
 attributes on as they change.
+
+The device's own MAC and addresses come from General Diagnostics (``0/51``).
+They find it among a network integration's clients in Home Assistant, which
+may know the access point by the name its owner gave it; the BSSID alone
+does not, as an access point sends its networks under addresses of its own.
 """
 
 from __future__ import annotations
@@ -23,6 +28,9 @@ CHANNEL = "0/54/3"
 RSSI = "0/54/4"
 #: The networks a device knows, each with its SSID and whether it is on it.
 NETWORKS = "0/49/1"
+#: General Diagnostics: the device's network interfaces, each with its
+#: hardware address (``4``) and IPv4 addresses (``5``).
+INTERFACES = "0/51/0"
 
 #: Wi-Fi signal, in dBm: above -65 there is room to spare; at -75 and below
 #: throughput drops and a device loses its association now and then.
@@ -35,15 +43,37 @@ VERSION_NAMES = {0: "a", 1: "b", 2: "g", 3: "n", 4: "ac", 5: "ax", 6: "ah"}
 STATE = "wifi.devices"
 
 
-def _mac(value: Any) -> str | None:
-    """Return a BSSID, reported as base64 bytes, as colon-separated hex."""
+def _bytes(value: Any, size: int) -> bytes | None:
+    """Return base64-reported bytes of the given length, else None."""
     if not isinstance(value, str) or not value:
         return None
     try:
         raw = base64.b64decode(value, validate=True)
     except binascii.Error, ValueError:
         return None
-    return ":".join(f"{byte:02x}" for byte in raw) if len(raw) == 6 else None
+    return raw if len(raw) == size else None
+
+
+def _mac(value: Any) -> str | None:
+    """Return a MAC or BSSID, reported as base64 bytes, as colon-separated hex."""
+    raw = _bytes(value, 6)
+    return ":".join(f"{byte:02x}" for byte in raw) if raw else None
+
+
+def _identity(interfaces: Any) -> tuple[str | None, list[str]]:
+    """Return the MAC and IPv4 addresses of the interface a device is up on."""
+    for interface in interfaces if isinstance(interfaces, list) else []:
+        if not isinstance(interface, dict) or not interface.get("1"):
+            continue
+        mac = _mac(interface.get("4"))
+        if mac:
+            addresses = [
+                ".".join(str(byte) for byte in raw)
+                for value in interface.get("5") or []
+                if (raw := _bytes(value, 4))
+            ]
+            return mac, addresses
+    return None, []
 
 
 def _ssid(networks: Any) -> str | None:
@@ -61,8 +91,11 @@ def _ssid(networks: Any) -> str | None:
 def describe(attributes: dict[str, Any]) -> dict[str, Any]:
     """Return what a device's attributes say about its Wi-Fi link."""
     rssi = attributes.get(RSSI)
+    mac, addresses = _identity(attributes.get(INTERFACES))
     return {
         "bssid": _mac(attributes.get(BSSID)),
+        "mac": mac,
+        "addresses": addresses,
         "ssid": _ssid(attributes.get(NETWORKS)),
         "channel": attributes.get(CHANNEL),
         "rssi": rssi if isinstance(rssi, int) else None,
@@ -77,7 +110,7 @@ class WifiTransport(Transport):
 
     name: ClassVar[str] = "wifi"
     feature: ClassVar[int] = 0b1
-    clusters: ClassVar[tuple[str, ...]] = ("0/54/", NETWORKS)
+    clusters: ClassVar[tuple[str, ...]] = ("0/54/", NETWORKS, INTERFACES)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Nothing rated yet."""
@@ -140,7 +173,14 @@ class WifiTransport(Transport):
                         "ssid": link.get("ssid"),
                         "channel": link.get("channel"),
                     },
+                    # Its devices as the home network knows them, to find
+                    # out there which access point this is.
+                    "clients": [],
                 }
+            if bssid and link.get("mac"):
+                points[bssid]["clients"].append(
+                    {"mac": link["mac"], "addresses": link.get("addresses") or []}
+                )
             entries.append(
                 {
                     "id": subject,

@@ -195,3 +195,28 @@ async def test_without_the_integration_nothing_is_missing(
     assert await store.get_state(state_key("unifi")) == []
     assert source.ctx._engine is not None
     assert "unifi" not in source.ctx._engine.status
+
+
+def test_an_access_point_is_named_by_what_its_devices_are_on() -> None:
+    knowledge = Knowledge(
+        [
+            Client("02:00:00:00:10:01", "192.0.2.10", "Plug", False, "Hallway AP"),
+            Client("02:00:00:00:10:02", "192.0.2.11", "Lamp", False, "Hallway AP"),
+            Client("02:00:00:00:10:03", "192.0.2.12", "Roamed", False, "Garden AP"),
+            Client("02:00:00:00:10:04", "192.0.2.13", "Wired"),
+        ]
+    )
+
+    assert (
+        knowledge.access_point(
+            [
+                {"mac": "02:00:00:00:10:01".upper(), "addresses": []},
+                {"mac": None, "addresses": ["192.0.2.11"]},
+                {"mac": "02:00:00:00:10:03"},
+                {"mac": "02:00:00:00:10:04"},
+                {"mac": "02:00:00:00:99:99"},
+            ]
+        )
+        == "Hallway AP"
+    )
+    assert knowledge.access_point([{"mac": "02:00:00:00:10:04"}]) is None

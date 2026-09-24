@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 from abc import abstractmethod
+from collections import Counter
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -59,13 +60,19 @@ class Knowledge:
         """Read what ``dump`` stored."""
         return cls([Client(**c) for c in raw])
 
-    def client(self, addresses: list[str] | None) -> Client | None:
-        """Find a client by any of its IP addresses."""
+    def client(
+        self, addresses: list[str] | None, mac: str | None = None
+    ) -> Client | None:
+        """Find a client by its MAC, else by any of its IP addresses."""
         wanted = {a.lower() for a in addresses or []}
+        mac = mac.lower() if mac else None
+        by_address = None
         for client in self.clients:
-            if client.ip and client.ip.lower() in wanted:
+            if mac and client.mac == mac:
                 return client
-        return None
+            if by_address is None and client.ip and client.ip.lower() in wanted:
+                by_address = client
+        return by_address
 
     def uplink(self, addresses: list[str] | None) -> dict[str, Any] | None:
         """How a device reaches the home network, if an integration knows."""
@@ -73,6 +80,19 @@ class Knowledge:
         if client is None:
             return None
         return {"wired": client.wired, "via": client.via, "ssid": client.ssid}
+
+    def access_point(self, clients: list[dict[str, Any]]) -> str | None:
+        """Name the access point that most of the given Wi-Fi clients are on.
+
+        Each client is ``{"mac", "addresses"}``. Clients roam; the one most
+        of them report wins.
+        """
+        seen: Counter[str] = Counter()
+        for identity in clients:
+            client = self.client(identity.get("addresses"), identity.get("mac"))
+            if client is not None and not client.wired and client.via:
+                seen[client.via] += 1
+        return seen.most_common(1)[0][0] if seen else None
 
 
 class Enricher(Source):

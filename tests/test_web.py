@@ -687,7 +687,14 @@ async def test_topology_tells_how_gateways_reach_the_home_network(
 ) -> None:
     await store.set_state("matter.transports", {"node:4": "wifi"})
     await store.set_state(
-        "wifi.devices", {"node:4": {"bssid": "02:00:00:00:00:01", "rssi": -50}}
+        "wifi.devices",
+        {
+            "node:4": {
+                "bssid": "02:00:00:00:00:01",
+                "rssi": -50,
+                "mac": "02:00:00:00:10:04",
+            }
+        },
     )
     await store.set_state(
         "border_routers",
@@ -717,7 +724,12 @@ async def test_topology_tells_how_gateways_reach_the_home_network(
     await store.set_state(
         state_key("unifi"),
         Knowledge(
-            [Client("02:00:00:00:10:11", "192.0.2.11", "Speaker", False, "AP", "Home")]
+            [
+                Client(
+                    "02:00:00:00:10:11", "192.0.2.11", "Speaker", False, "AP", "Home"
+                ),
+                Client("02:00:00:00:10:04", None, "Plug", False, "Hallway AP"),
+            ]
         ).dump(),
     )
     client = await aiohttp_client(build(engine, translations))
@@ -732,5 +744,8 @@ async def test_topology_tells_how_gateways_reach_the_home_network(
     }
     # Nothing is known of the other border router's or the access point's.
     assert nodes["thread:br_0B"]["uplink"] is None
-    assert nodes["wifi:ap:02:00:00:00:00:01"]["uplink"] is None
+    access_point = nodes["wifi:ap:02:00:00:00:00:01"]
+    assert access_point["uplink"] is None
+    # Named by the access point its device is on, as the integration says.
+    assert access_point["name"] == "Hallway AP"
     assert "uplink" not in nodes["wifi:node:4"]

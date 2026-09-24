@@ -67,12 +67,29 @@ def test_thread_link_quality(link: dict[str, Any], rated: str | None) -> None:
 def test_what_a_wifi_device_reports() -> None:
     assert describe(wifi()) == {
         "bssid": "02:00:00:00:00:01",
+        "mac": None,
+        "addresses": [],
         "ssid": "Home",
         "channel": 6,
         "rssi": -50,
         "security": "WPA2",
         "standard": "n",
     }
+
+
+def test_a_wifi_device_says_who_it_is_on_the_home_network() -> None:
+    interfaces = [
+        {"0": "down", "1": False, "4": "AgAAAAAC"},
+        {"0": "odd", "1": True, "4": "AQI="},
+        "nonsense",
+        # 02:00:00:00:00:03, 192.0.2.7, and an address that is no IPv4.
+        {"0": "wlan0", "1": True, "4": "AgAAAAAD", "5": ["wAACBw==", "AQI="]},
+    ]
+
+    link = describe({**wifi(), "0/51/0": interfaces})
+
+    assert link["mac"] == "02:00:00:00:00:03"
+    assert link["addresses"] == ["192.0.2.7"]
 
 
 @pytest.mark.parametrize(

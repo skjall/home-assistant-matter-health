@@ -65,8 +65,8 @@ BORDER_ROUTERS = [
     )
 ]
 
-#: What a network integration would tell: two speakers on Wi-Fi, the rest on
-#: cables.
+#: What a network integration would tell: two speakers and a plug on Wi-Fi,
+#: the rest on cables.
 NETWORK = Knowledge(
     [
         Client("02:00:00:00:10:02", "192.0.2.2", "Home Assistant"),
@@ -87,6 +87,7 @@ NETWORK = Knowledge(
             "Hallway AP",
             "Home",
         ),
+        Client("02:00:00:00:10:40", None, "Garage Plug", False, "Hallway AP", "Home"),
     ]
 )
 
@@ -318,9 +319,11 @@ async def seed(engine: Engine, clock: Clock) -> None:
     )
     # Two Wi-Fi devices on the same access point, one of them far from it.
     wifi = {"0/49/65532": 1, "0/54/0": "AgAAAAAB", "0/54/1": 4, "0/54/3": 6}
+    # 02:00:00:00:10:40, found among the network integration's clients.
+    plug = [{"1": True, "4": "AgAAABBA"}]
     await WifiTransport(ctx).devices(
         {
-            "node:40": {**wifi, "0/54/4": -52},
+            "node:40": {**wifi, "0/54/4": -52, "0/51/0": plug},
             "node:41": {**wifi, "0/54/4": -79},
         }
     )
