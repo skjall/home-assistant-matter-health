@@ -290,14 +290,12 @@
   },
   "network": {
     "title": "Tu red ahora mismo",
-    "unreachable_title": "Dispositivos que no responden",
+    "unreachable_title": "Sin respuesta",
     "unreachable_empty": "Todos los dispositivos responden.",
     "foreign_title": "Otras redes Thread",
-    "foreign_hint": "Separada de la tuya – tus dispositivos no pueden usarlos.",
     "foreign_network": "Red «{network}»",
     "sources_missing": "Sin conexión",
     "usual_title": "Va y viene",
-    "usual_hint": "Estos dispositivos faltan a menudo. Solo se avisa si uno falta bastante más de lo habitual.",
     "always_report": "Avisar siempre",
     "known_title": "Conocidos"
   },
@@ -331,12 +329,10 @@
     "days": "{count} día | {count} días"
   },
   "topology": {
-    "title": "Cómo está conectada tu red",
+    "title": "Red Thread",
     "home": "Red doméstica",
     "no_way": "Sin camino a la red",
     "unknown_device": "Otro dispositivo Thread",
-    "stats": "{bridges} puentes · {routers} reenvían · {devices} dispositivos finales",
-    "updated": "estado {time}",
     "all": "Todo",
     "only_problems": "Solo problemas",
     "empty": "La imagen de la red aparece con la primera lectura. Tarda hasta diez minutos.",

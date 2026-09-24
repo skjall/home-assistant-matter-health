@@ -290,14 +290,12 @@
   },
   "network": {
     "title": "Ton réseau en ce moment",
-    "unreachable_title": "Appareils qui ne répondent pas",
+    "unreachable_title": "Injoignables",
     "unreachable_empty": "Tous les appareils répondent.",
     "foreign_title": "Autres réseaux Thread",
-    "foreign_hint": "Séparé du tien – tes appareils ne peuvent pas les utiliser.",
     "foreign_network": "Réseau « {network} »",
     "sources_missing": "Non connecté",
     "usual_title": "Va et vient",
-    "usual_hint": "Ces appareils sont souvent absents. Seule une absence nettement plus longue que d'habitude est signalée.",
     "always_report": "Toujours signaler",
     "known_title": "Connus"
   },
@@ -331,12 +329,10 @@
     "days": "{count} jour | {count} jours"
   },
   "topology": {
-    "title": "Comment ton réseau est relié",
+    "title": "Réseau Thread",
     "home": "Réseau domestique",
     "no_way": "Sans chemin vers le réseau",
     "unknown_device": "Autre appareil Thread",
-    "stats": "{bridges} ponts · {routers} relais · {devices} appareils finaux",
-    "updated": "état {time}",
     "all": "Tout",
     "only_problems": "Problèmes seulement",
     "empty": "L'image du réseau apparaît au premier relevé. Cela prend jusqu'à dix minutes.",

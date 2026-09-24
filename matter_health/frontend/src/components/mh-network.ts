@@ -47,10 +47,6 @@ export class MhNetwork extends LitElement {
         margin: 0 0 4px;
         font-size: 16px;
       }
-      .hint {
-        margin: 0 0 14px;
-        font-size: 14px;
-      }
       ul {
         list-style: none;
         margin: 0;
@@ -165,7 +161,6 @@ export class MhNetwork extends LitElement {
       ${foreign.size
         ? html`<section class="card">
             <h2>${t("network.foreign_title")}</h2>
-            <p class="hint muted">${t("network.foreign_hint")}</p>
             ${[...foreign].map(
               ([network, routers]) =>
                 html`<h3>${t("network.foreign_network", { network })}</h3>
@@ -185,7 +180,6 @@ export class MhNetwork extends LitElement {
           : html`<p class="empty">${t("network.unreachable_empty")}</p>`}
         ${usual.length
           ? html`<h3>${t("network.usual_title")}</h3>
-              <p class="hint muted">${t("network.usual_hint")}</p>
               <ul>
                 ${usual.map((device) =>
                   this.device(

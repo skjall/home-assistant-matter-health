@@ -15,7 +15,7 @@ import { cluster, hierarchy, type HierarchyPointNode } from "d3-hierarchy";
 import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
 
 import type { Finding, Severity, Topology, TopologyNode } from "../api";
-import { relative, t } from "../i18n";
+import { t } from "../i18n";
 import { base } from "../theme";
 
 type Status = "ok" | "resting" | "weak" | "warning" | "problem" | "offline";
@@ -116,10 +116,6 @@ export class MhTopology extends LitElement {
       h2 {
         margin: 0;
         font-size: 16px;
-      }
-      .stats {
-        font-size: 13px;
-        color: var(--mh-muted);
       }
       .switch {
         margin-left: auto;
@@ -710,9 +706,9 @@ export class MhTopology extends LitElement {
 
   override render(): TemplateResult {
     const nodes = this.topology?.nodes ?? [];
-    const head = (stats: TemplateResult | typeof nothing) => html`<div class="head">
+    const head = (controls: TemplateResult | typeof nothing) => html`<div class="head">
       <h2>${t("topology.title")}</h2>
-      ${stats}
+      ${controls}
     </div>`;
     if (!nodes.length) {
       return html`${head(nothing)}
@@ -721,17 +717,7 @@ export class MhTopology extends LitElement {
     const worst = this.findingStatus();
     const statuses = new Map(nodes.map((n) => [n.id, this.status(n, worst)] as const));
     const root = this.tree(statuses);
-    const count = (kind: string) => nodes.filter((n) => n.kind === kind).length;
-    const stats = html`<span class="stats">
-        ${t("topology.stats", {
-          bridges: count("border_router"),
-          routers: count("router"),
-          devices: count("sleepy") + count("end_device"),
-        })}${this.topology?.at
-          ? html` · ${t("topology.updated", { time: relative(this.topology.at) })}`
-          : nothing}
-      </span>
-      <div class="switch" role="group">
+    const controls = html`<div class="switch" role="group">
         <button aria-pressed=${!this.onlyProblems} @click=${() => (this.onlyProblems = false)}>
           ${t("topology.all")}
         </button>
@@ -740,11 +726,11 @@ export class MhTopology extends LitElement {
         </button>
       </div>`;
     if (this.onlyProblems && !root.children.length) {
-      return html`${head(stats)}
+      return html`${head(controls)}
         <p class="empty">${t("topology.no_problems")}</p>`;
     }
-    if (!this.width) return head(stats);
-    return html`${head(stats)}
+    if (!this.width) return head(controls);
+    return html`${head(controls)}
       ${this.width < NARROW
         ? this.outline(root, statuses)
         : html`${this.chart(root, statuses)}${this.legend()}`}`;

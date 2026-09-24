@@ -290,14 +290,12 @@
   },
   "network": {
     "title": "Your network right now",
-    "unreachable_title": "Devices that don't respond",
+    "unreachable_title": "Not reachable",
     "unreachable_empty": "Every device responds.",
     "foreign_title": "Other Thread networks",
-    "foreign_hint": "Separate from yours – your devices cannot use them.",
     "foreign_network": "Network “{network}”",
     "sources_missing": "Not connected",
     "usual_title": "Comes and goes",
-    "usual_hint": "These devices are often away. Only an absence clearly longer than usual is reported.",
     "always_report": "Always report",
     "known_title": "Known"
   },
@@ -331,12 +329,10 @@
     "days": "{count} day | {count} days"
   },
   "topology": {
-    "title": "How your network hangs together",
+    "title": "Thread network",
     "home": "Home network",
     "no_way": "No way into the network",
     "unknown_device": "Other Thread device",
-    "stats": "{bridges} bridges · {routers} relay · {devices} end devices",
-    "updated": "as of {time}",
     "all": "All",
     "only_problems": "Problems only",
     "empty": "The picture of the network appears with the first reading. That takes up to ten minutes.",

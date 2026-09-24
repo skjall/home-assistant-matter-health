@@ -290,14 +290,12 @@
   },
   "network": {
     "title": "Dein Netz gerade jetzt",
-    "unreachable_title": "Geräte, die nicht reagieren",
+    "unreachable_title": "Nicht erreichbar",
     "unreachable_empty": "Alle Geräte reagieren.",
     "foreign_title": "Andere Thread-Netze",
-    "foreign_hint": "Getrennt von deinem Netz – deine Geräte können sie nicht nutzen.",
     "foreign_network": "Netz „{network}“",
     "sources_missing": "Nicht verbunden",
     "usual_title": "Kommt und geht",
-    "usual_hint": "Diese Geräte sind öfter mal weg. Gemeldet wird erst, wenn eins deutlich länger fehlt als sonst.",
     "always_report": "Immer melden",
     "known_title": "Bekannt"
   },
@@ -331,12 +329,10 @@
     "days": "{count} Tag | {count} Tage"
   },
   "topology": {
-    "title": "So hängt dein Netz zusammen",
+    "title": "Thread-Netz",
     "home": "Heimnetz",
     "no_way": "Ohne Weg ins Netz",
     "unknown_device": "Fremdes Thread-Gerät",
-    "stats": "{bridges} Brücken · {routers} leiten weiter · {devices} Endgeräte",
-    "updated": "Stand {time}",
     "all": "Alles",
     "only_problems": "Nur Probleme",
     "empty": "Das Netzbild entsteht beim ersten Abruf. Das dauert bis zu zehn Minuten.",
