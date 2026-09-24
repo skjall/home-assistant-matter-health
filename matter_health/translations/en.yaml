@@ -11,3 +11,24 @@ configuration:
   otbr_url:
     name: OpenThread Border Router address
     description: Leave empty to find the OpenThread Border Router add-on automatically.
+  unifi:
+    name: UniFi controller
+    description: "Optional. Reads from a UniFi controller whether bridges and access points are on a cable or on Wi-Fi. Nothing is changed."
+    fields:
+      url:
+        name: Address
+        description: "For example https://192.168.1.1 for a UniFi console."
+      api_key:
+        name: API key
+        description: "On UniFi consoles under Settings → Control Plane → Integrations. Or use username and password."
+      username:
+        name: Username
+        description: "A local account; the read-only role is enough."
+      password:
+        name: Password
+      site:
+        name: Site
+        description: "Leave empty for the default site."
+      verify_ssl:
+        name: Verify certificate
+        description: "Leave off when the controller uses a self-signed certificate."

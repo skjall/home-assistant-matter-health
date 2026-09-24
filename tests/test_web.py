@@ -12,6 +12,7 @@ from pytest_aiohttp import AiohttpClient
 
 from matter_health import bridges, kinds
 from matter_health.engine import Context, Engine
+from matter_health.enrichers import Client, Knowledge, state_key
 from matter_health.model import Finding, Link, Role, Severity
 from matter_health.store import Store
 from matter_health.web import app as web_app
@@ -676,3 +677,74 @@ async def test_topology_before_the_first_reading(
     body = await (await client.get("/api/topology")).json()
 
     assert body == {"nodes": []}
+
+
+async def test_topology_tells_how_gateways_reach_the_home_network(
+    aiohttp_client: AiohttpClient,
+    store: Store,
+    engine: Engine,
+    translations: Path,
+) -> None:
+    await store.set_state("matter.transports", {"node:4": "wifi"})
+    await store.set_state(
+        "wifi.devices", {"node:4": {"bssid": "02:00:00:00:00:01", "rssi": -50}}
+    )
+    await store.set_state(
+        "border_routers",
+        [{"subject": "br:0a", "name": "Speaker", "addresses": ["192.0.2.11"]}],
+    )
+    await store.set_state(
+        "thread.tree",
+        {
+            "nodes": [
+                {
+                    "id": "br_0A",
+                    "subject": "br:0a",
+                    "kind": "border_router",
+                    "parent": "home",
+                    "link": {},
+                },
+                {
+                    "id": "br_0B",
+                    "subject": "br:0b",
+                    "kind": "border_router",
+                    "parent": "home",
+                    "link": {},
+                },
+            ]
+        },
+    )
+    await store.set_state(
+        state_key("unifi"),
+        Knowledge(
+            [
+                Client(
+                    "02:00:00:00:00:00", "192.0.2.3", "Hallway AP", True, "Switch", 8
+                ),
+                Client(
+                    "02:00:00:00:10:11",
+                    "192.0.2.11",
+                    "Speaker",
+                    False,
+                    "Hallway AP",
+                    ssid="Home",
+                    signal=-58,
+                ),
+            ],
+            {"02:00:00:00:00:01": "02:00:00:00:00:00"},
+        ).dump(),
+    )
+    client = await aiohttp_client(build(engine, translations))
+
+    body = await (await client.get("/api/topology")).json()
+
+    nodes = {n["id"]: n for n in body["nodes"]}
+    access_point = nodes["wifi:ap:02:00:00:00:00:01"]
+    assert access_point["name"] == "Hallway AP"
+    assert access_point["uplink"]["port"] == 8
+    speaker = nodes["thread:br_0A"]
+    assert speaker["uplink"]["wired"] is False
+    assert speaker["uplink"]["quality"] == "strong"
+    # Nothing is known of the other border router's connection.
+    assert nodes["thread:br_0B"]["uplink"] is None
+    assert "uplink" not in nodes["wifi:node:4"]

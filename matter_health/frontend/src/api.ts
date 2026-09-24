@@ -90,6 +90,19 @@ export interface TopologyNode {
   bridge?: boolean;
   /** Behind a bridge, on a network that is not Matter's. */
   bridged?: boolean;
+  /** How it reaches the home network, where network equipment tells. */
+  uplink?: Uplink | null;
+}
+
+/** A gateway's or wired device's connection to the home network. */
+export interface Uplink {
+  wired: boolean;
+  /** The switch or access point it is connected to. */
+  via: string | null;
+  port: number | null;
+  ssid: string | null;
+  signal: number | null;
+  quality: "strong" | "medium" | "weak" | null;
 }
 
 export interface Topology {

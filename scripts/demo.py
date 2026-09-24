@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "matter_health" / "
 from matter_health import bridges, kinds, rules
 from matter_health.config import Options
 from matter_health.engine import RULES, Context, Engine, utcnow
+from matter_health.enrichers import Client, Knowledge, state_key
 from matter_health.store import Store
 from matter_health.transports.thread.tree import build_tree
 from matter_health.transports.wifi.transport import WifiTransport
@@ -55,14 +56,54 @@ NAMES = {
 }
 
 BORDER_ROUTERS = [
-    {"subject": s, "name": n, "vendor": v, "model": None}
-    for s, n, v in (
-        ("br:3d4e5f6071829304", "Home Assistant", "Home Assistant"),
-        ("br:2c3d4e5f60718293", "Bedroom Speaker", "Acme"),
-        ("br:1b2c3d4e5f607182", "Kitchen Speaker", "Acme"),
-        ("br:0a1b2c3d4e5f6071", "Living Room TV", "Acme"),
+    {"subject": s, "name": n, "vendor": v, "model": None, "addresses": [ip]}
+    for s, n, v, ip in (
+        ("br:3d4e5f6071829304", "Home Assistant", "Home Assistant", "192.0.2.2"),
+        ("br:2c3d4e5f60718293", "Bedroom Speaker", "Acme", "192.0.2.12"),
+        ("br:1b2c3d4e5f607182", "Kitchen Speaker", "Acme", "192.0.2.11"),
+        ("br:0a1b2c3d4e5f6071", "Living Room TV", "Acme", "192.0.2.10"),
     )
 ]
+
+#: What a network controller would tell: two speakers on Wi-Fi, one of them
+#: far from the access point, the rest on cables.
+NETWORK = Knowledge(
+    [
+        Client(
+            "02:00:00:00:10:02", "192.0.2.2", "Home Assistant", True, "Office Switch", 1
+        ),
+        Client(
+            "02:00:00:00:10:10",
+            "192.0.2.10",
+            "Living Room TV",
+            True,
+            "Office Switch",
+            4,
+        ),
+        Client(
+            "02:00:00:00:10:11",
+            "192.0.2.11",
+            "Kitchen Speaker",
+            False,
+            "Hallway AP",
+            ssid="Home",
+            signal=-58,
+        ),
+        Client(
+            "02:00:00:00:10:12",
+            "192.0.2.12",
+            "Bedroom Speaker",
+            False,
+            "Hallway AP",
+            ssid="Home",
+            signal=-78,
+        ),
+        Client(
+            "02:00:00:00:00:00", "192.0.2.3", "Hallway AP", True, "Office Switch", 8
+        ),
+    ],
+    {"02:00:00:00:00:01": "02:00:00:00:00:00"},
+)
 
 
 def _link(a: str, b: str, cost: int, lqi: int = 3, rssi: int = -60) -> dict[str, Any]:
@@ -276,6 +317,7 @@ async def seed(engine: Engine, clock: Clock) -> None:
         },
     )
     await store.set_state("border_routers", BORDER_ROUTERS)
+    await store.set_state(state_key("unifi"), NETWORK.dump())
     await store.set_state(
         "thread.tree", {"at": clock.at.isoformat(), "nodes": build_tree(TOPOLOGY)}
     )
@@ -312,7 +354,13 @@ async def seed(engine: Engine, clock: Clock) -> None:
     found = await store.findings()
     button = next(f for f in found if f.subjects == ["node:31"] and not f.ended_at)
     await store.set_state("dismissed", {button.key: button.started_at.isoformat()})
-    for source in ("home_assistant", "matter_server", "matter_server_log", "otbr"):
+    for source in (
+        "home_assistant",
+        "matter_server",
+        "matter_server_log",
+        "otbr",
+        "unifi",
+    ):
         await engine.set_status(source, True)
     await engine.set_status("otbr_log", True)
 

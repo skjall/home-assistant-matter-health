@@ -467,6 +467,11 @@ export class MhTopology extends LitElement {
         border-radius: 50%;
         background: var(--mh-muted);
       }
+      summary .via {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--mh-muted);
+      }
       .dot.bridge {
         border-radius: 2px;
         transform: rotate(45deg);
@@ -639,13 +644,44 @@ export class MhTopology extends LitElement {
       : "";
   }
 
+  /** The colour of a way into the home network, where the view shows transports. */
+  private uplinkTint(item: Item): string {
+    const up = item.node?.kind === "gateway" ? item.node.uplink : null;
+    if (!up) return this.tint(item);
+    return this.colorBy === "transport"
+      ? `--c: var(--mh-${up.wired ? "ethernet" : "wifi"})`
+      : "";
+  }
+
+  /** How a gateway is connected to the home network, in words. */
+  private uplinkLine(node: TopologyNode): TemplateResult | typeof nothing {
+    const up = node.uplink;
+    if (!up) return nothing;
+    const parts = [t(up.wired ? "topology.uplink.wired" : "topology.uplink.wireless")];
+    if (up.via) parts.push(t("topology.uplink.via", { via: up.via }));
+    if (up.port !== null) parts.push(t("topology.uplink.port", { port: up.port }));
+    if (typeof up.signal === "number" && up.quality) {
+      parts.push(`${up.signal} dBm – ${t(`topology.quality.${up.quality}`)}`);
+    }
+    return html`<p class=${up.quality === "weak" ? "meh" : ""}>${parts.join(" · ")}</p>`;
+  }
+
   /** How a device's link to its parent is drawn in the chosen view. */
   private linkClass(target: Item, fromHome: boolean, status: Status): string {
     const dash =
       status === "offline" ? "dash-offline" : status === "resting" ? "dash-resting" : "";
     // A gateway's way into the home network is not its transport's; a wired
-    // device's is.
-    if (fromHome && target.node?.kind === "gateway") return `lan ${dash}`;
+    // device's is. Where network equipment tells how it is connected, that
+    // is shown like any link.
+    if (fromHome && target.node?.kind === "gateway") {
+      const up = target.node.uplink;
+      if (!up) return `lan ${dash}`;
+      if (this.colorBy === "transport") return `by-transport ${dash}`;
+      if (this.colorBy === "signal") {
+        return up.quality ? `q-${up.quality} ${dash}` : `lan ${dash}`;
+      }
+      return up.quality === "weak" ? `weak ${dash}` : `lan ${dash}`;
+    }
     if (this.colorBy === "transport") {
       return `${target.node?.bridged ? "bridged" : "by-transport"} ${dash}`;
     }
@@ -692,6 +728,7 @@ export class MhTopology extends LitElement {
       .map(([key, value]) => (node ? word(node.transport, `detail.${key}`, { [key]: value }) : null))
       .filter((part): part is string => !!part);
     if (detail.length) lines.push(html`<p>${detail.join(" · ")}</p>`);
+    if (node?.uplink) lines.push(html`${this.uplinkLine(node)}`);
     const parent = point.parent?.data;
     const parentName = parent ? this.name(parent) : null;
     if (node && parentName && !parent?.special) {
@@ -785,7 +822,9 @@ export class MhTopology extends LitElement {
         target.special === "no_way" || link.source.data.special === "no_way"
           ? "no-way"
           : this.linkClass(target, link.source.data.special === "home", status);
-      return svg`<path class="link ${kind} ${dim(target.id)}" style=${this.tint(target)}
+      const style =
+        link.source.data.special === "home" ? this.uplinkTint(target) : this.tint(target);
+      return svg`<path class="link ${kind} ${dim(target.id)}" style=${style}
         d=${this.path(pos(link.source), pos(link.target))}></path>`;
     });
 
@@ -901,6 +940,15 @@ export class MhTopology extends LitElement {
                   style=${this.tint(bridge)}
                 ></span>
                 <span>${this.name(bridge)}</span>
+                ${bridge.node?.kind === "gateway" && bridge.node.uplink
+                  ? html`<span class="via"
+                      >${t(
+                        bridge.node.uplink.wired
+                          ? "topology.uplink.short_wired"
+                          : "topology.uplink.short_wireless",
+                      )}</span
+                    >`
+                  : nothing}
                 ${size(bridge)
                   ? html`<span class="count">${t("topology.devices", { count: size(bridge) })}</span>`
                   : nothing}
@@ -947,11 +995,17 @@ export class MhTopology extends LitElement {
       html`<svg width="26" height="10" viewBox="0 -5 26 10">
         ${svg`<path class="link ${cls}" style=${style} d="M0,0H26"></path>`}
       </svg>`;
-    const bridged = (this.topology?.nodes ?? []).some((n) => n.bridged);
+    const nodes = this.topology?.nodes ?? [];
+    const bridged = nodes.some((n) => n.bridged);
+    // Ways into the home network may use a transport no Matter device does.
+    const uplinks = nodes
+      .filter((n) => n.kind === "gateway" && n.uplink)
+      .map((n) => (n.uplink?.wired ? "ethernet" : "wifi"));
+    const shown = [...order, ...uplinks.filter((u, i) => !order.includes(u) && uplinks.indexOf(u) === i)];
     const entries: [TemplateResult, string][] =
       this.colorBy === "transport"
         ? [
-            ...order.map((transport): [TemplateResult, string] => [
+            ...shown.map((transport): [TemplateResult, string] => [
               line("by-transport", `--c: var(--mh-${transport}, var(--mh-muted))`),
               t(`transport.${transport}.name`),
             ]),
@@ -972,7 +1026,11 @@ export class MhTopology extends LitElement {
               [line("weak"), t("topology.legend.weak")],
               [line("offline"), t("topology.legend.offline")],
             ];
-    if (lines) entries.unshift([line("lan"), t("topology.legend.home")]);
+    const home =
+      this.colorBy === "transport" && uplinks.length
+        ? t("topology.legend.home_unknown")
+        : t("topology.legend.home");
+    if (lines) entries.unshift([line("lan"), home]);
     return html`<div class="legend lines">
       ${entries.map(([symbol, label]) => html`<span>${symbol}${label}</span>`)}
     </div>`;

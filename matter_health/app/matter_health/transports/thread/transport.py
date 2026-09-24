@@ -237,6 +237,10 @@ class ThreadTransport(Transport):
                 "model": raw.get("modelName"),
                 "network": raw.get("networkName"),
                 "pan": str(raw.get("extendedPanIdHex") or "").lower() or None,
+                # Where it is on the home network, to find it there.
+                "addresses": [
+                    a for a in raw.get("addresses") or [] if isinstance(a, str)
+                ],
             }
             self.ctx.names.set(f"br:{ext}", current[name]["name"])
         home = await self.home_network(current.values())
@@ -281,7 +285,11 @@ class ThreadTransport(Transport):
         return counted.most_common(1)[0][0] if counted else None
 
     async def _border_router_event(self, kind: str, info: dict[str, Any]) -> None:
-        details = {key: value for key, value in info.items() if key != "subject"}
+        details = {
+            key: value
+            for key, value in info.items()
+            if key not in ("subject", "addresses")
+        }
         await self.ctx.emit(kind, "matter_server", info["subject"], **details)
 
     async def picture(self, away: set[str]) -> list[dict[str, Any]]:
@@ -289,10 +297,14 @@ class ThreadTransport(Transport):
         tree = await self.ctx.store.get_state("thread.tree") or {}
         parents: dict[str, str] = await self.ctx.store.get_state("thread.parents") or {}
         mine: dict[str, str] = await self.ctx.store.get_state("matter.transports") or {}
+        routers = await self.ctx.store.get_state("border_routers") or []
+        addresses = {r["subject"]: r.get("addresses") or [] for r in routers}
         entries = []
         for raw in tree.get("nodes", []):
             entry = dict(raw)
             entry["kind"] = KIND.get(str(raw.get("kind")), "unknown")
+            if entry["kind"] == "gateway":
+                entry["addresses"] = addresses.get(str(raw.get("subject")), [])
             link = dict(raw.get("link") or {})
             link["quality"] = link_quality(link)
             entry["link"] = link

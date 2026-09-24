@@ -132,6 +132,8 @@ class WifiTransport(Transport):
                     "subject": f"ap:{bssid}",
                     "kind": "gateway",
                     "parent": ROOT,
+                    # The access point is known on the home network by it.
+                    "mac": bssid,
                     "link": {},
                     "alternatives": 0,
                     "vendor": None,

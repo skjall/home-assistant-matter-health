@@ -304,7 +304,8 @@
     "home_assistant": "Home Assistant",
     "down": "no accesible",
     "waiting": "conectando…",
-    "system": "Supervisor"
+    "system": "Supervisor",
+    "unifi": "Controlador UniFi"
   },
   "thread_role": {
     "leader": "coordinador",
@@ -361,7 +362,8 @@
       },
       "home": "Conexión a la red doméstica",
       "bridge": "Puente Matter",
-      "bridged": "Tras un puente Matter"
+      "bridged": "Tras un puente Matter",
+      "home_unknown": "Conexión desconocida"
     },
     "resting": "fuera, como siempre",
     "color": {
@@ -371,7 +373,15 @@
       "signal": "Señal"
     },
     "bridge": "Puente Matter para {count} dispositivo | Puente Matter para {count} dispositivos",
-    "bridged": "Tras un puente Matter, por su propia radio"
+    "bridged": "Tras un puente Matter, por su propia radio",
+    "uplink": {
+      "wired": "En la red doméstica por cable",
+      "wireless": "En la red doméstica por Wi-Fi",
+      "via": "a través de {via}",
+      "port": "puerto {port}",
+      "short_wired": "Cable",
+      "short_wireless": "Wi-Fi"
+    }
   },
   "finding.open_device": "Abrir en Home Assistant",
   "finding.open_named": "Abrir {device}",

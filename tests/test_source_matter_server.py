@@ -269,7 +269,7 @@ async def test_border_routers_come_and_go(
     ]
     assert found[4:] == [(kinds.BORDER_ROUTER_APPEARED, "br:0a1b2c3d4e5f6071", tv)]
     assert await store.get_state("border_routers") == [
-        {"subject": "br:0a1b2c3d4e5f6071", **tv}
+        {"subject": "br:0a1b2c3d4e5f6071", **tv, "addresses": []}
     ]
     assert ctx.names.get("br:1122334455667788") == "Hub Mini"
     assert await store.get_state("matter.nodes") == {"total": 0, "unavailable": []}

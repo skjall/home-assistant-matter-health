@@ -106,6 +106,30 @@ such a device by a registry identifier ending in its endpoint instead of
 `MatterNodeDevice`. In the picture it hangs on its bridge, marked
 `bridged`; its link is not a Matter transport's.
 
+## Enrichers
+
+Matter and Thread say nothing about the home network underneath them:
+whether a border router is on a cable or on Wi-Fi, or what the access point
+behind a BSSID is called. Network equipment knows. An enricher reads one
+kind of it and answers in words every enricher shares: the clients it sees,
+each with how it is connected (`wired`, `via`, `port`, `ssid`, `signal`),
+and which access point sends which BSSID.
+
+```
+enrichers/
+  __init__.py  Enricher base, Client and Knowledge, merging
+  unifi.py     a UniFi Network controller
+```
+
+An enricher is a source subclassing `Enricher`: it runs only when its own
+options - a mapping under its name in the add-on options - are set, polls
+read-only and stores what it learned under `enrich.<name>`. The page asks
+the merged knowledge for each node hanging on the home network, by MAC or
+by IP address; border routers bring the addresses they announce, access
+points their BSSID. Without an enricher the uplink is simply unknown and
+drawn neutral. Another enricher - a router of another make - is a module
+next to `unifi.py` with the same answers.
+
 ## Rules
 
 A rule (`matter_health/rules/`) subclasses `Rule`, registers under a name and
@@ -229,3 +253,7 @@ page needs no change.
 package, if it is about one transport - register it and import it in the
 package's `__init__.py`. If it needs configuration, add an option to
 `config.yaml`, the `Options` dataclass and the option translations.
+
+**A new enricher.** Add a module to `enrichers/` with an `Enricher` subclass,
+import it in `enrichers/__init__.py`, and give it a mapping of options under
+its name in `config.yaml` (with `{}` as default) and the option translations.

@@ -59,5 +59,6 @@ def test_plugins_register_themselves_on_import() -> None:
         "otbr",
         "otbr_log",
         "system",
+        "unifi",
     ]
     assert PARSERS.names() == ["matter_js", "openthread"]

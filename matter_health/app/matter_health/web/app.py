@@ -20,7 +20,7 @@ from typing import Any
 
 from aiohttp import web
 
-from .. import bridges, kinds
+from .. import bridges, enrichers, kinds
 from ..engine import Engine, event_payload
 from ..model import Finding
 from ..rules.habits import HABITS
@@ -219,9 +219,15 @@ async def topology(request: web.Request) -> web.Response:
             entry["parent"] = parent if parent in (ROOT, None) else f"{name}:{parent}"
             entries.append(entry)
     entries += await bridges.picture(store, entries)
+    network = await enrichers.known(engine.ctx)
     for entry in entries:
         subject = entry.get("subject")
         entry["name"] = names.get(subject)
+        if entry.get("parent") == ROOT:
+            # How it reaches the home network, where the equipment tells.
+            entry["uplink"] = network.uplink(entry.get("addresses"), entry.get("mac"))
+        if entry["name"] is None and entry.get("mac"):
+            entry["name"] = network.access_point_name(str(entry["mac"]))
         entry["device_id"] = names.device(subject)
         entry["available"] = subject not in away
         # Away, but as expected or as the user knows: no alarm in the picture.

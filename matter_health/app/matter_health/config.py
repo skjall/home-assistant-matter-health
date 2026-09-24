@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +32,9 @@ class Options:
     supervisor_token: str | None = None
     data_dir: Path = DATA_DIR
     port: int = 8099
+    #: Every option as the Supervisor wrote it, for modules with options of
+    #: their own, such as an enricher's controller.
+    extra: dict[str, Any] = field(default_factory=dict)
 
     @property
     def core_websocket_url(self) -> str:
@@ -57,4 +60,5 @@ def load_options(
         supervisor_token=environ.get("SUPERVISOR_TOKEN"),
         data_dir=Path(environ.get("MATTER_HEALTH_DATA", str(DATA_DIR))),
         port=int(environ.get("MATTER_HEALTH_PORT", "8099")),
+        extra=raw,
     )
