@@ -75,7 +75,10 @@
       "title": "{device} can't be reached"
     },
     "related_title": "Also part of this",
-    "related_count": "{count} consequence | {count} consequences"
+    "related_count": "{count} consequence | {count} consequences",
+    "dismiss": "Mark as dealt with",
+    "undismiss": "Show again",
+    "dismissed": "dealt with"
   },
   "link": {
     "power_off": "{switch} was switched off {origin}.",
@@ -184,8 +187,8 @@
     "commissioning.contact": "Someone started adding a device",
     "commissioning.completed": "A device was added",
     "commissioning.failed": "Adding a device failed",
-    "source.status.ok": "{source}: connected again",
-    "source.status.down": "{source}: connection lost"
+    "source.status.ok": "{source} – connected again",
+    "source.status.down": "{source} – connection lost"
   },
   "network": {
     "title": "Your network right now",
@@ -198,9 +201,9 @@
   },
   "source": {
     "matter_server": "Matter Server",
-    "matter_server_log": "Matter Server log",
+    "matter_server_log": "Matter Server: log",
     "otbr": "OpenThread Border Router",
-    "otbr_log": "OpenThread Border Router log",
+    "otbr_log": "OpenThread Border Router: log",
     "home_assistant": "Home Assistant",
     "ok": "connected",
     "down": "not reachable",

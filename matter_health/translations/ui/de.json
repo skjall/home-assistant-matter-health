@@ -75,7 +75,10 @@
       "title": "{device} ist nicht erreichbar"
     },
     "related_title": "Dazu gehört auch",
-    "related_count": "{count} Folge | {count} Folgen"
+    "related_count": "{count} Folge | {count} Folgen",
+    "dismiss": "Als erledigt markieren",
+    "undismiss": "Wieder anzeigen",
+    "dismissed": "erledigt"
   },
   "link": {
     "power_off": "{switch} wurde ausgeschaltet {origin}.",
@@ -184,8 +187,8 @@
     "commissioning.contact": "Jemand hat begonnen, ein Gerät hinzuzufügen",
     "commissioning.completed": "Ein Gerät wurde hinzugefügt",
     "commissioning.failed": "Ein Gerät hinzuzufügen ist fehlgeschlagen",
-    "source.status.ok": "{source}: wieder verbunden",
-    "source.status.down": "{source}: Verbindung verloren"
+    "source.status.ok": "{source} – wieder verbunden",
+    "source.status.down": "{source} – Verbindung verloren"
   },
   "network": {
     "title": "Dein Netz gerade jetzt",
@@ -198,9 +201,9 @@
   },
   "source": {
     "matter_server": "Matter-Server",
-    "matter_server_log": "Protokoll des Matter-Servers",
+    "matter_server_log": "Matter-Server: Protokoll",
     "otbr": "OpenThread Border Router",
-    "otbr_log": "Protokoll des OpenThread Border Routers",
+    "otbr_log": "OpenThread Border Router: Protokoll",
     "home_assistant": "Home Assistant",
     "ok": "verbunden",
     "down": "nicht erreichbar",

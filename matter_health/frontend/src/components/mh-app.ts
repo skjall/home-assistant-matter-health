@@ -260,6 +260,7 @@ export class MhApp extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.addEventListener("mh-dismiss", (e) => void this.dismiss(e as CustomEvent));
     void this.load();
     this.stop = follow({
       finding: (finding) => this.upsert(finding),
@@ -298,8 +299,21 @@ export class MhApp extends LitElement {
     }, 1500);
   }
 
+  private async dismiss(event: CustomEvent<{ key: string; dismissed: boolean }>) {
+    const { key, dismissed } = event.detail;
+    await api.dismiss(key, dismissed);
+    this.findings = this.findings.map((f) => (f.key === key ? { ...f, dismissed } : f));
+    this.overview = await api.overview();
+  }
+
   private upsert(finding: Finding): void {
-    this.findings = [finding, ...this.findings.filter((f) => f.key !== finding.key)];
+    const before = this.findings.find((f) => f.key === finding.key);
+    // Live updates do not carry the dismissal; it holds for the same occurrence.
+    const dismissed = before?.dismissed && before.started_at === finding.started_at;
+    this.findings = [
+      { ...before, ...finding, dismissed },
+      ...this.findings.filter((f) => f.key !== finding.key),
+    ];
     this.scheduleOverview();
     // Which story a finding belongs to is decided when findings are read.
     window.clearTimeout(this.regroup);
@@ -309,8 +323,9 @@ export class MhApp extends LitElement {
   }
 
   private verdict(): TemplateResult {
-    const problems = this.findings.filter((f) => !f.ended_at && f.severity === "problem");
-    const warnings = this.findings.filter((f) => !f.ended_at && f.severity === "warning");
+    const current = this.findings.filter((f) => !f.ended_at && !f.dismissed);
+    const problems = current.filter((f) => f.severity === "problem");
+    const warnings = current.filter((f) => f.severity === "warning");
     const sourcesDown = Object.values(this.overview?.sources ?? {}).some(
       (s) => s.ok === false,
     );
@@ -394,9 +409,9 @@ export class MhApp extends LitElement {
     const sorted = [...shown].sort(
       (a, b) => rank(a) - rank(b) || b.started_at.localeCompare(a.started_at),
     );
-    const open = sorted.filter((f) => !f.ended_at);
+    const open = sorted.filter((f) => !f.ended_at && !f.dismissed);
     const earlier = [...shown]
-      .filter((f) => f.ended_at)
+      .filter((f) => f.ended_at || f.dismissed)
       .sort((a, b) => b.started_at.localeCompare(a.started_at));
     if (!open.length && !earlier.length) {
       return html`<div class="card empty">

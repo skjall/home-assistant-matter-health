@@ -75,7 +75,10 @@
       "title": "{device} est injoignable"
     },
     "related_title": "Fait aussi partie de l'incident",
-    "related_count": "{count} conséquence | {count} conséquences"
+    "related_count": "{count} conséquence | {count} conséquences",
+    "dismiss": "Marquer comme réglé",
+    "undismiss": "Afficher à nouveau",
+    "dismissed": "réglé"
   },
   "link": {
     "power_off": "{switch} a été éteint {origin}.",
@@ -184,8 +187,8 @@
     "commissioning.contact": "Quelqu'un a commencé à ajouter un appareil",
     "commissioning.completed": "Un appareil a été ajouté",
     "commissioning.failed": "L'ajout d'un appareil a échoué",
-    "source.status.ok": "{source} : de nouveau connecté",
-    "source.status.down": "{source} : connexion perdue"
+    "source.status.ok": "{source} – de nouveau connecté",
+    "source.status.down": "{source} – connexion perdue"
   },
   "network": {
     "title": "Ton réseau en ce moment",
@@ -198,9 +201,9 @@
   },
   "source": {
     "matter_server": "Serveur Matter",
-    "matter_server_log": "Journal du serveur Matter",
+    "matter_server_log": "Serveur Matter : journal",
     "otbr": "OpenThread Border Router",
-    "otbr_log": "Journal de l'OpenThread Border Router",
+    "otbr_log": "OpenThread Border Router : journal",
     "home_assistant": "Home Assistant",
     "ok": "connecté",
     "down": "injoignable",

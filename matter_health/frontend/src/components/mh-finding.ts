@@ -266,6 +266,18 @@ export class MhFinding extends LitElement {
       dd {
         margin: 0;
       }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-left: 50px;
+      }
+      .actions .details-toggle {
+        margin: 4px 0 0;
+      }
+      .dismiss {
+        color: var(--mh-text);
+      }
       .consequences {
         color: var(--mh-muted);
         background: var(--mh-surface-2);
@@ -301,7 +313,8 @@ export class MhFinding extends LitElement {
         height: 20px;
       }
       @media (max-width: 600px) {
-        .related {
+        .related,
+        .actions {
           margin-left: 0;
         }
         header {
@@ -327,6 +340,16 @@ export class MhFinding extends LitElement {
 
   override updated(): void {
     this.setAttribute("severity", this.severity());
+  }
+
+  private dismiss(dismissed: boolean): void {
+    this.dispatchEvent(
+      new CustomEvent("mh-dismiss", {
+        detail: { key: this.finding.key, dismissed },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   private toggle(): void {
@@ -420,7 +443,9 @@ export class MhFinding extends LitElement {
               ? span && span >= 30
                 ? html`<span>${t("finding.lasted", { duration: duration(span) })}</span>`
                 : nothing
-              : html`<span class="pill ongoing">${t("finding.ongoing")}</span>`}
+              : finding.dismissed
+                ? html`<span class="pill consequences">${t("finding.dismissed")}</span>`
+                : html`<span class="pill ongoing">${t("finding.ongoing")}</span>`}
             ${this.related.length
               ? html`<span class="pill consequences"
                   >${t("finding.related_count", { count: this.related.length })}</span
@@ -444,9 +469,19 @@ export class MhFinding extends LitElement {
                   )}
                 </div>`
               : nothing}
+            <div class="actions">
+            ${!finding.ended_at && !this.nested
+              ? html`<button
+                  class="details-toggle dismiss"
+                  @click=${() => this.dismiss(!finding.dismissed)}
+                >
+                  ${finding.dismissed ? t("finding.undismiss") : t("finding.dismiss")}
+                </button>`
+              : nothing}
             <button class="details-toggle" @click=${() => (this.details = !this.details)}>
               ${this.details ? t("finding.hide_details") : t("finding.details")}
             </button>
+            </div>
             ${this.details ? this.technical() : nothing}
           </div>`
         : nothing}

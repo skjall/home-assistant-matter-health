@@ -301,3 +301,58 @@ async def test_stream_sends_findings_and_timeline_events(
             break
         await asyncio.sleep(0.02)
     assert engine._listeners == []
+
+
+async def test_dismissing_a_finding(
+    aiohttp_client: AiohttpClient,
+    store: Store,
+    engine: Engine,
+    translations: Path,
+) -> None:
+    await store.put_finding(finding("a", Severity.PROBLEM, 0, ended=False), T0)
+    await store.put_finding(finding("b", Severity.WARNING, 0, ended=False), T0)
+    await store.set_state("dismissed", {"gone": "whenever"})
+    client = await aiohttp_client(build(engine, translations))
+
+    async def state() -> tuple[dict[str, int], dict[str, bool]]:
+        overview = await (await client.get("/api/overview")).json()
+        found = await (await client.get("/api/findings")).json()
+        return overview["open"], {f["key"]: f["dismissed"] for f in found}
+
+    response = await client.post("/api/dismiss", json={"key": "a"})
+    assert await response.json() == {"key": "a", "dismissed": True}
+    assert await state() == (
+        {"problem": 0, "warning": 1, "info": 0},
+        {"a": True, "b": False},
+    )
+    # Entries of findings that no longer exist are dropped on the way.
+    assert await store.get_state("dismissed") == {"a": at(0).isoformat()}
+
+    # The same situation coming back later is a new occurrence.
+    await store.put_finding(finding("a", Severity.PROBLEM, 30, ended=False), T0)
+    assert (await state())[1]["a"] is False
+
+    await client.post("/api/dismiss", json={"key": "a"})
+    await client.post("/api/dismiss", json={"key": "a", "dismissed": False})
+    assert (await state())[1]["a"] is False
+
+
+@pytest.mark.parametrize(
+    ("body", "status"),
+    [("not json", 400), ({"dismissed": True}, 400), (["a"], 400), ({"key": "x"}, 404)],
+)
+async def test_dismissing_needs_a_known_key(
+    aiohttp_client: AiohttpClient,
+    engine: Engine,
+    translations: Path,
+    body: object,
+    status: int,
+) -> None:
+    client = await aiohttp_client(build(engine, translations))
+
+    if isinstance(body, str):
+        response = await client.post("/api/dismiss", data=body)
+    else:
+        response = await client.post("/api/dismiss", json=body)
+
+    assert response.status == status

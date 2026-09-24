@@ -27,6 +27,8 @@ export interface Finding {
   chain: Link[];
   /** Key of the finding whose story this one is part of. */
   part_of?: string | null;
+  /** The user marked this occurrence as dealt with. */
+  dismissed?: boolean;
 }
 
 export interface TimelineEvent {
@@ -68,6 +70,16 @@ export interface Overview {
   now: string;
 }
 
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`${path}: ${response.status}`);
+  return (await response.json()) as T;
+}
+
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(path, { headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error(`${path}: ${response.status}`);
@@ -78,6 +90,8 @@ export const api = {
   overview: () => get<Overview>("api/overview"),
   findings: (days = 7) => get<Finding[]>(`api/findings?days=${days}`),
   events: (limit = 300) => get<TimelineEvent[]>(`api/events?limit=${limit}`),
+  dismiss: (key: string, dismissed: boolean) =>
+    post<{ key: string; dismissed: boolean }>("api/dismiss", { key, dismissed }),
 };
 
 export type StreamHandlers = {

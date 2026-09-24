@@ -21,6 +21,7 @@ from aiohttp import web
 
 from .. import kinds
 from ..engine import Engine, event_payload
+from ..model import Finding
 from ..stories import stories
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,6 +55,11 @@ TIMELINE_KINDS: tuple[str, ...] = (
 ENGINE: web.AppKey[Engine] = web.AppKey("engine", Engine)
 TRUST_ALL: web.AppKey[bool] = web.AppKey("trust_all", bool)
 TRANSLATION_DIR: web.AppKey[Path] = web.AppKey("translations", Path)
+
+#: Findings the user marked as dealt with, by key, with the start of the
+#: occurrence they dismissed. A situation that ends and comes back under the
+#: same key starts anew and is shown again.
+DISMISSED = "dismissed"
 
 #: Proxies drop a connection that stays silent; a comment line keeps it open.
 KEEPALIVE_S = 25.0
@@ -95,12 +101,20 @@ async def index(request: web.Request) -> web.StreamResponse:
     return web.FileResponse(STATIC / "index.html")
 
 
+def is_dismissed(finding: Finding, dismissed: dict[str, str]) -> bool:
+    """Whether the user dismissed this very occurrence of the finding."""
+    return dismissed.get(finding.key) == finding.started_at.isoformat()
+
+
 async def overview(request: web.Request) -> web.Response:
     """Everything the header of the page needs in one answer."""
     engine = request.app[ENGINE]
     store = engine.ctx.store
     findings = await store.findings()
-    open_findings = [f for f in findings if f.ended_at is None]
+    dismissed = await store.get_state(DISMISSED) or {}
+    open_findings = [
+        f for f in findings if f.ended_at is None and not is_dismissed(f, dismissed)
+    ]
     nodes = await store.get_state("matter.nodes") or {}
     unavailable = [
         {"subject": s, "name": engine.ctx.names.get(s)}
@@ -128,12 +142,46 @@ async def findings(request: web.Request) -> web.Response:
     since = engine.ctx.now() - timedelta(days=days)
     found = await engine.ctx.store.findings(since)
     belongs = stories(found, (type(rule) for rule in engine.rules), engine.ctx.now())
+    dismissed = await engine.ctx.store.get_state(DISMISSED) or {}
     return web.json_response(
         [
-            with_names(engine, {**f.as_dict(), "part_of": belongs.get(f.key)})
+            with_names(
+                engine,
+                {
+                    **f.as_dict(),
+                    "part_of": belongs.get(f.key),
+                    "dismissed": is_dismissed(f, dismissed),
+                },
+            )
             for f in found
         ]
     )
+
+
+async def dismiss(request: web.Request) -> web.Response:
+    """Mark a finding as dealt with, or show it again."""
+    engine = request.app[ENGINE]
+    store = engine.ctx.store
+    try:
+        body = await request.json()
+        key, wanted = str(body["key"]), bool(body.get("dismissed", True))
+    except ValueError, KeyError, TypeError:
+        raise web.HTTPBadRequest(text="expected {key, dismissed}") from None
+    finding = await store.finding(key)
+    if finding is None:
+        raise web.HTTPNotFound(text="no such finding")
+    current = await store.findings()
+    known = {f.key for f in current}
+    # Entries for findings that have since been removed are dropped here.
+    dismissed = {
+        k: v for k, v in (await store.get_state(DISMISSED) or {}).items() if k in known
+    }
+    if wanted:
+        dismissed[key] = finding.started_at.isoformat()
+    else:
+        dismissed.pop(key, None)
+    await store.set_state(DISMISSED, dismissed)
+    return web.json_response({"key": key, "dismissed": wanted})
 
 
 async def events(request: web.Request) -> web.Response:
@@ -227,6 +275,7 @@ def create_app(
     app.router.add_get("/", index)
     app.router.add_get("/api/overview", overview)
     app.router.add_get("/api/findings", findings)
+    app.router.add_post("/api/dismiss", dismiss)
     app.router.add_get("/api/events", events)
     app.router.add_get("/api/languages", languages)
     app.router.add_get("/api/i18n/{language}", translation)

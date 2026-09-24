@@ -75,7 +75,10 @@
       "title": "No se puede contactar con {device}"
     },
     "related_title": "También forma parte",
-    "related_count": "{count} consecuencia | {count} consecuencias"
+    "related_count": "{count} consecuencia | {count} consecuencias",
+    "dismiss": "Marcar como resuelto",
+    "undismiss": "Mostrar de nuevo",
+    "dismissed": "resuelto"
   },
   "link": {
     "power_off": "{switch} fue apagado {origin}.",
@@ -184,8 +187,8 @@
     "commissioning.contact": "Alguien empezó a añadir un dispositivo",
     "commissioning.completed": "Se añadió un dispositivo",
     "commissioning.failed": "No se pudo añadir un dispositivo",
-    "source.status.ok": "{source}: conectado de nuevo",
-    "source.status.down": "{source}: conexión perdida"
+    "source.status.ok": "{source} – conectado de nuevo",
+    "source.status.down": "{source} – conexión perdida"
   },
   "network": {
     "title": "Tu red ahora mismo",
@@ -198,9 +201,9 @@
   },
   "source": {
     "matter_server": "Servidor Matter",
-    "matter_server_log": "Registro del servidor Matter",
+    "matter_server_log": "Servidor Matter: registro",
     "otbr": "OpenThread Border Router",
-    "otbr_log": "Registro del OpenThread Border Router",
+    "otbr_log": "OpenThread Border Router: registro",
     "home_assistant": "Home Assistant",
     "ok": "conectado",
     "down": "no accesible",
