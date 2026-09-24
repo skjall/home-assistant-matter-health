@@ -206,9 +206,15 @@ export class MhTopology extends LitElement {
         stroke-dasharray: 2 2;
         stroke-width: 1.5;
       }
+      /* The state colours the symbol itself, so every device keeps the size of
+         its kind whatever happens to it. */
       .node .ring {
         fill: none;
         stroke-width: 2;
+      }
+      .ring.offline,
+      .ring.resting {
+        fill: var(--mh-surface);
       }
       .ring.weak,
       .ring.warning {
@@ -386,22 +392,34 @@ export class MhTopology extends LitElement {
         background: var(--mh-primary);
       }
       .dot.router {
-        width: 11px;
-        height: 11px;
+        width: 15px;
+        height: 15px;
         background: var(--mh-surface);
         border: 2px solid var(--mh-primary);
       }
       .dot.unknown {
+        width: 12px;
+        height: 12px;
         background: none;
         border: 1.5px dashed var(--mh-muted);
       }
+      .dot {
+        box-sizing: border-box;
+      }
       .dot.offline,
       .dot.problem {
-        box-shadow: 0 0 0 2px var(--mh-surface), 0 0 0 4px var(--mh-problem);
+        border: 2px solid var(--mh-problem);
+      }
+      .dot.offline {
+        background: var(--mh-surface);
       }
       .dot.weak,
       .dot.warning {
-        box-shadow: 0 0 0 2px var(--mh-surface), 0 0 0 4px var(--mh-warning);
+        border: 2px solid var(--mh-warning);
+      }
+      .dot.resting {
+        background: var(--mh-surface);
+        border: 1.5px dashed var(--mh-muted);
       }
     `,
   ];
@@ -617,7 +635,7 @@ export class MhTopology extends LitElement {
           @focus=${() => (this.pointed = item.id)}
           @blur=${() => (this.pointed = null)}>
         ${kind === "no-way" ? nothing : svg`<circle r=${radius}></circle>`}
-        ${status !== "ok" ? svg`<circle class="ring ${status}" r=${radius + 4}></circle>` : nothing}
+        ${status !== "ok" ? svg`<circle class="ring ${status}" r=${radius}></circle>` : nothing}
         ${label !== name ? svg`<title>${name}</title>` : nothing}
         ${inner
           ? svg`<text x="10" y="-9">${label}<tspan class="extra">${extra}</tspan></text>`
