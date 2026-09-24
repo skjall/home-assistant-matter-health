@@ -84,7 +84,7 @@ def router(
     }
 
 
-TV = router("0A1B2C3D4E5F6071", hostname="Living-Room-TV.local.", model="TV Box")
+TV = router("0A1B2C3D4E5F6071", hostname="Living-Room-TV-Wall.local.", model="TV Box")
 HUB = router("1122334455667788", model="Hub Mini")
 HUB_RESTARTED = router("8877665544332211", model="Hub Mini")
 
@@ -188,6 +188,8 @@ async def test_border_routers_come_and_go(
     source = source_for(
         MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
     )
+    # The name the user gave, of which the host name is a plainer copy.
+    ctx.names.know_device("Living Room TV (Wall)")
 
     with pytest.raises(ConnectionError):
         await source.run()
@@ -197,7 +199,7 @@ async def test_border_routers_come_and_go(
         for e in await store.events()
         if e.kind != kinds.THREAD_TOPOLOGY
     ]
-    tv = {"name": "Living Room TV", "vendor": "Acme", "model": "TV Box"}
+    tv = {"name": "Living Room TV (Wall)", "vendor": "Acme", "model": "TV Box"}
     hub = {"name": "Hub Mini", "vendor": "Acme", "model": "Hub Mini"}
     assert found[:2] == [
         (kinds.BORDER_ROUTER_GONE, "br:1122334455667788", hub),

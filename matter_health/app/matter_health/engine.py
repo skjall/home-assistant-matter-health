@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import unicodedata
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -53,6 +54,7 @@ class NameBook:
     def __init__(self) -> None:
         """Start empty."""
         self._names: dict[str, str] = {}
+        self._devices: dict[str, str] = {}
 
     def set(self, subject: str, name: str | None) -> None:
         """Remember ``name`` for ``subject``; empty names are ignored."""
@@ -65,9 +67,30 @@ class NameBook:
             return default
         return self._names.get(subject, default)
 
+    def know_device(self, name: str | None) -> None:
+        """Remember a device name so a mangled copy of it can be recognised."""
+        if name:
+            self._devices.setdefault(_fold(name), name)
+
+    def match(self, text: str) -> str | None:
+        """Return the known device name ``text`` is a mangled copy of, if any.
+
+        Host names are derived from device names with accents, spaces and
+        punctuation dropped: "Kitchen Speaker (Left)" announces itself as
+        "Kitchen-Speaker-Left". Comparing only letters and digits, without
+        accents, finds the name the user actually gave.
+        """
+        return self._devices.get(_fold(text)) if _fold(text) else None
+
     def snapshot(self) -> dict[str, str]:
         """Return a copy of every known name."""
         return dict(self._names)
+
+
+def _fold(text: str) -> str:
+    """Reduce ``text`` to lower-case letters and digits without accents."""
+    plain = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in plain.casefold() if c.isalnum() and c.isascii())
 
 
 Listener = Callable[[str, dict[str, Any]], Awaitable[None]]

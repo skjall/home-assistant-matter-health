@@ -262,11 +262,12 @@ class MatterServerSource(Source):
             name = border_router_name(raw)
             current[name] = {
                 "subject": f"br:{ext}",
-                "name": name,
+                # Keyed by the announced name, shown by the one the user gave.
+                "name": self.ctx.names.match(name) or name,
                 "vendor": raw.get("vendorName"),
                 "model": raw.get("modelName"),
             }
-            self.ctx.names.set(f"br:{ext}", name)
+            self.ctx.names.set(f"br:{ext}", current[name]["name"])
         # Only the very first answer is a baseline. Deciding by an empty list
         # instead would swallow the return of the last router that went away.
         first_round, self._first_round = self._first_round, False

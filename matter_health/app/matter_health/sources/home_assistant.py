@@ -231,6 +231,7 @@ class HomeAssistantSource(Source):
         """Remember what the user calls each Matter device."""
         for device in devices:
             name = device.get("name_by_user") or device.get("name")
+            self.ctx.names.know_device(name)
             for domain, identifier in device.get("identifiers", []):
                 match = MATTER_IDENTIFIER.match(str(identifier))
                 if domain == "matter" and match:

@@ -105,6 +105,18 @@ def test_name_book() -> None:
     assert names.snapshot() == {"node:1": "Living Room Plug"}
 
 
+def test_name_book_recognises_names_turned_into_host_names() -> None:
+    names = NameBook()
+    names.know_device("Küche Speaker (Links)")
+    names.know_device("Küche Speaker (Links)!")  # the first name stays
+    names.know_device(None)
+
+    assert names.match("Kuche Speaker Links") == "Küche Speaker (Links)"
+    assert names.match("kuche-speaker-links") == "Küche Speaker (Links)"
+    assert names.match("Kitchen Speaker") is None
+    assert names.match("---") is None
+
+
 async def test_emit_needs_an_engine(ctx: Context) -> None:
     with pytest.raises(RuntimeError, match="not attached"):
         await ctx.emit("test.ping", "test")
