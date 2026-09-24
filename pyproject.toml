@@ -1,0 +1,76 @@
+[project]
+name = "matter-health"
+version = "0.0.0"
+description = "Explains why Matter and Thread devices misbehave, in words anyone can follow."
+requires-python = ">=3.14"
+license = "MIT"
+dependencies = [
+  "aiohttp==3.14.3",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-aiohttp==1.1.1",
+  "pytest-cov==7.1.0",
+  "mypy==2.3.1",
+  "ruff==0.16.8",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["matter_health/app"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",    # pycodestyle
+  "F",         # pyflakes
+  "I",         # import order
+  "UP",        # pyupgrade
+  "B",         # bugbear
+  "SIM",       # simplify
+  "RUF",       # ruff
+  "D",         # docstrings
+  "ASYNC",     # async pitfalls
+  "TRY",       # exception handling
+]
+ignore = [
+  "D203",      # conflicts with D211
+  "D213",      # conflicts with D212
+  "TRY003",    # user-facing words live in the translation files, not in the raise
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "SLF001"]
+"scripts/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.mypy]
+strict = true
+mypy_path = "matter_health/app"
+packages = ["matter_health"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["matter_health/app"]
+addopts = [
+  "--cov=matter_health",
+  "--cov-report=term-missing",
+  "--cov-fail-under=95",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "packages": {
+    ".": {
+      "changelog-path": "matter_health/CHANGELOG.md",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "yaml",
+          "path": "matter_health/config.yaml",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}

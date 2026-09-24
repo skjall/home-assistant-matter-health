@@ -1,0 +1,226 @@
+{
+  "app": {
+    "title": "Matter Health",
+    "subtitle": "What is going on with your Matter and Thread devices"
+  },
+  "nav": {
+    "findings": "Findings",
+    "timeline": "Timeline",
+    "network": "Network"
+  },
+  "status": {
+    "all_good": "Everything looks fine",
+    "all_good_detail": "No problems right now. Anything that happens is recorded, so you can come back later.",
+    "problems": "{count} problem needs attention | {count} problems need attention",
+    "warnings": "{count} thing to keep an eye on | {count} things to keep an eye on",
+    "sources_down": "Some information is missing",
+    "live": "Live",
+    "reconnecting": "Reconnecting…",
+    "unavailable": "The add-on could not be reached. Reload the page in a moment."
+  },
+  "summary": {
+    "devices": "Devices",
+    "devices_unreachable": "{count} unreachable | {count} unreachable",
+    "devices_ok": "all reachable",
+    "border_routers": "Border routers",
+    "border_routers_hint": "Bridges between your Thread devices and your home network",
+    "mesh": "Thread network",
+    "mesh_ok": "Connected",
+    "mesh_unknown": "Unknown"
+  },
+  "role": {
+    "cause": "Why",
+    "effect": "What happened",
+    "impact": "What it means for you",
+    "fix": "What you can do"
+  },
+  "confidence": {
+    "likely": "probably",
+    "possible": "possibly"
+  },
+  "finding": {
+    "ongoing": "ongoing",
+    "since": "since {time}",
+    "lasted": "lasted {duration}",
+    "details": "Details",
+    "hide_details": "Hide details",
+    "technical": "For the technically curious",
+    "evidence": "Recorded facts",
+    "none_title": "Nothing to report",
+    "none_text": "Matter Health has not found anything that needs your attention in this period.",
+    "earlier": "Earlier",
+    "open": "Right now",
+    "mesh_split": {
+      "title": "Your Thread network fell apart for {duration}"
+    },
+    "new_leader": {
+      "title": "Your Thread network had to reorganise itself"
+    },
+    "border_router_gone": {
+      "title": "{border_router} stopped working as a bridge"
+    },
+    "border_router_switched": {
+      "title": "{border_router} seems to be plugged into {switch}"
+    },
+    "pairing_ok": {
+      "title": "A new device was added"
+    },
+    "pairing_failed": {
+      "title": "Adding a device failed"
+    },
+    "weak_signal": {
+      "title": "{device} has a weak connection"
+    },
+    "device_unreachable": {
+      "title": "{device} can't be reached"
+    }
+  },
+  "link": {
+    "power_off": "{switch} was switched off {origin}.",
+    "border_router_gone": "{border_router} disappeared from the network.",
+    "was_probably_leader": "{border_router} was coordinating your Thread network. When the coordinator disappears, the other devices need a while to agree on a new one.",
+    "cause_unknown": "No clear cause was recorded. Nothing was switched off and no bridge disappeared right before.",
+    "mesh_split": "For {duration}, your Thread devices were split into separate groups that could not reach each other, until they agreed on a new coordinator.",
+    "new_leader": "Your Thread devices had to choose a new coordinator. That took {duration}.",
+    "mesh_trouble_impact": "During that time some devices did not respond, and adding a new device fails almost certainly.",
+    "pairing_failed_meanwhile": "An attempt to add a device failed at the same time - very likely because of this.",
+    "border_router_gone_impact": "Your Thread devices have one way less into your home network. If it was the last one, none of them can be reached.",
+    "border_router_on_switch": "Every time {switch} was switched off, {border_router} disappeared shortly after. This happened {count} times.",
+    "border_router_on_switch_impact": "Each time, your Thread network loses a bridge and may have to choose a new coordinator. Devices stop responding for a while, and adding devices fails in that time.",
+    "pairing_ok": "{device} was added successfully in {seconds} seconds.",
+    "mesh_disturbed_during_pairing": "Your Thread network was unsettled at exactly that time, so the new device could not be reached reliably.",
+    "pairing_stopped": "The attempt stopped at this stage: {phase}.",
+    "pairing_failed_impact": "The device is not part of Home Assistant. It may still believe it belongs somewhere and needs a reset before the next attempt.",
+    "weak_signal": "{device} hears its nearest neighbour {neighbour} only faintly ({rssi} dBm).",
+    "weak_signal_impact": "Commands arrive late or not at all, and the device may drop out now and then.",
+    "weak_signal_battery": "Battery devices also run down faster, because they have to repeat themselves.",
+    "mesh_disturbed": "Your Thread network was unsettled at that moment.",
+    "device_unreachable": "{device} stopped responding.",
+    "device_unreachable_impact": "You cannot control it and its values are not updated."
+  },
+  "origin": {
+    "person": "by {by}",
+    "person_unknown": "by someone in the Home Assistant app",
+    "automation": "by the automation \"{by}\"",
+    "automation_unknown": "by an automation",
+    "unknown": "(directly on the device, or by something Home Assistant could not identify)"
+  },
+  "cause": {
+    "pairing": {
+      "first_contact": "The phone or Home Assistant could not start talking to the device. Usually it is too far away, not in pairing mode, or still paired elsewhere.",
+      "prepare": "The device accepted the first contact but stopped responding while it was being set up. Usually the radio connection is poor at that spot.",
+      "authenticity": "The device could not prove that it is a genuine certified product, or the certificate could not be checked.",
+      "keys": "Handing the device the key to your home did not work. Often the device still holds keys from an earlier attempt.",
+      "network": "The device could not join your Thread or Wi-Fi network. Often no router is close enough where the device is.",
+      "find_again": "The device joined your network, but Home Assistant could not find it there afterwards. Usually the device is too far from the nearest Thread router or bridge.",
+      "finish": "Everything was nearly done, but the last confirmation did not arrive."
+    }
+  },
+  "fix": {
+    "keep_border_router_powered": "Plug {border_router} into an outlet that is always on, not into {switch}. It uses very little power when idle and your whole Thread network depends on it.",
+    "check_border_router_power": "Check that {border_router} has power and is connected to your network. Restarting it once usually helps.",
+    "mesh_trouble_rare": "Nothing to do if this happens rarely. If it happens often, check that your bridges (speakers, TV boxes, hubs) have power all the time.",
+    "pairing_wait_for_mesh": "Wait a minute until your network has settled, then try again.",
+    "pairing": {
+      "first_contact": "Hold the phone close to the device, put the device into pairing mode again, and check that it is not still added to another app.",
+      "prepare": "Try again close to where the device will stay. If that fails, plug a Thread device that is always powered (for example a smart plug) in between.",
+      "authenticity": "Update the device's firmware if the maker offers one. If it keeps failing, the device may not be certified for use outside the maker's app.",
+      "keys": "Reset the device to factory settings before the next attempt.",
+      "network": "Make sure a Thread router or bridge is nearby - for example a smart plug or a speaker - or bring the device closer for pairing.",
+      "find_again": "Pair the device closer to a bridge or an always-powered Thread device. Once added, you can move it back.",
+      "finish": "Check whether the device appeared in Home Assistant after all. If not, reset it and try again."
+    },
+    "pairing_reset_and_retry": "Before trying again: reset the device to factory settings, then scan the code again.",
+    "weak_signal": "Put a Thread device that is always powered (for example a smart plug) between {device} and {neighbour}, or move {device} a little closer.",
+    "device_unreachable": "Check that {device} has power - or fresh batteries. If it runs on batteries, take them out for ten seconds and put them back."
+  },
+  "phase": {
+    "first_contact": {
+      "name": "First contact",
+      "what": "The phone and the device prove to each other that they know the code."
+    },
+    "prepare": {
+      "name": "Preparation",
+      "what": "The device gets basic settings such as region and time."
+    },
+    "authenticity": {
+      "name": "Authenticity check",
+      "what": "Home Assistant checks that the device is a genuine certified product."
+    },
+    "keys": {
+      "name": "Key handover",
+      "what": "The device receives the key to your home and its permissions."
+    },
+    "network": {
+      "name": "Joining the network",
+      "what": "The device connects to your Thread or Wi-Fi network."
+    },
+    "find_again": {
+      "name": "Finding it on the network",
+      "what": "Home Assistant looks for the device on your network."
+    },
+    "finish": {
+      "name": "Finishing",
+      "what": "The device confirms it is ready."
+    }
+  },
+  "timeline": {
+    "title": "Who came, who went",
+    "empty": "Nothing recorded yet. Events appear here as they happen.",
+    "border_router.appeared": "{name} started working as a bridge",
+    "border_router.gone": "{name} stopped working as a bridge",
+    "matter.node_added": "{name} was added",
+    "matter.node_removed": "{name} was removed",
+    "matter.node_available": "{name} is reachable again",
+    "matter.node_unavailable": "{name} stopped responding",
+    "ha.power_off": "{name} was switched off",
+    "ha.power_on": "{name} was switched on",
+    "thread.leader_lost": "The Thread network lost its coordinator",
+    "thread.leader_changed": "The Thread network has a new coordinator",
+    "thread.foreign_partition": "The Thread network is split into groups",
+    "thread.partition_changed": "The Thread network reorganised itself",
+    "commissioning.contact": "Someone started adding a device",
+    "commissioning.completed": "A device was added",
+    "commissioning.failed": "Adding a device failed",
+    "source.status.ok": "{source}: connected again",
+    "source.status.down": "{source}: connection lost"
+  },
+  "network": {
+    "title": "Your network right now",
+    "border_routers_empty": "No bridge has announced itself yet.",
+    "unreachable_title": "Devices that don't respond",
+    "unreachable_empty": "Every device responds.",
+    "sources_title": "What Matter Health can see",
+    "role": "Home Assistant's bridge is currently a {role} in your Thread network.",
+    "routers": "{count} devices currently pass messages on for others."
+  },
+  "source": {
+    "matter_server": "Matter Server",
+    "matter_server_log": "Matter Server log",
+    "otbr": "OpenThread Border Router",
+    "otbr_log": "OpenThread Border Router log",
+    "home_assistant": "Home Assistant",
+    "ok": "connected",
+    "down": "not reachable",
+    "waiting": "connecting…"
+  },
+  "thread_role": {
+    "leader": "coordinator",
+    "router": "relay",
+    "child": "member",
+    "detached": "disconnected member",
+    "disabled": "switched-off member"
+  },
+  "generic": {
+    "device": "a device",
+    "border_router": "a bridge",
+    "switch": "a switch",
+    "unknown": "unknown"
+  },
+  "time": {
+    "seconds": "{count} second | {count} seconds",
+    "minutes": "{count} minute | {count} minutes",
+    "hours": "{count} hour | {count} hours",
+    "days": "{count} day | {count} days"
+  }
+}

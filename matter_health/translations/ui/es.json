@@ -1,0 +1,226 @@
+{
+  "app": {
+    "title": "Matter Health",
+    "subtitle": "Qué está pasando con tus dispositivos Matter y Thread"
+  },
+  "nav": {
+    "findings": "Hallazgos",
+    "timeline": "Cronología",
+    "network": "Red"
+  },
+  "status": {
+    "all_good": "Todo parece estar bien",
+    "all_good_detail": "Ahora mismo no hay problemas. Todo lo que pase queda registrado, así que puedes volver más tarde.",
+    "problems": "{count} problema necesita tu atención | {count} problemas necesitan tu atención",
+    "warnings": "{count} cosa que vigilar | {count} cosas que vigilar",
+    "sources_down": "Falta parte de la información",
+    "live": "En directo",
+    "reconnecting": "Reconectando…",
+    "unavailable": "No se puede acceder al complemento. Vuelve a cargar la página en un momento."
+  },
+  "summary": {
+    "devices": "Dispositivos",
+    "devices_unreachable": "{count} inaccesible | {count} inaccesibles",
+    "devices_ok": "todos accesibles",
+    "border_routers": "Puentes",
+    "border_routers_hint": "Los puentes entre tus dispositivos Thread y la red de tu casa",
+    "mesh": "Red Thread",
+    "mesh_ok": "Conectada",
+    "mesh_unknown": "Desconocido"
+  },
+  "role": {
+    "cause": "Por qué",
+    "effect": "Qué pasó",
+    "impact": "Qué significa para ti",
+    "fix": "Qué puedes hacer"
+  },
+  "confidence": {
+    "likely": "probablemente",
+    "possible": "posiblemente"
+  },
+  "finding": {
+    "ongoing": "en curso",
+    "since": "desde {time}",
+    "lasted": "duró {duration}",
+    "details": "Detalles",
+    "hide_details": "Ocultar detalles",
+    "technical": "Para los curiosos de la técnica",
+    "evidence": "Hechos registrados",
+    "none_title": "Nada que contar",
+    "none_text": "Matter Health no ha encontrado nada que necesite tu atención en este periodo.",
+    "earlier": "Antes",
+    "open": "Ahora mismo",
+    "mesh_split": {
+      "title": "Tu red Thread se rompió en pedazos durante {duration}"
+    },
+    "new_leader": {
+      "title": "Tu red Thread tuvo que reorganizarse"
+    },
+    "border_router_gone": {
+      "title": "{border_router} dejó de funcionar como puente"
+    },
+    "border_router_switched": {
+      "title": "Parece que {border_router} está enchufado a {switch}"
+    },
+    "pairing_ok": {
+      "title": "Se añadió un dispositivo nuevo"
+    },
+    "pairing_failed": {
+      "title": "No se pudo añadir un dispositivo"
+    },
+    "weak_signal": {
+      "title": "{device} tiene una conexión débil"
+    },
+    "device_unreachable": {
+      "title": "No se puede contactar con {device}"
+    }
+  },
+  "link": {
+    "power_off": "{switch} fue apagado {origin}.",
+    "border_router_gone": "{border_router} desapareció de la red.",
+    "was_probably_leader": "{border_router} estaba coordinando tu red Thread. Cuando el coordinador desaparece, los demás dispositivos necesitan un rato para ponerse de acuerdo en uno nuevo.",
+    "cause_unknown": "No se registró ninguna causa clara. No se apagó nada y ningún puente desapareció justo antes.",
+    "mesh_split": "Durante {duration}, tus dispositivos Thread estuvieron divididos en grupos separados que no podían comunicarse entre sí, hasta que se pusieron de acuerdo en un nuevo coordinador.",
+    "new_leader": "Tus dispositivos Thread tuvieron que elegir un nuevo coordinador. Eso tardó {duration}.",
+    "mesh_trouble_impact": "Durante ese tiempo algunos dispositivos no respondieron, y añadir un dispositivo nuevo falla casi seguro.",
+    "pairing_failed_meanwhile": "Un intento de añadir un dispositivo falló al mismo tiempo, muy probablemente por esto.",
+    "border_router_gone_impact": "Tus dispositivos Thread tienen un camino menos hacia la red de tu casa. Si era el último, no se puede contactar con ninguno.",
+    "border_router_on_switch": "Cada vez que {switch} se apagó, {border_router} desapareció poco después. Esto pasó {count} veces.",
+    "border_router_on_switch_impact": "Cada vez, tu red Thread pierde un puente y puede que tenga que elegir un nuevo coordinador. Los dispositivos dejan de responder durante un rato, y añadir dispositivos falla en ese tiempo.",
+    "pairing_ok": "{device} se añadió correctamente en {seconds} segundos.",
+    "mesh_disturbed_during_pairing": "Tu red Thread estaba inestable justo en ese momento, así que no se pudo contactar con el dispositivo nuevo de forma fiable.",
+    "pairing_stopped": "El intento se detuvo en esta fase: {phase}.",
+    "pairing_failed_impact": "El dispositivo no forma parte de Home Assistant. Puede que todavía crea que pertenece a otro sitio y necesite un reinicio de fábrica antes del próximo intento.",
+    "weak_signal": "{device} oye muy débilmente a su vecino más cercano, {neighbour} ({rssi} dBm).",
+    "weak_signal_impact": "Las órdenes llegan tarde o no llegan, y el dispositivo puede desconectarse de vez en cuando.",
+    "weak_signal_battery": "Además, los dispositivos a pilas se gastan antes, porque tienen que repetir los mensajes.",
+    "mesh_disturbed": "Tu red Thread estaba inestable en ese momento.",
+    "device_unreachable": "{device} dejó de responder.",
+    "device_unreachable_impact": "No puedes controlarlo y sus valores no se actualizan."
+  },
+  "origin": {
+    "person": "por {by}",
+    "person_unknown": "por alguien desde la app de Home Assistant",
+    "automation": "por la automatización «{by}»",
+    "automation_unknown": "por una automatización",
+    "unknown": "(directamente en el dispositivo, o por algo que Home Assistant no pudo identificar)"
+  },
+  "cause": {
+    "pairing": {
+      "first_contact": "El móvil o Home Assistant no pudo empezar a comunicarse con el dispositivo. Normalmente está demasiado lejos, no está en modo de emparejamiento o sigue emparejado en otro sitio.",
+      "prepare": "El dispositivo aceptó el primer contacto, pero dejó de responder mientras se configuraba. Normalmente la conexión por radio es mala en ese lugar.",
+      "authenticity": "El dispositivo no pudo demostrar que es un producto certificado auténtico, o no se pudo comprobar el certificado.",
+      "keys": "No funcionó la entrega de la llave de tu casa al dispositivo. A menudo el dispositivo todavía guarda llaves de un intento anterior.",
+      "network": "El dispositivo no pudo unirse a tu red Thread o Wi-Fi. A menudo no hay ningún router lo bastante cerca de donde está el dispositivo.",
+      "find_again": "El dispositivo se unió a tu red, pero después Home Assistant no pudo encontrarlo en ella. Normalmente el dispositivo está demasiado lejos del router Thread o del puente más cercano.",
+      "finish": "Ya casi estaba todo listo, pero no llegó la confirmación final."
+    }
+  },
+  "fix": {
+    "keep_border_router_powered": "Enchufa {border_router} a un enchufe que esté siempre encendido, no a {switch}. Gasta muy poca energía en reposo y toda tu red Thread depende de él.",
+    "check_border_router_power": "Comprueba que {border_router} tenga corriente y esté conectado a tu red. Normalmente ayuda reiniciarlo una vez.",
+    "mesh_trouble_rare": "No hace falta hacer nada si pasa pocas veces. Si pasa a menudo, comprueba que tus puentes (altavoces, TV boxes, hubs) tengan corriente todo el tiempo.",
+    "pairing_wait_for_mesh": "Espera un minuto a que tu red se estabilice y vuelve a intentarlo.",
+    "pairing": {
+      "first_contact": "Acerca el móvil al dispositivo, vuelve a ponerlo en modo de emparejamiento y comprueba que no siga añadido en otra app.",
+      "prepare": "Vuelve a intentarlo cerca del lugar donde se quedará el dispositivo. Si falla, pon en medio un dispositivo Thread que esté siempre enchufado (por ejemplo, un enchufe inteligente).",
+      "authenticity": "Actualiza el firmware del dispositivo si el fabricante ofrece una actualización. Si sigue fallando, puede que el dispositivo no esté certificado para usarse fuera de la app del fabricante.",
+      "keys": "Restablece el dispositivo a los ajustes de fábrica antes del próximo intento.",
+      "network": "Asegúrate de que haya un router Thread o un puente cerca (por ejemplo, un enchufe inteligente o un altavoz) o acerca el dispositivo para emparejarlo.",
+      "find_again": "Empareja el dispositivo más cerca de un puente o de un dispositivo Thread siempre enchufado. Una vez añadido, puedes volver a ponerlo en su sitio.",
+      "finish": "Comprueba si el dispositivo apareció en Home Assistant al final. Si no, restablécelo y vuelve a intentarlo."
+    },
+    "pairing_reset_and_retry": "Antes de volver a intentarlo: restablece el dispositivo a los ajustes de fábrica y escanea el código otra vez.",
+    "weak_signal": "Pon un dispositivo Thread que esté siempre enchufado (por ejemplo, un enchufe inteligente) entre {device} y {neighbour}, o acerca un poco {device}.",
+    "device_unreachable": "Comprueba que {device} tenga corriente o pilas nuevas. Si funciona con pilas, sácalas durante diez segundos y vuelve a ponerlas."
+  },
+  "phase": {
+    "first_contact": {
+      "name": "Primer contacto",
+      "what": "El móvil y el dispositivo se demuestran mutuamente que conocen el código."
+    },
+    "prepare": {
+      "name": "Preparación",
+      "what": "El dispositivo recibe ajustes básicos como la región y la hora."
+    },
+    "authenticity": {
+      "name": "Comprobación de autenticidad",
+      "what": "Home Assistant comprueba que el dispositivo es un producto certificado auténtico."
+    },
+    "keys": {
+      "name": "Entrega de la llave",
+      "what": "El dispositivo recibe la llave de tu casa y sus permisos."
+    },
+    "network": {
+      "name": "Unión a la red",
+      "what": "El dispositivo se conecta a tu red Thread o Wi-Fi."
+    },
+    "find_again": {
+      "name": "Búsqueda en la red",
+      "what": "Home Assistant busca el dispositivo en tu red."
+    },
+    "finish": {
+      "name": "Finalización",
+      "what": "El dispositivo confirma que está listo."
+    }
+  },
+  "timeline": {
+    "title": "Quién llegó, quién se fue",
+    "empty": "Todavía no hay nada registrado. Los eventos aparecen aquí a medida que ocurren.",
+    "border_router.appeared": "{name} empezó a funcionar como puente",
+    "border_router.gone": "{name} dejó de funcionar como puente",
+    "matter.node_added": "Se añadió {name}",
+    "matter.node_removed": "Se quitó {name}",
+    "matter.node_available": "{name} vuelve a estar accesible",
+    "matter.node_unavailable": "{name} dejó de responder",
+    "ha.power_off": "{name} se apagó",
+    "ha.power_on": "{name} se encendió",
+    "thread.leader_lost": "La red Thread perdió su coordinador",
+    "thread.leader_changed": "La red Thread tiene un nuevo coordinador",
+    "thread.foreign_partition": "La red Thread está dividida en grupos",
+    "thread.partition_changed": "La red Thread se reorganizó",
+    "commissioning.contact": "Alguien empezó a añadir un dispositivo",
+    "commissioning.completed": "Se añadió un dispositivo",
+    "commissioning.failed": "No se pudo añadir un dispositivo",
+    "source.status.ok": "{source}: conectado de nuevo",
+    "source.status.down": "{source}: conexión perdida"
+  },
+  "network": {
+    "title": "Tu red ahora mismo",
+    "border_routers_empty": "Todavía no se ha anunciado ningún puente.",
+    "unreachable_title": "Dispositivos que no responden",
+    "unreachable_empty": "Todos los dispositivos responden.",
+    "sources_title": "Qué puede ver Matter Health",
+    "role": "El puente de Home Assistant es ahora mismo {role} en tu red Thread.",
+    "routers": "{count} dispositivos reenvían ahora mismo mensajes para otros."
+  },
+  "source": {
+    "matter_server": "Servidor Matter",
+    "matter_server_log": "Registro del servidor Matter",
+    "otbr": "OpenThread Border Router",
+    "otbr_log": "Registro del OpenThread Border Router",
+    "home_assistant": "Home Assistant",
+    "ok": "conectado",
+    "down": "no accesible",
+    "waiting": "conectando…"
+  },
+  "thread_role": {
+    "leader": "coordinador",
+    "router": "repetidor",
+    "child": "miembro",
+    "detached": "miembro desconectado",
+    "disabled": "miembro desactivado"
+  },
+  "generic": {
+    "device": "un dispositivo",
+    "border_router": "un puente",
+    "switch": "un interruptor",
+    "unknown": "desconocido"
+  },
+  "time": {
+    "seconds": "{count} segundo | {count} segundos",
+    "minutes": "{count} minuto | {count} minutos",
+    "hours": "{count} hora | {count} horas",
+    "days": "{count} día | {count} días"
+  }
+}

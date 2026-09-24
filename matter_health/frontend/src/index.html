@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Matter Health</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #f6f7fb;
+      }
+      @media (prefers-color-scheme: dark) {
+        html:not([data-theme="light"]),
+        html:not([data-theme="light"]) body {
+          background: #111318;
+        }
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #111318;
+      }
+    </style>
+    <script type="module" src="static/app.js"></script>
+  </head>
+  <body>
+    <mh-app></mh-app>
+  </body>
+</html>

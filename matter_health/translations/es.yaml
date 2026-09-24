@@ -1,0 +1,13 @@
+configuration:
+  retention_days:
+    name: Conservar el historial (días)
+    description: Cuánto tiempo se guardan los eventos y los hallazgos. Los problemas de emparejamiento suelen notarse días después.
+  log_level:
+    name: Nivel de registro
+    description: Cuánto escribe el complemento en su propio registro.
+  matter_server_url:
+    name: Dirección del servidor Matter
+    description: Déjalo vacío para encontrar automáticamente el complemento Matter Server.
+  otbr_url:
+    name: Dirección del OpenThread Border Router
+    description: Déjalo vacío para encontrar automáticamente el complemento OpenThread Border Router.

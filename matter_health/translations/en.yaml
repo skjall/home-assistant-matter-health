@@ -1,0 +1,13 @@
+configuration:
+  retention_days:
+    name: Keep history for (days)
+    description: How long events and findings are kept. Pairing problems are often reported days later.
+  log_level:
+    name: Log level
+    description: How much the add-on itself writes to its log.
+  matter_server_url:
+    name: Matter Server address
+    description: Leave empty to find the Matter Server add-on automatically.
+  otbr_url:
+    name: OpenThread Border Router address
+    description: Leave empty to find the OpenThread Border Router add-on automatically.

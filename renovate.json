@@ -1,0 +1,88 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "baseBranchPatterns": [
+    "main"
+  ],
+  "semanticCommits": "enabled",
+  "semanticCommitType": "deps",
+  "semanticCommitScope": null,
+  "constraints": {
+    "python": "3.14"
+  },
+  "pre-commit": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchCategories": [
+        "python"
+      ],
+      "groupName": "Python dependencies",
+      "matchPackageNames": [
+        "*"
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "Frontend dependencies"
+    },
+    {
+      "description": "Auto-merge low-risk updates once CI is green; no review request needed. CI runs the full test suite, mypy --strict and the quality-scale gate, so a green run is a real statement.",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      "description": "Major updates: never auto-merge, request review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false,
+      "reviewers": [
+        "Skjall"
+      ]
+    },
+    {
+      "description": "The frontend is what users look at; a human checks it before an update lands.",
+      "matchManagers": [
+        "npm"
+      ],
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "frontend"
+      ],
+      "reviewers": [
+        "Skjall"
+      ]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 2,
+  "labels": [
+    "dependencies",
+    "type: chore"
+  ],
+  "assignees": [
+    "Skjall"
+  ]
+}

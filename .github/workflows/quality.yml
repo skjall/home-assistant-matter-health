@@ -1,0 +1,83 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Install
+        run: pip install ".[test]"
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Types
+        run: mypy
+      - name: Tests
+        run: python -m pytest
+      - name: Translations
+        run: python scripts/check_translations.py
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: matter_health/frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: matter_health/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [python, frontend]
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, aarch64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Base image and platform
+        id: target
+        run: |
+          echo "base=$(yq -r ".build_from.${{ matrix.arch }}" matter_health/build.yaml)" >> "$GITHUB_OUTPUT"
+          case "${{ matrix.arch }}" in
+            amd64) echo "platform=linux/amd64" >> "$GITHUB_OUTPUT" ;;
+            aarch64) echo "platform=linux/arm64" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - uses: docker/build-push-action@v7
+        with:
+          context: matter_health
+          push: false
+          load: ${{ matrix.arch == 'amd64' }}
+          tags: local/matter_health:${{ matrix.arch }}
+          build-args: BUILD_FROM=${{ steps.target.outputs.base }}
+          platforms: ${{ steps.target.outputs.platform }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # The build succeeds even when a module is missing from the image;
+      # importing everything inside it catches that.
+      - name: Import smoke test
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm --entrypoint sh local/matter_health:amd64 -c \
+            'cd /opt/matter_health/app && python3 -c "import matter_health.__main__, matter_health.web"'

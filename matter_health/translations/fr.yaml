@@ -1,0 +1,13 @@
+configuration:
+  retention_days:
+    name: Conserver l'historique (jours)
+    description: Durée de conservation des événements et des constats. Les problèmes d'appairage sont souvent signalés plusieurs jours plus tard.
+  log_level:
+    name: Niveau de journalisation
+    description: Quantité d'informations que le module écrit dans son propre journal.
+  matter_server_url:
+    name: Adresse du serveur Matter
+    description: Laisser vide pour trouver automatiquement le module Matter Server.
+  otbr_url:
+    name: Adresse de l'OpenThread Border Router
+    description: Laisser vide pour trouver automatiquement le module OpenThread Border Router.

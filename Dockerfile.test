@@ -1,0 +1,12 @@
+# The add-on runs on Python 3.14; the tests run on exactly that, whatever the
+# workstation has installed.
+FROM python:3.14-slim
+
+WORKDIR /src
+COPY pyproject.toml /tmp/pyproject.toml
+RUN python - <<'EOF' > /tmp/requirements.txt
+import tomllib
+project = tomllib.load(open("/tmp/pyproject.toml", "rb"))["project"]
+print("\n".join(project["dependencies"] + project["optional-dependencies"]["test"]))
+EOF
+RUN pip install --no-cache-dir --root-user-action=ignore -r /tmp/requirements.txt

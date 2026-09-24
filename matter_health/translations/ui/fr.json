@@ -1,0 +1,226 @@
+{
+  "app": {
+    "title": "Matter Health",
+    "subtitle": "Ce qui se passe avec tes appareils Matter et Thread"
+  },
+  "nav": {
+    "findings": "Constats",
+    "timeline": "Chronologie",
+    "network": "Réseau"
+  },
+  "status": {
+    "all_good": "Tout a l'air en ordre",
+    "all_good_detail": "Aucun problème pour l'instant. Tout ce qui se passe est enregistré, tu peux donc revenir plus tard.",
+    "problems": "{count} problème demande ton attention | {count} problèmes demandent ton attention",
+    "warnings": "{count} chose à surveiller | {count} choses à surveiller",
+    "sources_down": "Certaines informations manquent",
+    "live": "En direct",
+    "reconnecting": "Reconnexion…",
+    "unavailable": "Le module complémentaire est injoignable. Rechargez la page dans un instant."
+  },
+  "summary": {
+    "devices": "Appareils",
+    "devices_unreachable": "{count} injoignable | {count} injoignables",
+    "devices_ok": "tous joignables",
+    "border_routers": "Passerelles",
+    "border_routers_hint": "Les ponts entre tes appareils Thread et ton réseau domestique",
+    "mesh": "Réseau Thread",
+    "mesh_ok": "Connecté",
+    "mesh_unknown": "Inconnu"
+  },
+  "role": {
+    "cause": "Pourquoi",
+    "effect": "Ce qui s'est passé",
+    "impact": "Ce que ça change pour toi",
+    "fix": "Ce que tu peux faire"
+  },
+  "confidence": {
+    "likely": "probablement",
+    "possible": "peut-être"
+  },
+  "finding": {
+    "ongoing": "en cours",
+    "since": "depuis {time}",
+    "lasted": "a duré {duration}",
+    "details": "Détails",
+    "hide_details": "Masquer les détails",
+    "technical": "Pour les curieux de technique",
+    "evidence": "Faits enregistrés",
+    "none_title": "Rien à signaler",
+    "none_text": "Matter Health n'a rien trouvé qui demande ton attention sur cette période.",
+    "earlier": "Plus tôt",
+    "open": "En ce moment",
+    "mesh_split": {
+      "title": "Ton réseau Thread s'est morcelé pendant {duration}"
+    },
+    "new_leader": {
+      "title": "Ton réseau Thread a dû se réorganiser"
+    },
+    "border_router_gone": {
+      "title": "{border_router} ne fait plus office de passerelle"
+    },
+    "border_router_switched": {
+      "title": "{border_router} semble branché sur {switch}"
+    },
+    "pairing_ok": {
+      "title": "Un nouvel appareil a été ajouté"
+    },
+    "pairing_failed": {
+      "title": "L'ajout d'un appareil a échoué"
+    },
+    "weak_signal": {
+      "title": "{device} a une connexion faible"
+    },
+    "device_unreachable": {
+      "title": "{device} est injoignable"
+    }
+  },
+  "link": {
+    "power_off": "{switch} a été éteint {origin}.",
+    "border_router_gone": "{border_router} a disparu du réseau.",
+    "was_probably_leader": "{border_router} coordonnait ton réseau Thread. Quand le coordinateur disparaît, les autres appareils ont besoin d'un moment pour se mettre d'accord sur un nouveau.",
+    "cause_unknown": "Aucune cause claire n'a été enregistrée. Rien n'a été éteint et aucune passerelle n'a disparu juste avant.",
+    "mesh_split": "Pendant {duration}, tes appareils Thread étaient séparés en groupes qui ne pouvaient pas se joindre, jusqu'à ce qu'ils se mettent d'accord sur un nouveau coordinateur.",
+    "new_leader": "Tes appareils Thread ont dû choisir un nouveau coordinateur. Cela a pris {duration}.",
+    "mesh_trouble_impact": "Pendant ce temps, certains appareils ne répondaient pas, et l'ajout d'un nouvel appareil échoue presque à coup sûr.",
+    "pairing_failed_meanwhile": "Une tentative d'ajout d'appareil a échoué au même moment - très probablement à cause de cela.",
+    "border_router_gone_impact": "Tes appareils Thread ont un accès de moins à ton réseau domestique. Si c'était le dernier, plus aucun d'eux n'est joignable.",
+    "border_router_on_switch": "Chaque fois que {switch} a été éteint, {border_router} a disparu peu après. C'est arrivé {count} fois.",
+    "border_router_on_switch_impact": "À chaque fois, ton réseau Thread perd une passerelle et doit parfois choisir un nouveau coordinateur. Les appareils ne répondent plus pendant un moment, et l'ajout d'appareils échoue pendant ce temps.",
+    "pairing_ok": "{device} a été ajouté avec succès en {seconds} secondes.",
+    "mesh_disturbed_during_pairing": "Ton réseau Thread était instable exactement à ce moment-là, donc le nouvel appareil n'était pas joignable de façon fiable.",
+    "pairing_stopped": "La tentative s'est arrêtée à cette étape : {phase}.",
+    "pairing_failed_impact": "L'appareil ne fait pas partie de Home Assistant. Il croit peut-être encore appartenir ailleurs et doit être réinitialisé avant la prochaine tentative.",
+    "weak_signal": "{device} n'entend que faiblement son voisin le plus proche, {neighbour} ({rssi} dBm).",
+    "weak_signal_impact": "Les commandes arrivent en retard ou pas du tout, et l'appareil peut décrocher de temps en temps.",
+    "weak_signal_battery": "Les appareils sur piles s'usent aussi plus vite, parce qu'ils doivent se répéter.",
+    "mesh_disturbed": "Ton réseau Thread était instable à ce moment-là.",
+    "device_unreachable": "{device} ne répond plus.",
+    "device_unreachable_impact": "Tu ne peux pas le commander et ses valeurs ne sont plus mises à jour."
+  },
+  "origin": {
+    "person": "par {by}",
+    "person_unknown": "par quelqu'un dans l'application Home Assistant",
+    "automation": "par l'automatisation « {by} »",
+    "automation_unknown": "par une automatisation",
+    "unknown": "(directement sur l'appareil, ou par quelque chose que Home Assistant n'a pas pu identifier)"
+  },
+  "cause": {
+    "pairing": {
+      "first_contact": "Le téléphone ou Home Assistant n'a pas réussi à entrer en contact avec l'appareil. En général, il est trop loin, pas en mode appairage, ou encore appairé ailleurs.",
+      "prepare": "L'appareil a accepté le premier contact, mais a cessé de répondre pendant sa configuration. En général, la liaison radio est mauvaise à cet endroit.",
+      "authenticity": "L'appareil n'a pas pu prouver qu'il est un produit certifié authentique, ou le certificat n'a pas pu être vérifié.",
+      "keys": "La remise de la clé de ton domicile à l'appareil n'a pas fonctionné. Souvent, l'appareil garde encore des clés d'une tentative précédente.",
+      "network": "L'appareil n'a pas pu rejoindre ton réseau Thread ou Wi-Fi. Souvent, aucun routeur n'est assez proche de l'endroit où il se trouve.",
+      "find_again": "L'appareil a rejoint ton réseau, mais Home Assistant n'a pas réussi à l'y retrouver ensuite. En général, l'appareil est trop loin du routeur Thread ou de la passerelle la plus proche.",
+      "finish": "Tout était presque terminé, mais la confirmation finale n'est pas arrivée."
+    }
+  },
+  "fix": {
+    "keep_border_router_powered": "Branche {border_router} sur une prise toujours alimentée, pas sur {switch}. Il consomme très peu au repos et tout ton réseau Thread en dépend.",
+    "check_border_router_power": "Vérifie que {border_router} est alimenté et connecté à ton réseau. Le redémarrer une fois aide en général.",
+    "mesh_trouble_rare": "Rien à faire si cela arrive rarement. Si cela arrive souvent, vérifie que tes passerelles (enceintes, box TV, hubs) sont alimentées en permanence.",
+    "pairing_wait_for_mesh": "Attends une minute que ton réseau se stabilise, puis réessaie.",
+    "pairing": {
+      "first_contact": "Tiens le téléphone près de l'appareil, remets l'appareil en mode appairage et vérifie qu'il n'est pas encore ajouté dans une autre application.",
+      "prepare": "Réessaie près de l'endroit où l'appareil restera. Si ça échoue, ajoute entre les deux un appareil Thread toujours alimenté (par exemple une prise connectée).",
+      "authenticity": "Mets à jour le firmware de l'appareil si le fabricant en propose un. Si ça échoue toujours, l'appareil n'est peut-être pas certifié pour être utilisé en dehors de l'application du fabricant.",
+      "keys": "Réinitialise l'appareil aux réglages d'usine avant la prochaine tentative.",
+      "network": "Assure-toi qu'un routeur Thread ou une passerelle se trouve à proximité - par exemple une prise connectée ou une enceinte - ou rapproche l'appareil pour l'appairage.",
+      "find_again": "Appaire l'appareil plus près d'une passerelle ou d'un appareil Thread toujours alimenté. Une fois ajouté, tu peux le remettre à sa place.",
+      "finish": "Vérifie si l'appareil est finalement apparu dans Home Assistant. Sinon, réinitialise-le et réessaie."
+    },
+    "pairing_reset_and_retry": "Avant de réessayer : réinitialise l'appareil aux réglages d'usine, puis scanne à nouveau le code.",
+    "weak_signal": "Place un appareil Thread toujours alimenté (par exemple une prise connectée) entre {device} et {neighbour}, ou rapproche un peu {device}.",
+    "device_unreachable": "Vérifie que {device} est alimenté - ou a des piles neuves. S'il fonctionne sur piles, retire-les dix secondes puis remets-les."
+  },
+  "phase": {
+    "first_contact": {
+      "name": "Premier contact",
+      "what": "Le téléphone et l'appareil se prouvent mutuellement qu'ils connaissent le code."
+    },
+    "prepare": {
+      "name": "Préparation",
+      "what": "L'appareil reçoit des réglages de base comme la région et l'heure."
+    },
+    "authenticity": {
+      "name": "Vérification d'authenticité",
+      "what": "Home Assistant vérifie que l'appareil est un produit certifié authentique."
+    },
+    "keys": {
+      "name": "Remise de la clé",
+      "what": "L'appareil reçoit la clé de ton domicile et ses autorisations."
+    },
+    "network": {
+      "name": "Connexion au réseau",
+      "what": "L'appareil se connecte à ton réseau Thread ou Wi-Fi."
+    },
+    "find_again": {
+      "name": "Recherche sur le réseau",
+      "what": "Home Assistant cherche l'appareil sur ton réseau."
+    },
+    "finish": {
+      "name": "Finalisation",
+      "what": "L'appareil confirme qu'il est prêt."
+    }
+  },
+  "timeline": {
+    "title": "Qui est arrivé, qui est parti",
+    "empty": "Rien d'enregistré pour l'instant. Les événements apparaissent ici au fur et à mesure.",
+    "border_router.appeared": "{name} fait maintenant office de passerelle",
+    "border_router.gone": "{name} ne fait plus office de passerelle",
+    "matter.node_added": "{name} a été ajouté",
+    "matter.node_removed": "{name} a été retiré",
+    "matter.node_available": "{name} est de nouveau joignable",
+    "matter.node_unavailable": "{name} ne répond plus",
+    "ha.power_off": "{name} a été éteint",
+    "ha.power_on": "{name} a été allumé",
+    "thread.leader_lost": "Le réseau Thread a perdu son coordinateur",
+    "thread.leader_changed": "Le réseau Thread a un nouveau coordinateur",
+    "thread.foreign_partition": "Le réseau Thread est divisé en groupes",
+    "thread.partition_changed": "Le réseau Thread s'est réorganisé",
+    "commissioning.contact": "Quelqu'un a commencé à ajouter un appareil",
+    "commissioning.completed": "Un appareil a été ajouté",
+    "commissioning.failed": "L'ajout d'un appareil a échoué",
+    "source.status.ok": "{source} : de nouveau connecté",
+    "source.status.down": "{source} : connexion perdue"
+  },
+  "network": {
+    "title": "Ton réseau en ce moment",
+    "border_routers_empty": "Aucune passerelle ne s'est encore annoncée.",
+    "unreachable_title": "Appareils qui ne répondent pas",
+    "unreachable_empty": "Tous les appareils répondent.",
+    "sources_title": "Ce que Matter Health peut voir",
+    "role": "La passerelle de Home Assistant est actuellement {role} dans ton réseau Thread.",
+    "routers": "{count} appareils relaient actuellement des messages pour les autres."
+  },
+  "source": {
+    "matter_server": "Serveur Matter",
+    "matter_server_log": "Journal du serveur Matter",
+    "otbr": "OpenThread Border Router",
+    "otbr_log": "Journal de l'OpenThread Border Router",
+    "home_assistant": "Home Assistant",
+    "ok": "connecté",
+    "down": "injoignable",
+    "waiting": "connexion…"
+  },
+  "thread_role": {
+    "leader": "coordinateur",
+    "router": "relais",
+    "child": "membre",
+    "detached": "membre déconnecté",
+    "disabled": "membre désactivé"
+  },
+  "generic": {
+    "device": "un appareil",
+    "border_router": "une passerelle",
+    "switch": "un interrupteur",
+    "unknown": "inconnu"
+  },
+  "time": {
+    "seconds": "{count} seconde | {count} secondes",
+    "minutes": "{count} minute | {count} minutes",
+    "hours": "{count} heure | {count} heures",
+    "days": "{count} jour | {count} jours"
+  }
+}

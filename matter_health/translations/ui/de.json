@@ -1,0 +1,226 @@
+{
+  "app": {
+    "title": "Matter Health",
+    "subtitle": "Was mit deinen Matter- und Thread-Geräten los ist"
+  },
+  "nav": {
+    "findings": "Befunde",
+    "timeline": "Verlauf",
+    "network": "Netzwerk"
+  },
+  "status": {
+    "all_good": "Alles sieht gut aus",
+    "all_good_detail": "Gerade gibt es keine Probleme. Alles, was passiert, wird aufgezeichnet – du kannst also später nachsehen.",
+    "problems": "{count} Problem braucht deine Aufmerksamkeit | {count} Probleme brauchen deine Aufmerksamkeit",
+    "warnings": "{count} Sache solltest du im Blick behalten | {count} Dinge solltest du im Blick behalten",
+    "sources_down": "Einige Informationen fehlen",
+    "live": "Live",
+    "reconnecting": "Verbinde neu …",
+    "unavailable": "Das Add-on ist gerade nicht erreichbar. Lade die Seite gleich noch einmal."
+  },
+  "summary": {
+    "devices": "Geräte",
+    "devices_unreachable": "{count} nicht erreichbar | {count} nicht erreichbar",
+    "devices_ok": "alle erreichbar",
+    "border_routers": "Border Router",
+    "border_routers_hint": "Brücken zwischen deinen Thread-Geräten und deinem Heimnetz",
+    "mesh": "Thread-Netz",
+    "mesh_ok": "Verbunden",
+    "mesh_unknown": "Unbekannt"
+  },
+  "role": {
+    "cause": "Warum",
+    "effect": "Was passiert ist",
+    "impact": "Was das für dich bedeutet",
+    "fix": "Was du tun kannst"
+  },
+  "confidence": {
+    "likely": "vermutlich",
+    "possible": "möglicherweise"
+  },
+  "finding": {
+    "ongoing": "dauert an",
+    "since": "seit {time}",
+    "lasted": "dauerte {duration}",
+    "details": "Details",
+    "hide_details": "Details ausblenden",
+    "technical": "Für Technikinteressierte",
+    "evidence": "Aufgezeichnete Fakten",
+    "none_title": "Nichts zu melden",
+    "none_text": "Matter Health hat in diesem Zeitraum nichts gefunden, um das du dich kümmern müsstest.",
+    "earlier": "Früher",
+    "open": "Gerade jetzt",
+    "mesh_split": {
+      "title": "Dein Thread-Netz ist für {duration} zerfallen"
+    },
+    "new_leader": {
+      "title": "Dein Thread-Netz musste sich neu ordnen"
+    },
+    "border_router_gone": {
+      "title": "{border_router} arbeitet nicht mehr als Brücke"
+    },
+    "border_router_switched": {
+      "title": "{border_router} hängt offenbar an {switch}"
+    },
+    "pairing_ok": {
+      "title": "Ein neues Gerät wurde hinzugefügt"
+    },
+    "pairing_failed": {
+      "title": "Ein Gerät hinzuzufügen ist fehlgeschlagen"
+    },
+    "weak_signal": {
+      "title": "{device} hat eine schwache Verbindung"
+    },
+    "device_unreachable": {
+      "title": "{device} ist nicht erreichbar"
+    }
+  },
+  "link": {
+    "power_off": "{switch} wurde ausgeschaltet {origin}.",
+    "border_router_gone": "{border_router} ist aus dem Netz verschwunden.",
+    "was_probably_leader": "{border_router} hat dein Thread-Netz koordiniert. Fällt der Koordinator weg, brauchen die übrigen Geräte eine Weile, um sich auf einen neuen zu einigen.",
+    "cause_unknown": "Eine klare Ursache wurde nicht aufgezeichnet. Kurz davor wurde nichts ausgeschaltet und keine Brücke ist verschwunden.",
+    "mesh_split": "{duration} lang waren deine Thread-Geräte in getrennte Gruppen aufgeteilt, die einander nicht erreichen konnten – bis sie sich auf einen neuen Koordinator geeinigt hatten.",
+    "new_leader": "Deine Thread-Geräte mussten einen neuen Koordinator bestimmen. Das hat {duration} gedauert.",
+    "mesh_trouble_impact": "In dieser Zeit haben manche Geräte nicht reagiert, und ein neues Gerät hinzuzufügen schlägt so gut wie sicher fehl.",
+    "pairing_failed_meanwhile": "Genau in dieser Zeit ist ein Versuch gescheitert, ein Gerät hinzuzufügen – sehr wahrscheinlich deswegen.",
+    "border_router_gone_impact": "Deine Thread-Geräte haben einen Weg weniger in dein Heimnetz. War es der letzte, ist keines von ihnen mehr erreichbar.",
+    "border_router_on_switch": "Jedes Mal, wenn {switch} ausgeschaltet wurde, ist kurz darauf {border_router} verschwunden. Das ist {count}-mal passiert.",
+    "border_router_on_switch_impact": "Jedes Mal verliert dein Thread-Netz eine Brücke und muss womöglich einen neuen Koordinator bestimmen. Geräte reagieren eine Weile nicht, und neue Geräte lassen sich in dieser Zeit nicht hinzufügen.",
+    "pairing_ok": "{device} wurde in {seconds} Sekunden erfolgreich hinzugefügt.",
+    "mesh_disturbed_during_pairing": "Dein Thread-Netz war genau in diesem Moment in Unruhe, deshalb war das neue Gerät nicht zuverlässig zu erreichen.",
+    "pairing_stopped": "Der Versuch ist an dieser Stelle stehen geblieben: {phase}.",
+    "pairing_failed_impact": "Das Gerät ist nicht in Home Assistant. Es hält sich womöglich trotzdem für eingebunden und muss vor dem nächsten Versuch zurückgesetzt werden.",
+    "weak_signal": "{device} hört seinen nächsten Nachbarn {neighbour} nur schwach ({rssi} dBm).",
+    "weak_signal_impact": "Befehle kommen verzögert oder gar nicht an, und das Gerät fällt ab und zu aus.",
+    "weak_signal_battery": "Batteriegeräte sind außerdem schneller leer, weil sie sich wiederholen müssen.",
+    "mesh_disturbed": "Dein Thread-Netz war in diesem Moment in Unruhe.",
+    "device_unreachable": "{device} reagiert nicht mehr.",
+    "device_unreachable_impact": "Du kannst es nicht steuern, und seine Werte werden nicht aktualisiert."
+  },
+  "origin": {
+    "person": "von {by}",
+    "person_unknown": "von jemandem in der Home-Assistant-App",
+    "automation": "von der Automation „{by}“",
+    "automation_unknown": "von einer Automation",
+    "unknown": "(direkt am Gerät oder durch etwas, das Home Assistant nicht zuordnen konnte)"
+  },
+  "cause": {
+    "pairing": {
+      "first_contact": "Das Handy oder Home Assistant konnte mit dem Gerät nicht ins Gespräch kommen. Meist ist es zu weit weg, nicht im Kopplungsmodus oder noch woanders eingebunden.",
+      "prepare": "Das Gerät hat den ersten Kontakt angenommen, dann aber beim Einrichten nicht mehr geantwortet. Meist ist die Funkverbindung an dieser Stelle schlecht.",
+      "authenticity": "Das Gerät konnte nicht nachweisen, dass es ein echtes, zertifiziertes Produkt ist, oder das Zertifikat ließ sich nicht prüfen.",
+      "keys": "Dem Gerät den Schlüssel zu deinem Zuhause zu übergeben hat nicht geklappt. Oft hat es noch Schlüssel von einem früheren Versuch.",
+      "network": "Das Gerät konnte deinem Thread- oder WLAN-Netz nicht beitreten. Oft ist dort, wo das Gerät steht, kein Router nah genug.",
+      "find_again": "Das Gerät ist deinem Netz beigetreten, aber Home Assistant konnte es dort danach nicht finden. Meist ist es zu weit vom nächsten Thread-Router oder der nächsten Brücke entfernt.",
+      "finish": "Fast alles war erledigt, aber die letzte Bestätigung kam nicht an."
+    }
+  },
+  "fix": {
+    "keep_border_router_powered": "Steck {border_router} in eine Steckdose, die immer Strom hat – nicht an {switch}. Im Leerlauf braucht es kaum Strom, und dein ganzes Thread-Netz hängt daran.",
+    "check_border_router_power": "Prüfe, ob {border_router} Strom hat und mit deinem Netz verbunden ist. Einmal neu starten hilft meistens.",
+    "mesh_trouble_rare": "Nichts zu tun, wenn das selten passiert. Kommt es oft vor, prüfe, ob deine Brücken (Lautsprecher, TV-Boxen, Hubs) ständig Strom haben.",
+    "pairing_wait_for_mesh": "Warte eine Minute, bis sich dein Netz beruhigt hat, und versuch es dann noch einmal.",
+    "pairing": {
+      "first_contact": "Halte das Handy nah ans Gerät, versetze das Gerät erneut in den Kopplungsmodus und prüfe, dass es nicht noch in einer anderen App eingebunden ist.",
+      "prepare": "Versuch es erneut nah an der Stelle, an der das Gerät bleiben soll. Klappt das nicht, stell ein Thread-Gerät mit Dauerstrom (zum Beispiel eine smarte Steckdose) dazwischen.",
+      "authenticity": "Aktualisiere die Firmware des Geräts, falls der Hersteller eine anbietet. Scheitert es weiter, ist das Gerät womöglich nicht für den Einsatz außerhalb der Hersteller-App zertifiziert.",
+      "keys": "Setz das Gerät vor dem nächsten Versuch auf Werkseinstellungen zurück.",
+      "network": "Sorg dafür, dass ein Thread-Router oder eine Brücke in der Nähe ist – etwa eine smarte Steckdose oder ein Lautsprecher – oder bring das Gerät zum Koppeln näher heran.",
+      "find_again": "Kopple das Gerät näher an einer Brücke oder einem Thread-Gerät mit Dauerstrom. Sobald es eingebunden ist, kannst du es zurückstellen.",
+      "finish": "Sieh nach, ob das Gerät doch in Home Assistant aufgetaucht ist. Falls nicht, setz es zurück und versuch es noch einmal."
+    },
+    "pairing_reset_and_retry": "Vor dem nächsten Versuch: Gerät auf Werkseinstellungen zurücksetzen, dann den Code erneut scannen.",
+    "weak_signal": "Stell ein Thread-Gerät mit Dauerstrom (zum Beispiel eine smarte Steckdose) zwischen {device} und {neighbour}, oder rück {device} etwas näher heran.",
+    "device_unreachable": "Prüfe, ob {device} Strom hat – oder frische Batterien. Bei Batteriegeräten: Batterien zehn Sekunden herausnehmen und wieder einlegen."
+  },
+  "phase": {
+    "first_contact": {
+      "name": "Erster Kontakt",
+      "what": "Handy und Gerät weisen sich gegenseitig nach, dass sie den Code kennen."
+    },
+    "prepare": {
+      "name": "Vorbereitung",
+      "what": "Das Gerät bekommt Grundeinstellungen wie Region und Uhrzeit."
+    },
+    "authenticity": {
+      "name": "Echtheitsprüfung",
+      "what": "Home Assistant prüft, ob das Gerät ein echtes, zertifiziertes Produkt ist."
+    },
+    "keys": {
+      "name": "Schlüsselübergabe",
+      "what": "Das Gerät bekommt den Schlüssel zu deinem Zuhause und seine Berechtigungen."
+    },
+    "network": {
+      "name": "Netzbeitritt",
+      "what": "Das Gerät verbindet sich mit deinem Thread- oder WLAN-Netz."
+    },
+    "find_again": {
+      "name": "Wiederfinden im Netz",
+      "what": "Home Assistant sucht das Gerät in deinem Netz."
+    },
+    "finish": {
+      "name": "Abschluss",
+      "what": "Das Gerät bestätigt, dass es bereit ist."
+    }
+  },
+  "timeline": {
+    "title": "Wer kam, wer ging",
+    "empty": "Noch nichts aufgezeichnet. Ereignisse erscheinen hier, sobald sie passieren.",
+    "border_router.appeared": "{name} arbeitet als Brücke",
+    "border_router.gone": "{name} arbeitet nicht mehr als Brücke",
+    "matter.node_added": "{name} wurde hinzugefügt",
+    "matter.node_removed": "{name} wurde entfernt",
+    "matter.node_available": "{name} ist wieder erreichbar",
+    "matter.node_unavailable": "{name} reagiert nicht mehr",
+    "ha.power_off": "{name} wurde ausgeschaltet",
+    "ha.power_on": "{name} wurde eingeschaltet",
+    "thread.leader_lost": "Das Thread-Netz hat seinen Koordinator verloren",
+    "thread.leader_changed": "Das Thread-Netz hat einen neuen Koordinator",
+    "thread.foreign_partition": "Das Thread-Netz ist in Gruppen zerfallen",
+    "thread.partition_changed": "Das Thread-Netz hat sich neu geordnet",
+    "commissioning.contact": "Jemand hat begonnen, ein Gerät hinzuzufügen",
+    "commissioning.completed": "Ein Gerät wurde hinzugefügt",
+    "commissioning.failed": "Ein Gerät hinzuzufügen ist fehlgeschlagen",
+    "source.status.ok": "{source}: wieder verbunden",
+    "source.status.down": "{source}: Verbindung verloren"
+  },
+  "network": {
+    "title": "Dein Netz gerade jetzt",
+    "border_routers_empty": "Noch keine Brücke hat sich gemeldet.",
+    "unreachable_title": "Geräte, die nicht reagieren",
+    "unreachable_empty": "Alle Geräte reagieren.",
+    "sources_title": "Was Matter Health sieht",
+    "role": "Die Brücke von Home Assistant ist in deinem Thread-Netz gerade {role}.",
+    "routers": "{count} Geräte reichen gerade Nachrichten für andere weiter."
+  },
+  "source": {
+    "matter_server": "Matter-Server",
+    "matter_server_log": "Protokoll des Matter-Servers",
+    "otbr": "OpenThread Border Router",
+    "otbr_log": "Protokoll des OpenThread Border Routers",
+    "home_assistant": "Home Assistant",
+    "ok": "verbunden",
+    "down": "nicht erreichbar",
+    "waiting": "verbinde …"
+  },
+  "thread_role": {
+    "leader": "Koordinator",
+    "router": "Weiterleiter",
+    "child": "Mitglied",
+    "detached": "abgetrenntes Mitglied",
+    "disabled": "ausgeschaltetes Mitglied"
+  },
+  "generic": {
+    "device": "ein Gerät",
+    "border_router": "eine Brücke",
+    "switch": "ein Schalter",
+    "unknown": "unbekannt"
+  },
+  "time": {
+    "seconds": "{count} Sekunde | {count} Sekunden",
+    "minutes": "{count} Minute | {count} Minuten",
+    "hours": "{count} Stunde | {count} Stunden",
+    "days": "{count} Tag | {count} Tage"
+  }
+}

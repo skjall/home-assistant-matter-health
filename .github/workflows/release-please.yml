@@ -1,0 +1,22 @@
+name: Release Please
+
+# release-please reads the Conventional Commits on main and keeps a release PR
+# open that bumps matter_health/config.yaml and the changelog. Merging it tags
+# the release; Home Assistant offers the update from the new version.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

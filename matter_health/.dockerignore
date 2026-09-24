@@ -1,0 +1,3 @@
+frontend/node_modules
+app/matter_health/web/static
+**/__pycache__
