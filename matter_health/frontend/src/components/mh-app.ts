@@ -41,6 +41,7 @@ export class MhApp extends LitElement {
   failed = false;
   private stop?: () => void;
   private refresh?: number;
+  private regroup?: number;
 
   static override styles = [
     tokens,
@@ -300,6 +301,11 @@ export class MhApp extends LitElement {
   private upsert(finding: Finding): void {
     this.findings = [finding, ...this.findings.filter((f) => f.key !== finding.key)];
     this.scheduleOverview();
+    // Which story a finding belongs to is decided when findings are read.
+    window.clearTimeout(this.regroup);
+    this.regroup = window.setTimeout(async () => {
+      this.findings = await api.findings();
+    }, 1500);
   }
 
   private verdict(): TemplateResult {
@@ -376,13 +382,20 @@ export class MhApp extends LitElement {
   }
 
   private findingList(): TemplateResult {
-    const sorted = [...this.findings].sort(
-      (a, b) =>
-        SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] ||
-        b.started_at.localeCompare(a.started_at),
+    const related = new Map<string, Finding[]>();
+    for (const f of this.findings) {
+      if (f.part_of) related.set(f.part_of, [...(related.get(f.part_of) ?? []), f]);
+    }
+    const shown = this.findings.filter(
+      (f) => !f.part_of || !this.findings.some((p) => p.key === f.part_of),
+    );
+    const rank = (f: Finding) =>
+      Math.min(SEVERITY_RANK[f.severity], ...(related.get(f.key) ?? []).map((r) => SEVERITY_RANK[r.severity]));
+    const sorted = [...shown].sort(
+      (a, b) => rank(a) - rank(b) || b.started_at.localeCompare(a.started_at),
     );
     const open = sorted.filter((f) => !f.ended_at);
-    const earlier = [...this.findings]
+    const earlier = [...shown]
       .filter((f) => f.ended_at)
       .sort((a, b) => b.started_at.localeCompare(a.started_at));
     if (!open.length && !earlier.length) {
@@ -398,7 +411,11 @@ export class MhApp extends LitElement {
             <div class="list">
               ${open.map(
                 (f, index) =>
-                  html`<mh-finding .finding=${f} ?open=${index === 0}></mh-finding>`,
+                  html`<mh-finding
+                    .finding=${f}
+                    .related=${related.get(f.key) ?? []}
+                    ?open=${index === 0}
+                  ></mh-finding>`,
               )}
             </div>`
         : nothing}
@@ -409,6 +426,7 @@ export class MhApp extends LitElement {
                 (f, index) =>
                   html`<mh-finding
                     .finding=${f}
+                    .related=${related.get(f.key) ?? []}
                     ?open=${!open.length && index === 0 && f.severity !== "info"}
                   ></mh-finding>`,
               )}

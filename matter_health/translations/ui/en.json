@@ -73,7 +73,9 @@
     },
     "device_unreachable": {
       "title": "{device} can't be reached"
-    }
+    },
+    "related_title": "Also part of this",
+    "related_count": "{count} consequence | {count} consequences"
   },
   "link": {
     "power_off": "{switch} was switched off {origin}.",

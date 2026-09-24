@@ -14,7 +14,7 @@ import {
 } from "@mdi/js";
 import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
 
-import type { Finding, Link, Role } from "../api";
+import type { Finding, Link, Role, Severity } from "../api";
 import { clock, duration, relative, t } from "../i18n";
 import { base } from "../theme";
 import { sentence, title } from "../words";
@@ -43,11 +43,16 @@ const ORDER: Role[] = ["cause", "effect", "impact", "fix"];
 export class MhFinding extends LitElement {
   static override properties = {
     finding: { attribute: false },
+    related: { attribute: false },
+    nested: { type: Boolean, reflect: true },
     open: { type: Boolean, reflect: true },
     details: { state: true },
   };
 
   finding!: Finding;
+  /** Findings that are consequences of this one, shown inside it. */
+  related: Finding[] = [];
+  nested = false;
   open = false;
   details = false;
 
@@ -261,7 +266,44 @@ export class MhFinding extends LitElement {
       dd {
         margin: 0;
       }
+      .consequences {
+        color: var(--mh-muted);
+        background: var(--mh-surface-2);
+      }
+      .related {
+        display: grid;
+        gap: 8px;
+        margin: 0 0 14px 50px;
+      }
+      .related .label {
+        color: var(--mh-muted);
+        margin: 0 0 2px;
+      }
+      :host([nested]) article {
+        box-shadow: none;
+        border: 1px solid var(--mh-border);
+        border-left: 4px solid var(--accent);
+        background: var(--mh-surface-2);
+      }
+      :host([nested]) header {
+        padding: 12px 14px;
+      }
+      :host([nested]) h3 {
+        font-size: 15px;
+      }
+      :host([nested]) .badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+      }
+      :host([nested]) .badge svg.icon {
+        width: 20px;
+        height: 20px;
+      }
       @media (max-width: 600px) {
+        .related {
+          margin-left: 0;
+        }
         header {
           padding: 16px;
           gap: 12px;
@@ -277,8 +319,14 @@ export class MhFinding extends LitElement {
     `,
   ];
 
+  /** The most serious of this finding and its consequences. */
+  private severity(): Severity {
+    const all = [this.finding, ...this.related].map((f) => f.severity);
+    return all.includes("problem") ? "problem" : all.includes("warning") ? "warning" : "info";
+  }
+
   override updated(): void {
-    this.setAttribute("severity", this.finding.severity);
+    this.setAttribute("severity", this.severity());
   }
 
   private toggle(): void {
@@ -359,9 +407,9 @@ export class MhFinding extends LitElement {
       >
         <span class="badge"
           >${icon(
-            finding.severity === "info" && ended
+            this.severity() === "info" && ended
               ? mdiCheckCircleOutline
-              : SEVERITY_ICON[finding.severity],
+              : SEVERITY_ICON[this.severity()],
           )}</span
         >
         <div>
@@ -373,6 +421,11 @@ export class MhFinding extends LitElement {
                 ? html`<span>${t("finding.lasted", { duration: duration(span) })}</span>`
                 : nothing
               : html`<span class="pill ongoing">${t("finding.ongoing")}</span>`}
+            ${this.related.length
+              ? html`<span class="pill consequences"
+                  >${t("finding.related_count", { count: this.related.length })}</span
+                >`
+              : nothing}
           </div>
           ${!this.open && teaser ? html`<p class="teaser">${teaser}</p>` : nothing}
         </div>
@@ -383,6 +436,14 @@ export class MhFinding extends LitElement {
             <ol>
               ${groups.map(([role, links]) => this.step(role, links))}
             </ol>
+            ${this.related.length
+              ? html`<div class="related">
+                  <div class="label">${t("finding.related_title")}</div>
+                  ${this.related.map(
+                    (f) => html`<mh-finding nested .finding=${f}></mh-finding>`,
+                  )}
+                </div>`
+              : nothing}
             <button class="details-toggle" @click=${() => (this.details = !this.details)}>
               ${this.details ? t("finding.hide_details") : t("finding.details")}
             </button>

@@ -25,6 +25,8 @@ export interface Finding {
   subjects: string[];
   names: Record<string, string>;
   chain: Link[];
+  /** Key of the finding whose story this one is part of. */
+  part_of?: string | null;
 }
 
 export interface TimelineEvent {

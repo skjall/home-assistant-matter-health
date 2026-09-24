@@ -32,6 +32,7 @@ class OfflineRule(Rule):
     """Reports devices that have been unreachable for a while."""
 
     name: ClassVar[str] = "offline"
+    part_of: ClassVar[frozenset[str]] = frozenset({"mesh"})
     listens: ClassVar[frozenset[str]] = frozenset(
         {
             kinds.MATTER_NODE_UNAVAILABLE,

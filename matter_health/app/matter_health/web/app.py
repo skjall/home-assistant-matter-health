@@ -21,6 +21,7 @@ from aiohttp import web
 
 from .. import kinds
 from ..engine import Engine, event_payload
+from ..stories import stories
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -126,7 +127,13 @@ async def findings(request: web.Request) -> web.Response:
     days = _int(request.query.get("days"), 7, 1, 365)
     since = engine.ctx.now() - timedelta(days=days)
     found = await engine.ctx.store.findings(since)
-    return web.json_response([with_names(engine, f.as_dict()) for f in found])
+    belongs = stories(found, (type(rule) for rule in engine.rules), engine.ctx.now())
+    return web.json_response(
+        [
+            with_names(engine, {**f.as_dict(), "part_of": belongs.get(f.key)})
+            for f in found
+        ]
+    )
 
 
 async def events(request: web.Request) -> web.Response:

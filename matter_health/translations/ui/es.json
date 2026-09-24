@@ -73,7 +73,9 @@
     },
     "device_unreachable": {
       "title": "No se puede contactar con {device}"
-    }
+    },
+    "related_title": "También forma parte",
+    "related_count": "{count} consecuencia | {count} consecuencias"
   },
   "link": {
     "power_off": "{switch} fue apagado {origin}.",

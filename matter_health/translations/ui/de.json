@@ -73,7 +73,9 @@
     },
     "device_unreachable": {
       "title": "{device} ist nicht erreichbar"
-    }
+    },
+    "related_title": "Dazu gehört auch",
+    "related_count": "{count} Folge | {count} Folgen"
   },
   "link": {
     "power_off": "{switch} wurde ausgeschaltet {origin}.",

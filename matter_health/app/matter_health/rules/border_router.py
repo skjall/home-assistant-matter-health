@@ -38,9 +38,17 @@ class BorderRouterRule(Rule):
     """Reports border routers that stay away, and ones on switched outlets."""
 
     name: ClassVar[str] = "border_router"
+    part_of: ClassVar[frozenset[str]] = frozenset({"mesh"})
     listens: ClassVar[frozenset[str]] = frozenset(
         {kinds.BORDER_ROUTER_GONE, kinds.BORDER_ROUTER_APPEARED}
     )
+
+    @classmethod
+    def stories_for(cls, finding: Finding) -> frozenset[str]:
+        """Place a vanished router in a mesh story, but not a habit of vanishing."""
+        if finding.key.startswith("switched_border_router:"):
+            return frozenset()
+        return cls.part_of
 
     def __init__(self, ctx: Context) -> None:
         """Nothing is missing at start."""

@@ -73,7 +73,9 @@
     },
     "device_unreachable": {
       "title": "{device} est injoignable"
-    }
+    },
+    "related_title": "Fait aussi partie de l'incident",
+    "related_count": "{count} conséquence | {count} conséquences"
   },
   "link": {
     "power_off": "{switch} a été éteint {origin}.",

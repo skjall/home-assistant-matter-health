@@ -14,7 +14,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, ClassVar
 
 from . import kinds
@@ -147,9 +147,22 @@ class Rule(ABC):
     name: ClassVar[str]
     listens: ClassVar[frozenset[str]]
 
+    #: Rules whose findings tell a larger story this rule's findings can be
+    #: one consequence of, such as a failed pairing during a mesh split.
+    part_of: ClassVar[frozenset[str]] = frozenset()
+
+    #: For a rule that tells such a story: how long before its finding began
+    #: and after it ended a consequence may start and still belong to it.
+    story_margin: ClassVar[tuple[timedelta, timedelta] | None] = None
+
     def __init__(self, ctx: Context) -> None:
         """Keep the shared context."""
         self.ctx = ctx
+
+    @classmethod
+    def stories_for(cls, finding: Finding) -> frozenset[str]:
+        """Rules whose story ``finding`` may belong to; by default ``part_of``."""
+        return cls.part_of
 
     @abstractmethod
     async def on_event(self, event: Event) -> None:

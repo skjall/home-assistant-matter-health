@@ -63,6 +63,7 @@ class PairingRule(Rule):
     """Follows each attempt to add a device and explains failures."""
 
     name: ClassVar[str] = "pairing"
+    part_of: ClassVar[frozenset[str]] = frozenset({"mesh"})
     listens: ClassVar[frozenset[str]] = frozenset(
         {
             kinds.COMMISSIONING_CONTACT,
@@ -75,6 +76,11 @@ class PairingRule(Rule):
             kinds.COMMISSIONING_COMPLETED,
         }
     )
+
+    @classmethod
+    def stories_for(cls, finding: Finding) -> frozenset[str]:
+        """Only a failed attempt is a consequence of trouble in the mesh."""
+        return cls.part_of if finding.severity is Severity.PROBLEM else frozenset()
 
     def __init__(self, ctx: Context) -> None:
         """No attempt is open at start."""
