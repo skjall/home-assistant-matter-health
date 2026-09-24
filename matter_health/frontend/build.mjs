@@ -1,6 +1,7 @@
 // Bundles the page into the Python package, where the add-on serves it.
 import { build, context } from "esbuild";
-import { copyFile, mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 const out = "../app/matter_health/web/static";
 const options = {
@@ -14,10 +15,20 @@ const options = {
   legalComments: "none",
 };
 
+// The page names the bundle with a hash of its content, so a browser or the
+// companion app holding an old copy fetches the new one after an update.
+async function writePage() {
+  const bundle = await readFile(`${out}/app.js`).catch(() => "");
+  const version = createHash("sha256").update(bundle).digest("hex").slice(0, 12);
+  const page = await readFile("src/index.html", "utf8");
+  await writeFile(`${out}/index.html`, page.replace("static/app.js", `static/app.js?v=${version}`));
+}
+
 await mkdir(out, { recursive: true });
-await copyFile("src/index.html", `${out}/index.html`);
 if (process.argv.includes("--watch")) {
+  await writePage();
   await (await context(options)).watch();
 } else {
   await build(options);
+  await writePage();
 }

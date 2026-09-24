@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "Matter Health",
-    "subtitle": "Was mit deinen Matter- und Thread-Geräten los ist"
+    "title": "Matter Health"
   },
   "nav": {
     "findings": "Befunde",
@@ -10,20 +9,17 @@
   },
   "status": {
     "all_good": "Alles sieht gut aus",
-    "all_good_detail": "Gerade gibt es keine Probleme. Alles, was passiert, wird aufgezeichnet – du kannst also später nachsehen.",
     "problems": "{count} Problem braucht deine Aufmerksamkeit | {count} Probleme brauchen deine Aufmerksamkeit",
     "warnings": "{count} Sache solltest du im Blick behalten | {count} Dinge solltest du im Blick behalten",
     "sources_down": "Einige Informationen fehlen",
-    "live": "Live",
     "reconnecting": "Verbinde neu …",
-    "unavailable": "Das Add-on ist gerade nicht erreichbar. Lade die Seite gleich noch einmal."
+    "unavailable": "Das Add-on ist gerade nicht erreichbar. Lade die Seite gleich noch einmal.",
+    "offline": "Offline"
   },
   "summary": {
     "devices": "Geräte",
     "devices_unreachable": "{count} nicht erreichbar | {count} nicht erreichbar",
-    "devices_ok": "alle erreichbar",
     "border_routers": "Border Router",
-    "border_routers_hint": "Brücken zwischen deinen Thread-Geräten und deinem Heimnetz",
     "mesh": "Thread-Netz",
     "mesh_ok": "Verbunden",
     "mesh_unknown": "Unbekannt"
@@ -47,7 +43,6 @@
     "technical": "Für Technikinteressierte",
     "evidence": "Aufgezeichnete Fakten",
     "none_title": "Nichts zu melden",
-    "none_text": "Matter Health hat in diesem Zeitraum nichts gefunden, um das du dich kümmern müsstest.",
     "earlier": "Früher",
     "open": "Gerade jetzt",
     "mesh_split": {
@@ -196,11 +191,11 @@
     "unreachable_title": "Geräte, die nicht reagieren",
     "unreachable_empty": "Alle Geräte reagieren.",
     "sources_title": "Was Matter Health sieht",
-    "role": "Die Brücke von Home Assistant ist in deinem Thread-Netz gerade {role}.",
-    "routers": "{count} Geräte reichen gerade Nachrichten für andere weiter.",
     "foreign_title": "Andere Thread-Netze",
-    "foreign_hint": "Diese Geräte betreiben ein eigenes Thread-Netz. Geräte darin können deine Border Router nicht mitbenutzen – und deine Geräte nicht diese.",
-    "foreign_network": "Netz „{network}“"
+    "foreign_hint": "Getrennt von deinem Netz – deine Geräte können sie nicht nutzen.",
+    "foreign_network": "Netz „{network}“",
+    "facts": "Home Assistant: {role} · {count} Router im Netz",
+    "sources_ok": "Alles verbunden"
   },
   "source": {
     "matter_server": "Matter-Server",
@@ -214,7 +209,7 @@
   },
   "thread_role": {
     "leader": "Koordinator",
-    "router": "Weiterleiter",
+    "router": "Router",
     "child": "Mitglied",
     "detached": "abgetrenntes Mitglied",
     "disabled": "ausgeschaltetes Mitglied"

@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "Matter Health",
-    "subtitle": "What is going on with your Matter and Thread devices"
+    "title": "Matter Health"
   },
   "nav": {
     "findings": "Findings",
@@ -10,20 +9,17 @@
   },
   "status": {
     "all_good": "Everything looks fine",
-    "all_good_detail": "No problems right now. Anything that happens is recorded, so you can come back later.",
     "problems": "{count} problem needs attention | {count} problems need attention",
     "warnings": "{count} thing to keep an eye on | {count} things to keep an eye on",
     "sources_down": "Some information is missing",
-    "live": "Live",
     "reconnecting": "Reconnecting…",
-    "unavailable": "The add-on could not be reached. Reload the page in a moment."
+    "unavailable": "The add-on could not be reached. Reload the page in a moment.",
+    "offline": "Offline"
   },
   "summary": {
     "devices": "Devices",
     "devices_unreachable": "{count} unreachable | {count} unreachable",
-    "devices_ok": "all reachable",
     "border_routers": "Border routers",
-    "border_routers_hint": "Bridges between your Thread devices and your home network",
     "mesh": "Thread network",
     "mesh_ok": "Connected",
     "mesh_unknown": "Unknown"
@@ -47,7 +43,6 @@
     "technical": "For the technically curious",
     "evidence": "Recorded facts",
     "none_title": "Nothing to report",
-    "none_text": "Matter Health has not found anything that needs your attention in this period.",
     "earlier": "Earlier",
     "open": "Right now",
     "mesh_split": {
@@ -196,11 +191,11 @@
     "unreachable_title": "Devices that don't respond",
     "unreachable_empty": "Every device responds.",
     "sources_title": "What Matter Health can see",
-    "role": "Home Assistant's bridge is currently a {role} in your Thread network.",
-    "routers": "{count} devices currently pass messages on for others.",
     "foreign_title": "Other Thread networks",
-    "foreign_hint": "These devices run a Thread network of their own. Devices in it cannot use your border routers, and yours cannot use them.",
-    "foreign_network": "Network “{network}”"
+    "foreign_hint": "Separate from yours – your devices cannot use them.",
+    "foreign_network": "Network “{network}”",
+    "facts": "Home Assistant: {role} · {count} routers in the network",
+    "sources_ok": "All connected"
   },
   "source": {
     "matter_server": "Matter Server",

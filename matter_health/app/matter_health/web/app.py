@@ -81,6 +81,20 @@ async def ingress_only(request: web.Request, handler: Handler) -> web.StreamResp
     return await handler(request)
 
 
+@web.middleware
+async def revalidate(request: web.Request, handler: Handler) -> web.StreamResponse:
+    """Make browsers ask again before reusing the page or its files.
+
+    The companion apps keep cached files across updates of the add-on
+    otherwise and go on showing the old page. The files are small and the
+    answer to a repeated question is a cheap "not modified".
+    """
+    response = await handler(request)
+    if not request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 def with_names(engine: Engine, finding: dict[str, Any]) -> dict[str, Any]:
     """Add the current names of a finding's subjects.
 
@@ -268,7 +282,7 @@ def create_app(
     translations: Path = TRANSLATIONS,
 ) -> web.Application:
     """Build the web application; ``trust_all`` lifts the ingress check."""
-    app = web.Application(middlewares=[ingress_only])
+    app = web.Application(middlewares=[ingress_only, revalidate])
     app[ENGINE] = engine
     app[TRUST_ALL] = trust_all
     app[TRANSLATION_DIR] = translations

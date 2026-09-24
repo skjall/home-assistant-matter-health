@@ -123,6 +123,11 @@ async def test_page_and_static_files(
 
     assert await page.text() == "<h1>Matter Health</h1>"
     assert await script.text() == "console.log(1)"
+    # Cached copies are checked again, so an update reaches every viewer.
+    assert page.headers["Cache-Control"] == "no-cache"
+    assert script.headers["Cache-Control"] == "no-cache"
+    api = await client.get("/api/languages")
+    assert "Cache-Control" not in api.headers
 
 
 async def test_without_static_files_there_is_no_static_route(

@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "Matter Health",
-    "subtitle": "Qué está pasando con tus dispositivos Matter y Thread"
+    "title": "Matter Health"
   },
   "nav": {
     "findings": "Hallazgos",
@@ -10,20 +9,17 @@
   },
   "status": {
     "all_good": "Todo parece estar bien",
-    "all_good_detail": "Ahora mismo no hay problemas. Todo lo que pase queda registrado, así que puedes volver más tarde.",
     "problems": "{count} problema necesita tu atención | {count} problemas necesitan tu atención",
     "warnings": "{count} cosa que vigilar | {count} cosas que vigilar",
     "sources_down": "Falta parte de la información",
-    "live": "En directo",
     "reconnecting": "Reconectando…",
-    "unavailable": "No se puede acceder al complemento. Vuelve a cargar la página en un momento."
+    "unavailable": "No se puede acceder al complemento. Vuelve a cargar la página en un momento.",
+    "offline": "Sin conexión"
   },
   "summary": {
     "devices": "Dispositivos",
     "devices_unreachable": "{count} inaccesible | {count} inaccesibles",
-    "devices_ok": "todos accesibles",
     "border_routers": "Puentes",
-    "border_routers_hint": "Los puentes entre tus dispositivos Thread y la red de tu casa",
     "mesh": "Red Thread",
     "mesh_ok": "Conectada",
     "mesh_unknown": "Desconocido"
@@ -47,7 +43,6 @@
     "technical": "Para los curiosos de la técnica",
     "evidence": "Hechos registrados",
     "none_title": "Nada que contar",
-    "none_text": "Matter Health no ha encontrado nada que necesite tu atención en este periodo.",
     "earlier": "Antes",
     "open": "Ahora mismo",
     "mesh_split": {
@@ -196,11 +191,11 @@
     "unreachable_title": "Dispositivos que no responden",
     "unreachable_empty": "Todos los dispositivos responden.",
     "sources_title": "Qué puede ver Matter Health",
-    "role": "El puente de Home Assistant es ahora mismo {role} en tu red Thread.",
-    "routers": "{count} dispositivos reenvían ahora mismo mensajes para otros.",
     "foreign_title": "Otras redes Thread",
-    "foreign_hint": "Estos dispositivos tienen su propia red Thread. Los dispositivos de esa red no pueden usar tus routers de borde, ni los tuyos los suyos.",
-    "foreign_network": "Red «{network}»"
+    "foreign_hint": "Separada de la tuya – tus dispositivos no pueden usarlos.",
+    "foreign_network": "Red «{network}»",
+    "facts": "Home Assistant: {role} · {count} routers en la red",
+    "sources_ok": "Todo conectado"
   },
   "source": {
     "matter_server": "Servidor Matter",

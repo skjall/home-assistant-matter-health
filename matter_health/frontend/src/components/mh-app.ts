@@ -4,7 +4,6 @@ import {
   mdiAlertCircleOutline,
   mdiAlertOutline,
   mdiDevices,
-  mdiHeartPulse,
   mdiRouterWireless,
   mdiShieldCheckOutline,
   mdiSourceBranch,
@@ -30,6 +29,7 @@ export class MhApp extends LitElement {
     events: { state: true },
     tab: { state: true },
     live: { state: true },
+    offline: { state: true },
     failed: { state: true },
   };
 
@@ -38,6 +38,9 @@ export class MhApp extends LitElement {
   events: TimelineEvent[] = [];
   tab: Tab = "findings";
   live = false;
+  /** Disconnected for long enough to say so; brief gaps are normal. */
+  offline = false;
+  private offlineTimer?: number;
   failed = false;
   private stop?: () => void;
   private refresh?: number;
@@ -56,47 +59,6 @@ export class MhApp extends LitElement {
         max-width: 980px;
         margin: 0 auto;
         padding: 24px 20px 48px;
-      }
-      .top {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-      .logo {
-        display: grid;
-        place-items: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        color: #fff;
-        background: linear-gradient(135deg, #0a7ee8, #5aa9f5);
-      }
-      .top h1 {
-        margin: 0;
-        font-size: 20px;
-        line-height: 1.2;
-      }
-      .top p {
-        margin: 2px 0 0;
-        font-size: 13px;
-      }
-      .live {
-        margin-left: auto;
-        color: var(--mh-muted);
-        background: var(--mh-surface);
-        border: 1px solid var(--mh-border);
-      }
-      .live::before {
-        content: "";
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--mh-muted);
-      }
-      .live.on::before {
-        background: var(--mh-ok);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--mh-ok) 25%, transparent);
       }
       .hero {
         display: grid;
@@ -175,6 +137,17 @@ export class MhApp extends LitElement {
         color: var(--mh-problem);
         font-weight: 600;
       }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .offline {
+        color: var(--mh-muted);
+        background: var(--mh-surface-2);
+        border: 1px solid var(--mh-border);
+      }
       nav {
         display: inline-flex;
         padding: 4px;
@@ -182,7 +155,6 @@ export class MhApp extends LitElement {
         border-radius: 999px;
         background: var(--mh-surface-2);
         border: 1px solid var(--mh-border);
-        margin-bottom: 18px;
       }
       nav button {
         border: 0;
@@ -244,11 +216,23 @@ export class MhApp extends LitElement {
           font-size: 19px;
         }
         .tiles {
-          grid-template-columns: 1fr;
           gap: 8px;
+        }
+        .tile {
+          padding: 10px 12px;
+        }
+        .tile .ic {
+          display: none;
+        }
+        .tile .v {
+          font-size: 16px;
+        }
+        .bar {
+          flex-wrap: wrap;
         }
         nav {
           display: flex;
+          flex: 1;
         }
         nav button {
           flex: 1;
@@ -268,7 +252,12 @@ export class MhApp extends LitElement {
         this.events = [event, ...this.events].slice(0, 500);
         this.scheduleOverview();
       },
-      status: (live) => (this.live = live),
+      status: (live) => {
+        this.live = live;
+        window.clearTimeout(this.offlineTimer);
+        if (live) this.offline = false;
+        else this.offlineTimer = window.setTimeout(() => (this.offline = true), 15000);
+      },
     });
   }
 
@@ -335,8 +324,6 @@ export class MhApp extends LitElement {
       : warnings.length
         ? t("status.warnings", { count: warnings.length })
         : t("status.all_good");
-    // The findings follow right below; repeating one here would say it twice.
-    const detail = tone === "ok" ? t("status.all_good_detail") : "";
     return html`<section class="card hero ${tone}">
       <span class="big"
         >${icon(
@@ -349,7 +336,6 @@ export class MhApp extends LitElement {
       >
       <div>
         <h2>${headline}</h2>
-        ${detail ? html`<p>${detail}</p>` : nothing}
         ${sourcesDown ? html`<p>${t("status.sources_down")}</p>` : nothing}
       </div>
     </section>`;
@@ -365,14 +351,12 @@ export class MhApp extends LitElement {
         <span class="ic">${icon(mdiDevices)}</span>
         <div>
           <div class="v">${overview.devices.total ?? "–"}</div>
-          <div class="l">
-            ${t("summary.devices")} ·
-            ${unreachable
-              ? html`<span class="bad"
-                  >${t("summary.devices_unreachable", { count: unreachable })}</span
-                >`
-              : t("summary.devices_ok")}
-          </div>
+          <div class="l">${t("summary.devices")}</div>
+          ${unreachable
+            ? html`<div class="l bad">
+                ${t("summary.devices_unreachable", { count: unreachable })}
+              </div>`
+            : nothing}
         </div>
       </div>
       <div class="card tile">
@@ -419,7 +403,6 @@ export class MhApp extends LitElement {
       return html`<div class="card empty">
         <span class="ic">${icon(mdiShieldCheckOutline)}</span>
         <h3>${t("finding.none_title")}</h3>
-        <p>${t("finding.none_text")}</p>
       </div>`;
     }
     return html`
@@ -455,20 +438,11 @@ export class MhApp extends LitElement {
   override render(): TemplateResult {
     const tabs: Tab[] = ["findings", "timeline", "network"];
     return html`<div class="page">
-      <div class="top">
-        <span class="logo">${icon(mdiHeartPulse)}</span>
-        <div>
-          <h1>${t("app.title")}</h1>
-          <p class="muted">${t("app.subtitle")}</p>
-        </div>
-        <span class="pill live ${this.live ? "on" : ""}"
-          >${this.live ? t("status.live") : t("status.reconnecting")}</span
-        >
-      </div>
       ${this.failed
         ? html`<section class="card empty"><p>${t("status.unavailable")}</p></section>`
         : nothing}
       ${this.verdict()} ${this.tiles()}
+      <div class="bar">
       <nav role="tablist">
         ${tabs.map(
           (tab) =>
@@ -481,6 +455,12 @@ export class MhApp extends LitElement {
             </button>`,
         )}
       </nav>
+      ${this.offline
+        ? html`<span class="pill offline" title=${t("status.reconnecting")}
+            >${t("status.offline")}</span
+          >`
+        : nothing}
+      </div>
       ${this.tab === "findings"
         ? this.findingList()
         : this.tab === "timeline"

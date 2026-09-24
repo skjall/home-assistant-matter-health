@@ -73,6 +73,10 @@ export class MhNetwork extends LitElement {
         gap: 8px;
       }
       .empty {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
         font-size: 14px;
         color: var(--mh-muted);
       }
@@ -110,7 +114,6 @@ export class MhNetwork extends LitElement {
     return html`
       <section class="card">
         <h2>${t("summary.border_routers")}</h2>
-        <p class="hint muted">${t("summary.border_routers_hint")}</p>
         ${own.length
           ? html`<ul class="grid">
               ${own.map((router) => this.router(router))}
@@ -118,12 +121,10 @@ export class MhNetwork extends LitElement {
           : html`<p class="empty">${t("network.border_routers_empty")}</p>`}
         ${thread?.role
           ? html`<p class="facts">
-              ${t("network.role", {
+              ${t("network.facts", {
                 role: t(`thread_role.${thread.role}`),
+                count: thread.router_count ?? "–",
               })}
-              ${thread.router_count
-                ? t("network.routers", { count: thread.router_count })
-                : nothing}
             </p>`
           : nothing}
       </section>
@@ -159,24 +160,32 @@ export class MhNetwork extends LitElement {
 
       <section class="card">
         <h2>${t("network.sources_title")}</h2>
-        <ul>
-          ${Object.entries(overview.sources).map(
-            ([name, status]) =>
-              html`<li>
-                <span class=${status.ok ? "ok" : status.ok === false ? "down" : "muted"}
-                  >${icon(status.ok === false ? mdiCloseCircleOutline : mdiCheckCircleOutline)}</span
-                >
-                <span>${t(`source.${name}`)}</span>
-                <span class="sub"
-                  >${status.ok
-                    ? t("source.ok")
-                    : status.ok === false
-                      ? t("source.down")
-                      : t("source.waiting")}</span
-                >
-              </li>`,
-          )}
-        </ul>
+        ${Object.values(overview.sources).every((status) => status.ok)
+          ? html`<p class="empty">
+              <span class="ok">${icon(mdiCheckCircleOutline)}</span>
+              ${t("network.sources_ok")}
+            </p>`
+          : html`<ul>
+              ${Object.entries(overview.sources).map(
+                ([name, status]) =>
+                  html`<li>
+                    <span
+                      class=${status.ok ? "ok" : status.ok === false ? "down" : "muted"}
+                      >${icon(
+                        status.ok === false ? mdiCloseCircleOutline : mdiCheckCircleOutline,
+                      )}</span
+                    >
+                    <span>${t(`source.${name}`)}</span>
+                    <span class="sub"
+                      >${status.ok
+                        ? t("source.ok")
+                        : status.ok === false
+                          ? t("source.down")
+                          : t("source.waiting")}</span
+                    >
+                  </li>`,
+              )}
+            </ul>`}
       </section>
     `;
   }
