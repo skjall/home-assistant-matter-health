@@ -325,7 +325,7 @@ async def test_dismissing_a_finding(
         return overview["open"], {f["key"]: f["dismissed"] for f in found}
 
     response = await client.post("/api/dismiss", json={"key": "a"})
-    assert await response.json() == {"key": "a", "dismissed": True}
+    assert await response.json() == {"keys": ["a"], "dismissed": True}
     assert await state() == (
         {"problem": 0, "warning": 1, "info": 0},
         {"a": True, "b": False},
@@ -344,7 +344,13 @@ async def test_dismissing_a_finding(
 
 @pytest.mark.parametrize(
     ("body", "status"),
-    [("not json", 400), ({"dismissed": True}, 400), (["a"], 400), ({"key": "x"}, 404)],
+    [
+        ("not json", 400),
+        ({"dismissed": True}, 400),
+        (["a"], 400),
+        ({"keys": 3}, 400),
+        ({"key": "x"}, 404),
+    ],
 )
 async def test_dismissing_needs_a_known_key(
     aiohttp_client: AiohttpClient,
@@ -361,3 +367,23 @@ async def test_dismissing_needs_a_known_key(
         response = await client.post("/api/dismiss", json=body)
 
     assert response.status == status
+
+
+async def test_acknowledging_several_earlier_findings_at_once(
+    aiohttp_client: AiohttpClient,
+    store: Store,
+    engine: Engine,
+    translations: Path,
+) -> None:
+    for key in ("old", "older"):
+        await store.put_finding(finding(key, Severity.WARNING, -60, ended=True), T0)
+    client = await aiohttp_client(build(engine, translations))
+
+    response = await client.post("/api/dismiss", json={"keys": ["old", "older"]})
+    assert response.status == 200
+
+    found = await (await client.get("/api/findings")).json()
+    assert {f["key"]: f["dismissed"] for f in found} == {"old": True, "older": True}
+
+    missing = await client.post("/api/dismiss", json={"keys": ["old", "nope"]})
+    assert missing.status == 404

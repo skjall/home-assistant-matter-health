@@ -387,3 +387,13 @@ def test_link_summary_keeps_the_best_link_per_device() -> None:
         },
     ]
     assert link_summary({}) == []
+
+
+def test_home_assistants_own_border_router_is_named_after_it() -> None:
+    assert (
+        matter_server.display_name(
+            {"hostname": "homeassistant-otbr.local", "vendorName": "Home Assistant"}
+        )
+        == "Home Assistant"
+    )
+    assert matter_server.display_name({"vendorName": "Acme"}) is None

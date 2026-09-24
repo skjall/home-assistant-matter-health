@@ -4,12 +4,17 @@ Devices drop out for a moment all the time - a router restarts, a sleepy
 device misses a poll. Only one that stays away is worth the user's attention.
 The finding says what happened around the moment it went away: a disturbed
 mesh, or a switch turned off just before.
+
+What is away is kept in the store, not only in memory, and compared with the
+Matter Server's current list on every tick. A device that was unreachable
+before the add-on started, or while it was restarting, is reported all the
+same, and one that came back unseen is closed.
 """
 
 from __future__ import annotations
 
-from datetime import timedelta
-from typing import ClassVar
+from datetime import datetime, timedelta
+from typing import Any, ClassVar
 
 from .. import kinds
 from ..engine import RULES, Context, Rule
@@ -25,6 +30,16 @@ POWER_WINDOW = timedelta(minutes=2)
 
 #: Mesh trouble this close to the moment counts as the likely reason.
 MESH_WINDOW = timedelta(minutes=3)
+
+#: A device's entry may be missing from the Matter Server's list this long
+#: before it counts as back.
+GRACE = timedelta(minutes=1)
+
+#: Devices away, by subject, with when they went and whether that was reported.
+AWAY = "offline.away"
+
+#: The Matter Server's current picture, as the Matter Server source stores it.
+NODES = "matter.nodes"
 
 
 @RULES.register("offline")
@@ -42,44 +57,75 @@ class OfflineRule(Rule):
     )
 
     def __init__(self, ctx: Context) -> None:
-        """Every device is assumed reachable at start."""
+        """Read what is away from the store on first use."""
         super().__init__(ctx)
-        self.away: dict[str, Event] = {}
-        self.reported: dict[str, Finding] = {}
+        self._state: dict[str, dict[str, Any]] | None = None
 
     async def on_event(self, event: Event) -> None:
         """Track a device going away or coming back."""
         subject = event.subject
         if subject is None:
             return
+        away = await self._away()
         if event.kind == kinds.MATTER_NODE_UNAVAILABLE:
-            self.away.setdefault(subject, event)
-            return
-        self.away.pop(subject, None)
-        finding = self.reported.pop(subject, None)
-        if finding:
-            finding.ended_at = event.at
-            await self.ctx.publish(finding)
+            away.setdefault(
+                subject,
+                {
+                    "since": event.at.isoformat(),
+                    "event": event.id,
+                    "name": event.data.get("name"),
+                    "reported": False,
+                },
+            )
+        elif subject in away:
+            await self._back(subject, away.pop(subject), event.at)
+        await self._save(away)
 
     async def on_tick(self) -> None:
-        """Report devices that have been away long enough."""
+        """Catch up with the Matter Server, then report long absences."""
         now = self.ctx.now()
+        away = await self._away()
+        nodes = await self.ctx.store.get_state(NODES)
+        if nodes is not None:
+            unavailable = set(nodes.get("unavailable", []))
+            for subject in unavailable - away.keys():
+                away[subject] = {"since": now.isoformat(), "event": None}
+            for subject in list(away.keys() - unavailable):
+                # The list is written right after the event; give it a moment
+                # before taking a missing entry as a return nobody saw.
+                if now - datetime.fromisoformat(away[subject]["since"]) >= GRACE:
+                    await self._back(subject, away.pop(subject), now)
         # Publishing awaits, and a device may come or go meanwhile.
-        for subject, event in list(self.away.items()):
-            if subject not in self.reported and now - event.at >= UNREACHABLE_FOR:
-                finding = await self.describe(event)
-                self.reported[subject] = finding
-                await self.ctx.publish(finding)
+        for subject, entry in list(away.items()):
+            since = datetime.fromisoformat(entry["since"])
+            if not entry.get("reported") and now - since >= UNREACHABLE_FOR:
+                entry["reported"] = True
+                await self.ctx.publish(await self.describe(subject, entry))
+        await self._save(away)
 
-    async def describe(self, event: Event) -> Finding:
+    async def _away(self) -> dict[str, dict[str, Any]]:
+        # One dictionary for events and ticks alike: a copy per call would let
+        # a tick that awaits in between write back an older picture.
+        if self._state is None:
+            self._state = dict(await self.ctx.store.get_state(AWAY) or {})
+        return self._state
+
+    async def _save(self, away: dict[str, dict[str, Any]]) -> None:
+        await self.ctx.store.set_state(AWAY, away)
+
+    async def _back(self, subject: str, entry: dict[str, Any], at: datetime) -> None:
+        if entry.get("reported"):
+            finding = await self.describe(subject, entry)
+            finding.ended_at = at
+            await self.ctx.publish(finding)
+
+    async def describe(self, subject: str, entry: dict[str, Any]) -> Finding:
         """Build the finding for a device that stayed unreachable."""
-        subject = str(event.subject)
-        device = self.ctx.names.get(subject) or event.data.get("name")
+        since = datetime.fromisoformat(entry["since"])
+        device = self.ctx.names.get(subject) or entry.get("name")
         chain: list[Link] = []
-        trouble = await mesh_trouble(
-            self.ctx, event.at - MESH_WINDOW, event.at + MESH_WINDOW
-        )
-        power = await last_power_off(self.ctx, event.at, POWER_WINDOW)
+        trouble = await mesh_trouble(self.ctx, since - MESH_WINDOW, since + MESH_WINDOW)
+        power = await last_power_off(self.ctx, since, POWER_WINDOW)
         if trouble:
             chain.append(
                 Link(
@@ -99,19 +145,19 @@ class OfflineRule(Rule):
                 Role.EFFECT,
                 "link.device_unreachable",
                 {"device": device},
-                at=event.at,
-                evidence=[event.id] if event.id else [],
+                at=since,
+                evidence=[entry["event"]] if entry.get("event") else [],
             )
         )
         chain.append(Link(Role.IMPACT, "link.device_unreachable_impact"))
         chain.append(Link(Role.FIX, "fix.device_unreachable", {"device": device}))
         return Finding(
-            key=f"offline:{subject}:{event.at.isoformat()}",
+            key=f"offline:{subject}:{entry['since']}",
             rule=self.name,
             severity=Severity.WARNING,
             title="finding.device_unreachable.title",
             params={"device": device},
-            started_at=event.at,
+            started_at=since,
             chain=chain,
             subjects=[subject],
         )

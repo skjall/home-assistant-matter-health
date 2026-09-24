@@ -20,6 +20,8 @@ import "./mh-timeline";
 
 type Tab = "findings" | "timeline" | "network";
 
+const POLL_MS = 30_000;
+
 const SEVERITY_RANK = { problem: 0, warning: 1, info: 2 };
 
 export class MhApp extends LitElement {
@@ -30,6 +32,7 @@ export class MhApp extends LitElement {
     tab: { state: true },
     live: { state: true },
     offline: { state: true },
+    showDone: { state: true },
     failed: { state: true },
   };
 
@@ -40,11 +43,13 @@ export class MhApp extends LitElement {
   live = false;
   /** Disconnected for long enough to say so; brief gaps are normal. */
   offline = false;
+  showDone = false;
   private offlineTimer?: number;
   failed = false;
   private stop?: () => void;
   private refresh?: number;
   private regroup?: number;
+  private poll?: number;
 
   static override styles = [
     tokens,
@@ -133,6 +138,9 @@ export class MhApp extends LitElement {
         font-size: 13px;
         color: var(--mh-muted);
       }
+      .tile .short {
+        display: none;
+      }
       .tile .bad {
         color: var(--mh-problem);
         font-weight: 600;
@@ -179,6 +187,23 @@ export class MhApp extends LitElement {
         color: var(--mh-muted);
         margin: 20px 4px 10px;
       }
+      .group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      button.link {
+        border: 0;
+        padding: 0;
+        background: none;
+        font: inherit;
+        color: var(--mh-primary);
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 600;
+        cursor: pointer;
+      }
       .group:first-child {
         margin-top: 0;
       }
@@ -221,8 +246,12 @@ export class MhApp extends LitElement {
         .tile {
           padding: 10px 12px;
         }
-        .tile .ic {
+        .tile .ic,
+        .tile .long {
           display: none;
+        }
+        .tile .short {
+          display: inline;
         }
         .tile .v {
           font-size: 16px;
@@ -246,6 +275,12 @@ export class MhApp extends LitElement {
     super.connectedCallback();
     this.addEventListener("mh-dismiss", (e) => void this.dismiss(e as CustomEvent));
     void this.load();
+    // Some embedded browsers hold back live updates; asking now and then
+    // keeps the page current until the live connection is back.
+    this.poll = window.setInterval(() => {
+      if (!this.live) void this.load();
+    }, POLL_MS);
+    document.addEventListener("visibilitychange", this.onVisible);
     this.stop = follow({
       finding: (finding) => this.upsert(finding),
       event: (event) => {
@@ -264,7 +299,14 @@ export class MhApp extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.stop?.();
+    window.clearInterval(this.poll);
+    document.removeEventListener("visibilitychange", this.onVisible);
   }
+
+  /** A page coming back from the background may have missed updates. */
+  private onVisible = () => {
+    if (document.visibilityState === "visible") void this.load();
+  };
 
   private async load(): Promise<void> {
     try {
@@ -276,6 +318,7 @@ export class MhApp extends LitElement {
       this.overview = overview;
       this.findings = findings;
       this.events = events;
+      this.failed = false;
     } catch {
       this.failed = true;
     }
@@ -288,11 +331,22 @@ export class MhApp extends LitElement {
     }, 1500);
   }
 
-  private async dismiss(event: CustomEvent<{ key: string; dismissed: boolean }>) {
-    const { key, dismissed } = event.detail;
-    await api.dismiss(key, dismissed);
-    this.findings = this.findings.map((f) => (f.key === key ? { ...f, dismissed } : f));
+  private async dismiss(event: CustomEvent<{ keys: string[]; dismissed: boolean }>) {
+    const { keys, dismissed } = event.detail;
+    if (!keys.length) return;
+    await api.dismiss(keys, dismissed);
+    this.findings = this.findings.map((f) =>
+      keys.includes(f.key) ? { ...f, dismissed } : f,
+    );
     this.overview = await api.overview();
+  }
+
+  private acknowledgeAll(findings: Finding[]): void {
+    this.dispatchEvent(
+      new CustomEvent("mh-dismiss", {
+        detail: { keys: findings.map((f) => f.key), dismissed: true },
+      }),
+    );
   }
 
   private upsert(finding: Finding): void {
@@ -354,7 +408,11 @@ export class MhApp extends LitElement {
           <div class="l">${t("summary.devices")}</div>
           ${unreachable
             ? html`<div class="l bad">
-                ${t("summary.devices_unreachable", { count: unreachable })}
+                <span class="long"
+                  >${t("summary.devices_unreachable", { count: unreachable })}</span
+                ><span class="short"
+                  >${t("summary.devices_unreachable_short", { count: unreachable })}</span
+                >
               </div>`
             : nothing}
         </div>
@@ -396,10 +454,10 @@ export class MhApp extends LitElement {
       (a, b) => rank(a) - rank(b) || b.started_at.localeCompare(a.started_at),
     );
     const open = sorted.filter((f) => !f.ended_at && !f.dismissed);
-    const earlier = [...shown]
-      .filter((f) => f.ended_at || f.dismissed)
-      .sort((a, b) => b.started_at.localeCompare(a.started_at));
-    if (!open.length && !earlier.length) {
+    const newestFirst = (a: Finding, b: Finding) => b.started_at.localeCompare(a.started_at);
+    const earlier = shown.filter((f) => f.ended_at && !f.dismissed).sort(newestFirst);
+    const done = shown.filter((f) => f.dismissed).sort(newestFirst);
+    if (!open.length && !earlier.length && !done.length) {
       return html`<div class="card empty">
         <span class="ic">${icon(mdiShieldCheckOutline)}</span>
         <h3>${t("finding.none_title")}</h3>
@@ -420,7 +478,12 @@ export class MhApp extends LitElement {
             </div>`
         : nothing}
       ${earlier.length
-        ? html`<div class="group">${t("finding.earlier")}</div>
+        ? html`<div class="group">
+              <span>${t("finding.earlier")}</span>
+              <button class="link" @click=${() => this.acknowledgeAll(earlier)}>
+                ${t("finding.acknowledge_all")}
+              </button>
+            </div>
             <div class="list">
               ${earlier.map(
                 (f, index) =>
@@ -431,6 +494,28 @@ export class MhApp extends LitElement {
                   ></mh-finding>`,
               )}
             </div>`
+        : nothing}
+      ${done.length
+        ? html`<div class="group">
+              <button
+                class="link"
+                aria-expanded=${this.showDone}
+                @click=${() => (this.showDone = !this.showDone)}
+              >
+                ${t("finding.done", { count: done.length })}
+              </button>
+            </div>
+            ${this.showDone
+              ? html`<div class="list">
+                  ${done.map(
+                    (f) =>
+                      html`<mh-finding
+                        .finding=${f}
+                        .related=${related.get(f.key) ?? []}
+                      ></mh-finding>`,
+                  )}
+                </div>`
+              : nothing}`
         : nothing}
     `;
   }

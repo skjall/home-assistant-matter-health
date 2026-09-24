@@ -22,7 +22,8 @@
     "border_routers": "Puentes",
     "mesh": "Red Thread",
     "mesh_ok": "Conectada",
-    "mesh_unknown": "Desconocido"
+    "mesh_unknown": "Desconocido",
+    "devices_unreachable_short": "{count} sin conexión"
   },
   "role": {
     "cause": "Por qué",
@@ -73,7 +74,10 @@
     "related_count": "{count} consecuencia | {count} consecuencias",
     "dismiss": "Marcar como resuelto",
     "undismiss": "Mostrar de nuevo",
-    "dismissed": "resuelto"
+    "dismissed": "resuelto",
+    "acknowledge": "Marcar como visto",
+    "acknowledge_all": "Marcar todo como visto",
+    "done": "Resuelto ({count})"
   },
   "link": {
     "power_off": "{switch} fue apagado {origin}.",

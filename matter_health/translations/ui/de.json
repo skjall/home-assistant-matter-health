@@ -22,7 +22,8 @@
     "border_routers": "Border Router",
     "mesh": "Thread-Netz",
     "mesh_ok": "Verbunden",
-    "mesh_unknown": "Unbekannt"
+    "mesh_unknown": "Unbekannt",
+    "devices_unreachable_short": "{count} offline"
   },
   "role": {
     "cause": "Warum",
@@ -73,7 +74,10 @@
     "related_count": "{count} Folge | {count} Folgen",
     "dismiss": "Als erledigt markieren",
     "undismiss": "Wieder anzeigen",
-    "dismissed": "erledigt"
+    "dismissed": "erledigt",
+    "acknowledge": "Zur Kenntnis nehmen",
+    "acknowledge_all": "Alle zur Kenntnis nehmen",
+    "done": "Erledigt ({count})"
   },
   "link": {
     "power_off": "{switch} wurde ausgeschaltet {origin}.",

@@ -22,7 +22,8 @@
     "border_routers": "Passerelles",
     "mesh": "Réseau Thread",
     "mesh_ok": "Connecté",
-    "mesh_unknown": "Inconnu"
+    "mesh_unknown": "Inconnu",
+    "devices_unreachable_short": "{count} hors ligne"
   },
   "role": {
     "cause": "Pourquoi",
@@ -73,7 +74,10 @@
     "related_count": "{count} conséquence | {count} conséquences",
     "dismiss": "Marquer comme réglé",
     "undismiss": "Afficher à nouveau",
-    "dismissed": "réglé"
+    "dismissed": "réglé",
+    "acknowledge": "Marquer comme vu",
+    "acknowledge_all": "Tout marquer comme vu",
+    "done": "Réglé ({count})"
   },
   "link": {
     "power_off": "{switch} a été éteint {origin}.",

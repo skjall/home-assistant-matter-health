@@ -56,6 +56,17 @@ def border_router_name(raw: dict[str, Any]) -> str:
     return str(raw.get("modelName") or raw.get("vendorName") or "Border router")
 
 
+def display_name(raw: dict[str, Any]) -> str | None:
+    """Return a better name than the host name, where the announcement implies one.
+
+    Home Assistant's own border router announces itself with the add-on's
+    host name, which reads like a technical label; it is Home Assistant's.
+    """
+    if raw.get("vendorName") == "Home Assistant":
+        return "Home Assistant"
+    return None
+
+
 def link_summary(topology: dict[str, Any]) -> list[dict[str, Any]]:
     """For every device, its best radio link.
 
@@ -265,7 +276,7 @@ class MatterServerSource(Source):
             current[name] = {
                 "subject": f"br:{ext}",
                 # Keyed by the announced name, shown by the one the user gave.
-                "name": self.ctx.names.match(name) or name,
+                "name": self.ctx.names.match(name) or display_name(raw) or name,
                 "vendor": raw.get("vendorName"),
                 "model": raw.get("modelName"),
                 "network": raw.get("networkName"),

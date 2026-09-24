@@ -22,7 +22,8 @@
     "border_routers": "Border routers",
     "mesh": "Thread network",
     "mesh_ok": "Connected",
-    "mesh_unknown": "Unknown"
+    "mesh_unknown": "Unknown",
+    "devices_unreachable_short": "{count} offline"
   },
   "role": {
     "cause": "Why",
@@ -73,7 +74,10 @@
     "related_count": "{count} consequence | {count} consequences",
     "dismiss": "Mark as dealt with",
     "undismiss": "Show again",
-    "dismissed": "dealt with"
+    "dismissed": "dealt with",
+    "acknowledge": "Mark as seen",
+    "acknowledge_all": "Mark all as seen",
+    "done": "Dealt with ({count})"
   },
   "link": {
     "power_off": "{switch} was switched off {origin}.",

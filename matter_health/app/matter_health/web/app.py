@@ -173,29 +173,36 @@ async def findings(request: web.Request) -> web.Response:
 
 
 async def dismiss(request: web.Request) -> web.Response:
-    """Mark a finding as dealt with, or show it again."""
+    """Mark findings as dealt with, or show them again.
+
+    Takes one ``key`` or a list of ``keys``, so a whole list of earlier
+    findings can be acknowledged at once.
+    """
     engine = request.app[ENGINE]
     store = engine.ctx.store
     try:
         body = await request.json()
-        key, wanted = str(body["key"]), bool(body.get("dismissed", True))
+        keys = [str(k) for k in body["keys"]] if "keys" in body else [str(body["key"])]
+        wanted = bool(body.get("dismissed", True))
     except ValueError, KeyError, TypeError:
-        raise web.HTTPBadRequest(text="expected {key, dismissed}") from None
-    finding = await store.finding(key)
-    if finding is None:
-        raise web.HTTPNotFound(text="no such finding")
-    current = await store.findings()
-    known = {f.key for f in current}
+        raise web.HTTPBadRequest(text="expected {key or keys, dismissed}") from None
+    current = {f.key: f for f in await store.findings()}
+    for key in keys:
+        if key not in current:
+            raise web.HTTPNotFound(text=f"no finding {key}")
     # Entries for findings that have since been removed are dropped here.
     dismissed = {
-        k: v for k, v in (await store.get_state(DISMISSED) or {}).items() if k in known
+        k: v
+        for k, v in (await store.get_state(DISMISSED) or {}).items()
+        if k in current
     }
-    if wanted:
-        dismissed[key] = finding.started_at.isoformat()
-    else:
-        dismissed.pop(key, None)
+    for key in keys:
+        if wanted:
+            dismissed[key] = current[key].started_at.isoformat()
+        else:
+            dismissed.pop(key, None)
     await store.set_state(DISMISSED, dismissed)
-    return web.json_response({"key": key, "dismissed": wanted})
+    return web.json_response({"keys": keys, "dismissed": wanted})
 
 
 async def events(request: web.Request) -> web.Response:
@@ -260,7 +267,8 @@ async def stream(request: web.Request) -> web.StreamResponse:
                 continue
             data = json.dumps(payload, default=str)
             await response.write(f"event: {topic}\ndata: {data}\n\n".encode())
-    except ConnectionResetError, asyncio.CancelledError:
+    except ConnectionResetError:
+        # The viewer closed the page; nothing is left to send to.
         pass
     finally:
         unsubscribe()

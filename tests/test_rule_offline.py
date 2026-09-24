@@ -121,3 +121,52 @@ async def test_a_device_leaving_while_findings_are_published(
 
     assert "failed on tick" not in caplog.text
     assert len(await store.findings()) == 1
+
+
+async def test_devices_away_before_the_start_are_reported(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await store.set_state("matter.nodes", {"total": 3, "unavailable": [PLUG]})
+    await tick_at(engine, clock, 0)
+    await tick_at(engine, clock, 9)
+    assert await store.findings() == []
+    await tick_at(engine, clock, 10)
+
+    finding = await only_finding(store)
+    assert finding.started_at == at(0)
+    assert finding.chain[1].evidence == []
+
+    # Back while nobody was looking: the list no longer has it.
+    await store.set_state("matter.nodes", {"total": 3, "unavailable": []})
+    await tick_at(engine, clock, 20)
+
+    assert (await only_finding(store)).ended_at == at(20)
+
+
+async def test_a_restart_keeps_what_is_away(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 0, kinds.MATTER_NODE_UNAVAILABLE, PLUG)
+    await tick_at(engine, clock, 10)
+    first = await only_finding(store)
+
+    restarted = make_engine(ctx, rules=[OfflineRule])
+    await store.set_state("matter.nodes", {"total": 3, "unavailable": [PLUG]})
+    await tick_at(restarted, clock, 15)
+    await emit_at(ctx, clock, 16, kinds.MATTER_NODE_AVAILABLE, PLUG)
+
+    finding = await only_finding(store)
+    assert finding.key == first.key
+    assert finding.ended_at == at(16)
+
+
+async def test_a_fresh_event_is_not_taken_back_by_an_old_list(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await store.set_state("matter.nodes", {"total": 3, "unavailable": []})
+    await emit_at(ctx, clock, 0, kinds.MATTER_NODE_UNAVAILABLE, PLUG)
+    await tick_at(engine, clock, 0.5)
+    await store.set_state("matter.nodes", {"total": 3, "unavailable": [PLUG]})
+    await tick_at(engine, clock, 10)
+
+    assert (await only_finding(store)).ended_at is None

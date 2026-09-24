@@ -94,8 +94,8 @@ export const api = {
   overview: () => get<Overview>("api/overview"),
   findings: (days = 7) => get<Finding[]>(`api/findings?days=${days}`),
   events: (limit = 300) => get<TimelineEvent[]>(`api/events?limit=${limit}`),
-  dismiss: (key: string, dismissed: boolean) =>
-    post<{ key: string; dismissed: boolean }>("api/dismiss", { key, dismissed }),
+  dismiss: (keys: string[], dismissed: boolean) =>
+    post<{ keys: string[]; dismissed: boolean }>("api/dismiss", { keys, dismissed }),
 };
 
 export type StreamHandlers = {

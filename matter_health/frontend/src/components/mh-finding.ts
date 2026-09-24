@@ -345,7 +345,7 @@ export class MhFinding extends LitElement {
   private dismiss(dismissed: boolean): void {
     this.dispatchEvent(
       new CustomEvent("mh-dismiss", {
-        detail: { key: this.finding.key, dismissed },
+        detail: { keys: [this.finding.key], dismissed },
         bubbles: true,
         composed: true,
       }),
@@ -439,12 +439,15 @@ export class MhFinding extends LitElement {
           <h3>${title(finding)}</h3>
           <div class="meta muted">
             <span title=${clock(finding.started_at)}>${relative(finding.started_at)}</span>
+            ${finding.dismissed
+              ? html`<span class="pill consequences">${t("finding.dismissed")}</span>`
+              : nothing}
             ${ended
               ? span && span >= 30
                 ? html`<span>${t("finding.lasted", { duration: duration(span) })}</span>`
                 : nothing
               : finding.dismissed
-                ? html`<span class="pill consequences">${t("finding.dismissed")}</span>`
+                ? nothing
                 : html`<span class="pill ongoing">${t("finding.ongoing")}</span>`}
             ${this.related.length
               ? html`<span class="pill consequences"
@@ -470,12 +473,16 @@ export class MhFinding extends LitElement {
                 </div>`
               : nothing}
             <div class="actions">
-            ${!finding.ended_at && !this.nested
+            ${!this.nested
               ? html`<button
                   class="details-toggle dismiss"
                   @click=${() => this.dismiss(!finding.dismissed)}
                 >
-                  ${finding.dismissed ? t("finding.undismiss") : t("finding.dismiss")}
+                  ${finding.dismissed
+                    ? t("finding.undismiss")
+                    : finding.ended_at
+                      ? t("finding.acknowledge")
+                      : t("finding.dismiss")}
                 </button>`
               : nothing}
             <button class="details-toggle" @click=${() => (this.details = !this.details)}>
