@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import ipaddress
 import json
 import logging
@@ -58,6 +59,7 @@ TIMELINE_KINDS: tuple[str, ...] = (
 ENGINE: web.AppKey[Engine] = web.AppKey("engine", Engine)
 TRUST_ALL: web.AppKey[bool] = web.AppKey("trust_all", bool)
 TRANSLATION_DIR: web.AppKey[Path] = web.AppKey("translations", Path)
+BUILD: web.AppKey[str | None] = web.AppKey("build")
 
 #: Findings the user marked as dealt with, by key, with the start of the
 #: occurrence they dismissed. A situation that ends and comes back under the
@@ -163,6 +165,7 @@ async def overview(request: web.Request) -> web.Response:
                 for severity in ("problem", "warning", "info")
             },
             "now": engine.ctx.now().isoformat(),
+            "build": request.app[BUILD],
         }
     )
 
@@ -340,6 +343,17 @@ def _int(raw: str | None, default: int, low: int, high: int) -> int:
     return max(low, min(high, value))
 
 
+def page_version(static: Path = STATIC) -> str | None:
+    """Return the version the page's bundle is named with, as the build names it.
+
+    A page left open across an update compares it with its own and reloads.
+    """
+    bundle = static / "app.js"
+    if not bundle.is_file():
+        return None
+    return hashlib.sha256(bundle.read_bytes()).hexdigest()[:12]
+
+
 def create_app(
     engine: Engine,
     *,
@@ -351,6 +365,7 @@ def create_app(
     app[ENGINE] = engine
     app[TRUST_ALL] = trust_all
     app[TRANSLATION_DIR] = translations
+    app[BUILD] = page_version()
     app.router.add_get("/", index)
     app.router.add_get("/api/overview", overview)
     app.router.add_get("/api/findings", findings)

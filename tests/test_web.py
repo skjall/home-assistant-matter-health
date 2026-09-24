@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
@@ -182,6 +183,7 @@ async def test_overview(
         },
         "open": {"problem": 1, "warning": 1, "info": 0},
         "now": T0.isoformat(),
+        "build": web_app.page_version(),
     }
 
 
@@ -499,3 +501,14 @@ async def test_marking_needs_a_subject_and_a_yes_or_no(
         response = await client.post("/api/habit", json=body)
 
     assert response.status == 400
+
+
+def test_page_version_names_the_bundle(tmp_path: Path) -> None:
+    assert web_app.page_version(tmp_path) is None
+
+    (tmp_path / "app.js").write_bytes(b"console.log(1)")
+
+    assert (
+        web_app.page_version(tmp_path)
+        == (hashlib.sha256(b"console.log(1)").hexdigest()[:12])
+    )

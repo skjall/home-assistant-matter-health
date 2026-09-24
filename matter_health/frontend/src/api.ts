@@ -83,6 +83,29 @@ export interface Overview {
   };
   open: Record<Severity, number>;
   now: string;
+  /** Version of the page the add-on serves now. */
+  build?: string | null;
+}
+
+/** The version of this page, as the add-on named it when serving it. */
+const BUILD = new URL(import.meta.url).searchParams.get("v");
+
+/**
+ * Reload once when the add-on serves a newer page than this one.
+ *
+ * An app that keeps the page open across an update of the add-on would go on
+ * running the old code against the new API and translations.
+ */
+function reloadIfOutdated(served: string | null | undefined): void {
+  if (!served || !BUILD || served === BUILD) return;
+  try {
+    if (sessionStorage.getItem("mh-reloaded-for") === served) return;
+    sessionStorage.setItem("mh-reloaded-for", served);
+  } catch {
+    // Without storage a reload loop cannot be ruled out; better stay put.
+    return;
+  }
+  location.reload();
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -102,7 +125,11 @@ async function get<T>(path: string): Promise<T> {
 }
 
 export const api = {
-  overview: () => get<Overview>("api/overview"),
+  overview: async () => {
+    const overview = await get<Overview>("api/overview");
+    reloadIfOutdated(overview.build);
+    return overview;
+  },
   findings: (days = 7) => get<Finding[]>(`api/findings?days=${days}`),
   events: (limit = 300) => get<TimelineEvent[]>(`api/events?limit=${limit}`),
   dismiss: (keys: string[], dismissed: boolean) =>
