@@ -18,6 +18,14 @@ time, connects what happens across them and tells you:
 
 Technical detail is one click away, for whoever wants it.
 
+<p align="center">
+  <img src="docs/images/findings.png" width="640" alt="Findings: a Thread network split, told from cause to fix, with the failed pairing and the vanished border router shown as its consequences">
+  &nbsp;
+  <img src="docs/images/mobile-dark.png" width="200" alt="The same page on a phone in dark mode">
+</p>
+
+The screenshots show invented data from `scripts/demo.py`.
+
 ## What it recognises
 
 | Situation                         | Example of what you read                                 |
