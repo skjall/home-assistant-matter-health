@@ -175,6 +175,7 @@ async def test_overview(
                 {
                     "subject": "node:7",
                     "name": "Living Room Plug",
+                    "device_id": None,
                     "usual": False,
                     "known": False,
                     "comes_and_goes": None,
@@ -209,6 +210,7 @@ async def test_findings_of_the_last_days_with_current_names(
     translations: Path,
 ) -> None:
     ctx.names.set("node:7", "Living Room Plug")
+    ctx.names.set_device("node:7", "device-plug")
     days = 24 * 60
     await store.put_finding(finding("old", Severity.WARNING, -3 * days, True), T0)
     await store.put_finding(finding("new", Severity.WARNING, -1, True), T0)
@@ -225,6 +227,7 @@ async def test_findings_of_the_last_days_with_current_names(
 
     found = await (await client.get("/api/findings")).json()
     assert found[0]["names"] == {"node:7": "Living Room Plug"}
+    assert found[0]["devices"] == {"node:7": "device-plug"}
     assert found[0]["chain"][0]["key"] == "link.cause_unknown"
 
 
@@ -521,6 +524,7 @@ async def test_topology_names_devices_and_places_the_missing(
     translations: Path,
 ) -> None:
     engine.ctx.names.set("node:1", "Plug")
+    engine.ctx.names.set_device("node:1", "device-plug")
     engine.ctx.names.set("br:a1", "Speaker")
     await store.set_state(
         "thread.tree",
@@ -571,6 +575,8 @@ async def test_topology_names_devices_and_places_the_missing(
     assert nodes["node:3"]["resting"] is True
     assert nodes["node:2"]["resting"] is False
     assert nodes["br_A"]["resting"] is False
+    assert nodes["1"]["device_id"] == "device-plug"
+    assert nodes["br_A"]["device_id"] is None
 
 
 async def test_topology_before_the_first_reading(

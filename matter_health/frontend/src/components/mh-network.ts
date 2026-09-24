@@ -18,6 +18,7 @@ import type {
   Topology,
   UnavailableDevice,
 } from "../api";
+import { deviceName } from "../ha";
 import { t } from "../i18n";
 import { base } from "../theme";
 import { icon } from "./mh-finding";
@@ -124,7 +125,7 @@ export class MhNetwork extends LitElement {
   ): TemplateResult {
     return html`<li>
       <span class=${tone}>${icon(symbol)}</span>
-      <span>${device.name ?? t("generic.device")}</span>
+      <span>${deviceName(device.name ?? t("generic.device"), device.device_id)}</span>
       ${action !== nothing ? html`<span class="sub">${action}</span>` : nothing}
     </li>`;
   }

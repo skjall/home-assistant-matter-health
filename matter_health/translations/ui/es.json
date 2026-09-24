@@ -368,5 +368,7 @@
       "offline": "No responde"
     },
     "resting": "fuera, como siempre"
-  }
+  },
+  "finding.open_device": "Abrir en Home Assistant",
+  "finding.open_named": "Abrir {device}"
 }

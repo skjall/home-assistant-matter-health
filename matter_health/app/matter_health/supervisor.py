@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import AsyncIterator, Awaitable, Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 import aiohttp
@@ -11,6 +14,29 @@ import aiohttp
 from .config import Options
 
 _LOGGER = logging.getLogger(__name__)
+
+#: The journal's own prefix in the Supervisor's ``text/x-log`` format: when
+#: the line was written (UTC), host, container and process id.
+JOURNAL_PREFIX = re.compile(
+    r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)?) \S+ [^\s:]+: ?"
+)
+
+
+@dataclass(frozen=True)
+class LogLine:
+    """One line of an add-on's log and when the journal received it."""
+
+    text: str
+    at: datetime | None = None
+
+
+def journal_line(raw: str) -> LogLine:
+    """Split the journal prefix from a line; lines without one keep no time."""
+    match = JOURNAL_PREFIX.match(raw)
+    if not match:
+        return LogLine(raw)
+    at = datetime.fromisoformat(match.group(1)).replace(tzinfo=UTC)
+    return LogLine(raw[match.end() :], at)
 
 
 class Supervisor:
@@ -69,13 +95,16 @@ class Supervisor:
 
     async def follow_logs(
         self, slug: str, on_open: Callable[[], Awaitable[None]] | None = None
-    ) -> AsyncIterator[str]:
-        """Yield an add-on's log lines as they are written, starting now.
+    ) -> AsyncIterator[LogLine]:
+        """Yield an add-on's log lines as they are written.
 
-        ``on_open`` runs once the Supervisor accepted the request, before the
-        first line - a quiet log is still a working one.
+        The Supervisor starts with the last lines already written, and again
+        on every reconnect; each line carries its journal time so the reader
+        can tell them apart from new ones. ``on_open`` runs once the
+        Supervisor accepted the request, before the first line - a quiet log
+        is still a working one.
         """
-        headers = {**self._headers, "Accept": "text/plain"}
+        headers = {**self._headers, "Accept": "text/x-log"}
         timeout = aiohttp.ClientTimeout(total=None, sock_read=None)
         async with self._session.get(
             f"{self._base}/addons/{slug}/logs/follow",
@@ -86,4 +115,4 @@ class Supervisor:
             if on_open is not None:
                 await on_open()
             async for raw in response.content:
-                yield raw.decode("utf-8", errors="replace").rstrip("\r\n")
+                yield journal_line(raw.decode("utf-8", errors="replace").rstrip("\r\n"))

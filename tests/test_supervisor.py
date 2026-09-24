@@ -1,10 +1,12 @@
+from datetime import UTC, datetime
+
 import aiohttp
 import pytest
 from conftest import FakeSupervisor, start_supervisor
 from pytest_aiohttp import AiohttpServer
 
 from matter_health.config import Options
-from matter_health.supervisor import Supervisor
+from matter_health.supervisor import LogLine, Supervisor, journal_line
 
 ADDONS = {
     "running": {"version": "1.0", "state": "started", "hostname": "matter-host"},
@@ -59,10 +61,11 @@ async def test_follow_logs_yields_lines_after_opening(
         again = [line async for line in supervisor.follow_logs("running")]
 
     assert opened == ["open"]
-    assert lines == again == ["first", "second", "third"]
+    assert [line.text for line in lines] == ["first", "second", "third"]
+    assert lines == again
     path, headers = fake.requests[0]
     assert path == "/addons/running/logs/follow"
-    assert headers["Accept"] == "text/plain"
+    assert headers["Accept"] == "text/x-log"
     assert "Authorization" not in headers
 
 
@@ -74,3 +77,16 @@ async def test_follow_logs_raises_when_refused(aiohttp_server: AiohttpServer) ->
         with pytest.raises(aiohttp.ClientResponseError):
             async for _ in supervisor.follow_logs("absent"):
                 pass
+
+
+def test_journal_line_takes_the_time_from_the_prefix() -> None:
+    line = journal_line(
+        "2030-01-02 03:04:05.678 host addon_example[42]: INFO something happened"
+    )
+
+    assert line.text == "INFO something happened"
+    assert line.at == datetime(2030, 1, 2, 3, 4, 5, 678000, tzinfo=UTC)
+
+
+def test_journal_line_without_prefix_keeps_the_text() -> None:
+    assert journal_line("INFO no prefix") == LogLine("INFO no prefix")

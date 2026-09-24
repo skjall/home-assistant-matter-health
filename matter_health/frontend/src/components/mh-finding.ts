@@ -15,6 +15,7 @@ import {
 import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
 
 import type { Finding, Link, Role, Severity } from "../api";
+import { DEVICE_TARGET, deviceHref } from "../ha";
 import { clock, duration, relative, t } from "../i18n";
 import { base } from "../theme";
 import { sentence, title } from "../words";
@@ -278,6 +279,10 @@ export class MhFinding extends LitElement {
       .dismiss {
         color: var(--mh-text);
       }
+      a.device-page {
+        color: var(--mh-text);
+        text-decoration: none;
+      }
       .consequences {
         color: var(--mh-muted);
         background: var(--mh-surface-2);
@@ -420,6 +425,22 @@ export class MhFinding extends LitElement {
     </div>`;
   }
 
+  /** The pages of the devices this is about, to rename, check or remove them. */
+  private deviceLinks(): TemplateResult[] {
+    const devices = Object.entries(this.finding.devices ?? {});
+    return devices.map(
+      ([subject, deviceId]) =>
+        html`<a class="details-toggle device-page" href=${deviceHref(deviceId)}
+          target=${DEVICE_TARGET} rel="noopener"
+          >${devices.length === 1
+            ? t("finding.open_device")
+            : t("finding.open_named", {
+                device: this.finding.names[subject] ?? t("generic.device"),
+              })}</a
+        >`,
+    );
+  }
+
   override render(): TemplateResult {
     const finding = this.finding;
     const ended = finding.ended_at;
@@ -505,6 +526,7 @@ export class MhFinding extends LitElement {
                   ${t("finding.comes_and_goes")}
                 </button>`
               : nothing}
+            ${this.nested ? nothing : this.deviceLinks()}
             <button class="details-toggle" @click=${() => (this.details = !this.details)}>
               ${this.details ? t("finding.hide_details") : t("finding.details")}
             </button>

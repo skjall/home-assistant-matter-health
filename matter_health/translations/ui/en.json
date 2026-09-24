@@ -368,5 +368,7 @@
       "offline": "Not reachable"
     },
     "resting": "away, as usual"
-  }
+  },
+  "finding.open_device": "Open in Home Assistant",
+  "finding.open_named": "Open {device}"
 }

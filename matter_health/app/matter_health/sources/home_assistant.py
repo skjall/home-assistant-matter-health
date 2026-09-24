@@ -235,7 +235,9 @@ class HomeAssistantSource(Source):
             for domain, identifier in device.get("identifiers", []):
                 match = MATTER_IDENTIFIER.match(str(identifier))
                 if domain == "matter" and match:
-                    self.ctx.names.set(f"node:{int(match.group(1), 16)}", name)
+                    subject = f"node:{int(match.group(1), 16)}"
+                    self.ctx.names.set(subject, name)
+                    self.ctx.names.set_device(subject, device.get("id"))
 
     def origin(self, context: dict[str, Any]) -> tuple[str, str | None]:
         """Who caused a state change, as far as Home Assistant records it.

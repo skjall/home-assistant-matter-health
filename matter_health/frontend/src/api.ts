@@ -24,6 +24,8 @@ export interface Finding {
   ended_at: string | null;
   subjects: string[];
   names: Record<string, string>;
+  /** Home Assistant device ids of the subjects, where known. */
+  devices?: Record<string, string>;
   chain: Link[];
   /** Key of the finding whose story this one is part of. */
   part_of?: string | null;
@@ -69,6 +71,7 @@ export interface TopologyNode {
   alternatives: number;
   vendor: string | null;
   name: string | null;
+  device_id?: string | null;
   available: boolean;
   /** Away and missing from the latest picture; shown where it was last. */
   missing?: boolean;
@@ -84,6 +87,7 @@ export interface Topology {
 export interface UnavailableDevice {
   subject: string;
   name: string | null;
+  device_id?: string | null;
   /** Away, but no longer than this device usually is. */
   usual?: boolean;
   /** The user acknowledged this absence. */

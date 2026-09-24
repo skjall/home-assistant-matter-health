@@ -17,6 +17,7 @@ from matter_health.store import Store
 
 DEVICES = [
     {
+        "id": "device-plug",
         "name": "Smart Plug",
         "name_by_user": "Living Room Plug",
         "identifiers": [
@@ -237,6 +238,7 @@ async def test_learns_names_and_reports_power_switches(
     assert source.power_switches == {"switch.media_plug", "switch.tv_outlet"}
     assert source.people == {"user-alex": "Alex", "user-guest": "person.guest"}
     assert ctx.names.get("node:42") == "Living Room Plug"
+    assert ctx.names.device("node:42") == "device-plug"
     assert ctx.names.get("node:43") == "Kitchen Sensor"
     assert ctx.names.get("entity:switch.tv_outlet") == "TV Outlet"
     assert ctx.names.get("entity:switch.child_lock") is None

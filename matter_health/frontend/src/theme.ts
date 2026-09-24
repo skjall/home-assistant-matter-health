@@ -74,6 +74,14 @@ export const base = css`
     font: inherit;
     color: inherit;
   }
+  a.device {
+    color: inherit;
+    text-decoration: none;
+  }
+  a.device:hover,
+  a.device:focus-visible {
+    text-decoration: underline;
+  }
   svg.icon {
     width: 20px;
     height: 20px;

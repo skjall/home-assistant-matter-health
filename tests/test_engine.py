@@ -105,6 +105,16 @@ def test_name_book() -> None:
     assert names.snapshot() == {"node:1": "Living Room Plug"}
 
 
+def test_name_book_knows_home_assistant_device_ids() -> None:
+    names = NameBook()
+    names.set_device("node:1", "device-plug")
+    names.set_device("node:2", None)
+
+    assert names.device("node:1") == "device-plug"
+    assert names.device("node:2") is None
+    assert names.device(None) is None
+
+
 def test_name_book_recognises_names_turned_into_host_names() -> None:
     names = NameBook()
     names.know_device("Küche Speaker (Links)")

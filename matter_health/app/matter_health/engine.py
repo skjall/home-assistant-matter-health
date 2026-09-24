@@ -55,6 +55,7 @@ class NameBook:
         """Start empty."""
         self._names: dict[str, str] = {}
         self._devices: dict[str, str] = {}
+        self._registry: dict[str, str] = {}
 
     def set(self, subject: str, name: str | None) -> None:
         """Remember ``name`` for ``subject``; empty names are ignored."""
@@ -66,6 +67,15 @@ class NameBook:
         if subject is None:
             return default
         return self._names.get(subject, default)
+
+    def set_device(self, subject: str, device_id: str | None) -> None:
+        """Remember which Home Assistant device ``subject`` is."""
+        if device_id:
+            self._registry[subject] = device_id
+
+    def device(self, subject: str | None) -> str | None:
+        """Return the Home Assistant device id of ``subject``, if known."""
+        return self._registry.get(subject) if subject else None
 
     def know_device(self, name: str | None) -> None:
         """Remember a device name so a mangled copy of it can be recognised."""
@@ -107,11 +117,17 @@ class Context:
     _engine: Engine | None = None
 
     async def emit(
-        self, kind: str, source: str, subject: str | None = None, **data: Any
+        self,
+        kind: str,
+        source: str,
+        subject: str | None = None,
+        *,
+        at: datetime | None = None,
+        **data: Any,
     ) -> Event:
-        """Record an event and hand it to the rules."""
+        """Record an event and hand it to the rules; ``at`` defaults to now."""
         event = Event(
-            kind=kind, at=self.now(), source=source, subject=subject, data=data
+            kind=kind, at=at or self.now(), source=source, subject=subject, data=data
         )
         if self._engine is None:
             raise RuntimeError("context is not attached to an engine")
@@ -150,9 +166,16 @@ class Source(ABC):
         """Whether this source should run with the given options."""
         return True
 
-    async def emit(self, kind: str, subject: str | None = None, **data: Any) -> Event:
-        """Emit an event from this source."""
-        return await self.ctx.emit(kind, self.name, subject, **data)
+    async def emit(
+        self,
+        kind: str,
+        subject: str | None = None,
+        *,
+        at: datetime | None = None,
+        **data: Any,
+    ) -> Event:
+        """Emit an event from this source; ``at`` defaults to now."""
+        return await self.ctx.emit(kind, self.name, subject, at=at, **data)
 
     async def connected(self) -> None:
         """Tell the engine this source reaches what it observes."""

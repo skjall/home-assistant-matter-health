@@ -368,5 +368,7 @@
       "offline": "Injoignable"
     },
     "resting": "absent, comme d'habitude"
-  }
+  },
+  "finding.open_device": "Ouvrir dans Home Assistant",
+  "finding.open_named": "Ouvrir {device}"
 }

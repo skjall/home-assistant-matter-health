@@ -27,9 +27,14 @@ export function prepare(raw: Record<string, unknown>, finding?: Finding): Params
     if (value === null || value === undefined || typeof value === "object") continue;
     params[name] = value as string | number;
   }
-  if (finding && !params.device) {
+  if (finding) {
+    // A finding about one device may have stored the name it had back then;
+    // the name the user gave it since is the one they will look for.
     const known = subjectName(finding);
-    if (known) params.device = known;
+    const single = finding.subjects.length === 1;
+    if (known && (!params.device || (single && params.device === raw.device))) {
+      params.device = known;
+    }
   }
   for (const [name, fallback] of Object.entries(NAMED)) {
     if (name in raw || name === "device") {

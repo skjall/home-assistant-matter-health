@@ -107,12 +107,11 @@ def with_names(engine: Engine, finding: dict[str, Any]) -> dict[str, Any]:
     moment ago gets its name in Home Assistant only afterwards, so the page
     also receives today's names and prefers them.
     """
-    names = {
-        subject: engine.ctx.names.get(subject)
-        for subject in finding.get("subjects", [])
-        if engine.ctx.names.get(subject)
-    }
-    return {**finding, "names": names}
+    subjects = finding.get("subjects", [])
+    book = engine.ctx.names
+    names = {s: book.get(s) for s in subjects if book.get(s)}
+    devices = {s: book.device(s) for s in subjects if book.device(s)}
+    return {**finding, "names": names, "devices": devices}
 
 
 async def index(request: web.Request) -> web.StreamResponse:
@@ -156,6 +155,7 @@ async def overview(request: web.Request) -> web.Response:
         {
             "subject": s,
             "name": engine.ctx.names.get(s),
+            "device_id": engine.ctx.names.device(s),
             "usual": s in usual,
             "known": s in known,
             "comes_and_goes": habits.get(s),
@@ -211,6 +211,7 @@ async def topology(request: web.Request) -> web.Response:
     for entry in entries:
         subject = entry.get("subject")
         entry["name"] = names.get(subject)
+        entry["device_id"] = names.device(subject)
         entry["available"] = subject not in away
         # Away, but as expected or as the user knows: no alarm in the picture.
         entry["resting"] = subject in away and (subject in usual or subject in known)

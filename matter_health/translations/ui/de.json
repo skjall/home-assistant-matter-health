@@ -368,5 +368,7 @@
       "offline": "Nicht erreichbar"
     },
     "resting": "weg, wie üblich"
-  }
+  },
+  "finding.open_device": "In Home Assistant öffnen",
+  "finding.open_named": "{device} öffnen"
 }

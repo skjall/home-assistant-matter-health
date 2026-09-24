@@ -12,9 +12,18 @@
 // finding. Pointing at a device lights up its way to the home network.
 
 import { cluster, hierarchy, type HierarchyPointNode } from "d3-hierarchy";
-import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
+import {
+  LitElement,
+  css,
+  html,
+  nothing,
+  svg,
+  type SVGTemplateResult,
+  type TemplateResult,
+} from "lit";
 
 import type { Finding, Severity, Topology, TopologyNode } from "../api";
+import { DEVICE_TARGET, deviceHref, deviceName } from "../ha";
 import { t } from "../i18n";
 import { base } from "../theme";
 
@@ -228,6 +237,9 @@ export class MhTopology extends LitElement {
         stroke: var(--mh-muted);
         stroke-dasharray: 2 2;
       }
+      .node a.device {
+        cursor: pointer;
+      }
       .node text {
         font-size: 12.5px;
         fill: var(--mh-text);
@@ -392,19 +404,14 @@ export class MhTopology extends LitElement {
         background: var(--mh-primary);
       }
       .dot.router {
-        width: 15px;
-        height: 15px;
+        width: 11px;
+        height: 11px;
         background: var(--mh-surface);
         border: 2px solid var(--mh-primary);
       }
       .dot.unknown {
-        width: 12px;
-        height: 12px;
         background: none;
         border: 1.5px dashed var(--mh-muted);
-      }
-      .dot {
-        box-sizing: border-box;
       }
       .dot.offline,
       .dot.problem {
@@ -637,9 +644,12 @@ export class MhTopology extends LitElement {
         ${kind === "no-way" ? nothing : svg`<circle r=${radius}></circle>`}
         ${status !== "ok" ? svg`<circle class="ring ${status}" r=${radius}></circle>` : nothing}
         ${label !== name ? svg`<title>${name}</title>` : nothing}
-        ${inner
-          ? svg`<text x="10" y="-9">${label}<tspan class="extra">${extra}</tspan></text>`
-          : svg`<text x="10" dy="0.35em">${label}</text>`}
+        ${this.linked(
+          item.node?.device_id,
+          inner
+            ? svg`<text x="10" y="-9">${label}<tspan class="extra">${extra}</tspan></text>`
+            : svg`<text x="10" dy="0.35em">${label}</text>`,
+        )}
       </g>`;
     });
 
@@ -657,6 +667,14 @@ export class MhTopology extends LitElement {
     </div>`;
   }
 
+  /** A node's label, leading to the device's page where it has one. */
+  private linked(deviceId: string | null | undefined, label: SVGTemplateResult) {
+    return deviceId
+      ? svg`<a class="device" href=${deviceHref(deviceId)} target=${DEVICE_TARGET}
+          rel="noopener">${label}</a>`
+      : label;
+  }
+
   private outlineRow(item: Item, statuses: Map<string, Status>): TemplateResult {
     const status = statuses.get(item.id) ?? "ok";
     const note = this.note(item.node, status);
@@ -664,7 +682,7 @@ export class MhTopology extends LitElement {
     return html`<li>
       <div class="row ${item.children.length ? "inner" : ""}">
         <span class="dot ${kind} ${status === "ok" ? "" : status}"></span>
-        <span class="name">${this.name(item)}</span>
+        <span class="name">${deviceName(this.name(item), item.node?.device_id)}</span>
         ${note ? html`<span class="note ${note[1]}">${note[0]}</span>` : nothing}
       </div>
       ${item.children.length
