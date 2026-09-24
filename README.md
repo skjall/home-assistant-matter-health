@@ -23,7 +23,7 @@ Technical detail is one click away, for whoever wants it.
 | Situation                         | Example of what you read                                 |
 |-----------------------------------|----------------------------------------------------------|
 | Thread network splits or reorganises | which border router disappeared, and what switched it off |
-| A border router on a switched plug | the plug, once it has happened twice                     |
+| A border router on a switched plug | the plug, once off-gone-on-back has happened twice      |
 | Adding a device fails             | the step in plain words, and what usually helps there    |
 | A device has a weak connection    | the device, its nearest neighbour and the signal         |
 | A device stays unreachable        | whether the network or the power is the likelier reason  |

@@ -87,7 +87,7 @@
     "mesh_trouble_impact": "In dieser Zeit haben manche Geräte nicht reagiert, und ein neues Gerät hinzuzufügen schlägt so gut wie sicher fehl.",
     "pairing_failed_meanwhile": "Genau in dieser Zeit ist ein Versuch gescheitert, ein Gerät hinzuzufügen – sehr wahrscheinlich deswegen.",
     "border_router_gone_impact": "Deine Thread-Geräte haben einen Weg weniger in dein Heimnetz. War es der letzte, ist keines von ihnen mehr erreichbar.",
-    "border_router_on_switch": "Jedes Mal, wenn {switch} ausgeschaltet wurde, ist kurz darauf {border_router} verschwunden. Das ist {count}-mal passiert.",
+    "border_router_on_switch": "Jedes Mal, wenn {switch} ausgeschaltet wurde, ist kurz darauf {border_router} verschwunden – und kam zurück, sobald {switch} wieder an war. Das ist {count}-mal passiert.",
     "border_router_on_switch_impact": "Jedes Mal verliert dein Thread-Netz eine Brücke und muss womöglich einen neuen Koordinator bestimmen. Geräte reagieren eine Weile nicht, und neue Geräte lassen sich in dieser Zeit nicht hinzufügen.",
     "pairing_ok": "{device} wurde in {seconds} Sekunden erfolgreich hinzugefügt.",
     "mesh_disturbed_during_pairing": "Dein Thread-Netz war genau in diesem Moment in Unruhe, deshalb war das neue Gerät nicht zuverlässig zu erreichen.",

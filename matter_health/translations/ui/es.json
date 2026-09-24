@@ -87,7 +87,7 @@
     "mesh_trouble_impact": "Durante ese tiempo algunos dispositivos no respondieron, y añadir un dispositivo nuevo falla casi seguro.",
     "pairing_failed_meanwhile": "Un intento de añadir un dispositivo falló al mismo tiempo, muy probablemente por esto.",
     "border_router_gone_impact": "Tus dispositivos Thread tienen un camino menos hacia la red de tu casa. Si era el último, no se puede contactar con ninguno.",
-    "border_router_on_switch": "Cada vez que {switch} se apagó, {border_router} desapareció poco después. Esto pasó {count} veces.",
+    "border_router_on_switch": "Cada vez que se apagó {switch}, {border_router} desapareció poco después – y volvió en cuanto {switch} se encendió de nuevo. Ha pasado {count} veces.",
     "border_router_on_switch_impact": "Cada vez, tu red Thread pierde un puente y puede que tenga que elegir un nuevo coordinador. Los dispositivos dejan de responder durante un rato, y añadir dispositivos falla en ese tiempo.",
     "pairing_ok": "{device} se añadió correctamente en {seconds} segundos.",
     "mesh_disturbed_during_pairing": "Tu red Thread estaba inestable justo en ese momento, así que no se pudo contactar con el dispositivo nuevo de forma fiable.",

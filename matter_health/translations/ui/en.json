@@ -87,7 +87,7 @@
     "mesh_trouble_impact": "During that time some devices did not respond, and adding a new device fails almost certainly.",
     "pairing_failed_meanwhile": "An attempt to add a device failed at the same time - very likely because of this.",
     "border_router_gone_impact": "Your Thread devices have one way less into your home network. If it was the last one, none of them can be reached.",
-    "border_router_on_switch": "Every time {switch} was switched off, {border_router} disappeared shortly after. This happened {count} times.",
+    "border_router_on_switch": "Every time {switch} was switched off, {border_router} disappeared shortly after – and came back once {switch} was on again. This happened {count} times.",
     "border_router_on_switch_impact": "Each time, your Thread network loses a bridge and may have to choose a new coordinator. Devices stop responding for a while, and adding devices fails in that time.",
     "pairing_ok": "{device} was added successfully in {seconds} seconds.",
     "mesh_disturbed_during_pairing": "Your Thread network was unsettled at exactly that time, so the new device could not be reached reliably.",

@@ -87,7 +87,7 @@
     "mesh_trouble_impact": "Pendant ce temps, certains appareils ne répondaient pas, et l'ajout d'un nouvel appareil échoue presque à coup sûr.",
     "pairing_failed_meanwhile": "Une tentative d'ajout d'appareil a échoué au même moment - très probablement à cause de cela.",
     "border_router_gone_impact": "Tes appareils Thread ont un accès de moins à ton réseau domestique. Si c'était le dernier, plus aucun d'eux n'est joignable.",
-    "border_router_on_switch": "Chaque fois que {switch} a été éteint, {border_router} a disparu peu après. C'est arrivé {count} fois.",
+    "border_router_on_switch": "Chaque fois que {switch} a été éteint, {border_router} a disparu peu après – et il est revenu dès que {switch} a été rallumé. C'est arrivé {count} fois.",
     "border_router_on_switch_impact": "À chaque fois, ton réseau Thread perd une passerelle et doit parfois choisir un nouveau coordinateur. Les appareils ne répondent plus pendant un moment, et l'ajout d'appareils échoue pendant ce temps.",
     "pairing_ok": "{device} a été ajouté avec succès en {seconds} secondes.",
     "mesh_disturbed_during_pairing": "Ton réseau Thread était instable exactement à ce moment-là, donc le nouvel appareil n'était pas joignable de façon fiable.",
