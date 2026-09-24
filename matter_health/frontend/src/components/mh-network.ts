@@ -54,6 +54,8 @@ export class MhNetwork extends LitElement {
         margin: 0;
         padding: 0;
         display: grid;
+        /* Side by side where there is room, one below the other on a phone. */
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
         gap: 8px;
       }
       li {

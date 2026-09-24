@@ -78,8 +78,10 @@ export class MhApp extends LitElement {
         min-height: 100vh;
         background: var(--mh-bg);
       }
+      /* Wide screens get the room: the network picture and a second column
+         of findings use it. Beyond this even the picture has nothing to add. */
       .page {
-        max-width: 980px;
+        max-width: 1680px;
         margin: 0 auto;
         padding: 24px 20px 48px;
       }
@@ -230,6 +232,13 @@ export class MhApp extends LitElement {
       .list {
         display: grid;
         gap: 12px;
+        align-items: start;
+      }
+      /* Findings are text; two columns keep their lines readable. */
+      @media (min-width: 1280px) {
+        .list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
       .empty {
         padding: 36px 24px;
