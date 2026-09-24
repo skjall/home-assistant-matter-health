@@ -198,7 +198,7 @@
     "foreign_hint": "Getrennt von deinem Netz – deine Geräte können sie nicht nutzen.",
     "foreign_network": "Netz „{network}“",
     "facts": "Home Assistant: {role} · {count} Router im Netz",
-    "sources_missing": "Fehlende Informationen"
+    "sources_missing": "Nicht verbunden"
   },
   "source": {
     "matter_server": "Matter-Server",

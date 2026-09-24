@@ -198,7 +198,7 @@
     "foreign_hint": "Separada de la tuya – tus dispositivos no pueden usarlos.",
     "foreign_network": "Red «{network}»",
     "facts": "Home Assistant: {role} · {count} routers en la red",
-    "sources_missing": "Falta información"
+    "sources_missing": "Sin conexión"
   },
   "source": {
     "matter_server": "Servidor Matter",

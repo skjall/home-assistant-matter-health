@@ -198,7 +198,7 @@
     "foreign_hint": "Separate from yours – your devices cannot use them.",
     "foreign_network": "Network “{network}”",
     "facts": "Home Assistant: {role} · {count} routers in the network",
-    "sources_missing": "Missing information"
+    "sources_missing": "Not connected"
   },
   "source": {
     "matter_server": "Matter Server",
