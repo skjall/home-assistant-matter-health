@@ -8,8 +8,9 @@ from pytest_aiohttp import AiohttpServer
 from matter_health import kinds
 from matter_health.config import MATTER_SERVER_SLUG, OTBR_SLUG
 from matter_health.engine import Context
-from matter_health.sources.addon_logs import MatterServerLog, OtbrLog
+from matter_health.sources.addon_logs import MatterServerLog
 from matter_health.store import Store
+from matter_health.transports.thread.otbr import OtbrLog
 
 
 async def test_matter_server_log_becomes_commissioning_events(

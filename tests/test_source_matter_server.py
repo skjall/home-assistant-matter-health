@@ -8,12 +8,14 @@ from pytest_aiohttp import AiohttpServer
 from matter_health import kinds
 from matter_health.engine import Context
 from matter_health.sources import matter_server
-from matter_health.sources.matter_server import (
-    MatterServerSource,
-    border_router_name,
-    link_summary,
-)
+from matter_health.sources.matter_server import MatterServerSource
 from matter_health.store import Store
+from matter_health.transports.thread.transport import (
+    border_router_name,
+    display_name,
+    link_summary,
+    own_part,
+)
 
 #: A reply is a list of things to send, or None to hang up instead.
 Reply = list[Any] | None
@@ -96,7 +98,7 @@ async def serve(aiohttp_server: AiohttpServer, fake: FakeMatterServer) -> str:
 
 @pytest.fixture(autouse=True)
 def no_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(matter_server, "BORDER_ROUTER_POLL_S", 0)
+    monkeypatch.setattr(matter_server, "POLL_S", 0)
 
 
 async def test_device_changes_become_events(
@@ -164,7 +166,7 @@ async def test_device_changes_become_events(
         "get_network_topology",
         "get_thread_border_routers",
     ]
-    assert set(fake.commands) <= matter_server.READ_COMMANDS
+    assert set(fake.commands) <= matter_server.read_commands()
     assert source.ctx._engine is not None
     assert source.ctx._engine.status["matter_server"]["ok"] is True
 
@@ -424,12 +426,12 @@ def test_a_router_that_reports_nothing_is_not_judged() -> None:
 
 def test_home_assistants_own_border_router_is_named_after_it() -> None:
     assert (
-        matter_server.display_name(
+        display_name(
             {"hostname": "homeassistant-otbr.local", "vendorName": "Home Assistant"}
         )
         == "Home Assistant"
     )
-    assert matter_server.display_name({"vendorName": "Acme"}) is None
+    assert display_name({"vendorName": "Acme"}) is None
 
 
 async def test_a_server_that_forgot_every_device(
@@ -461,3 +463,83 @@ async def test_an_empty_server_that_was_empty_before_is_fine(
         await source.run()
 
     assert await store.events() == []
+
+
+async def test_each_transport_gets_its_devices(
+    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+) -> None:
+    wifi = {"0/49/65532": 1, "0/54/0": "AgAAAAAB", "0/54/4": -50, "0/40/5": "x"}
+    fake = FakeMatterServer(
+        {
+            "start_listening": [
+                [
+                    result(
+                        [
+                            {"node_id": 1, "available": True, "attributes": wifi},
+                            {"node_id": 2, "available": True},
+                            {
+                                "node_id": 3,
+                                "available": True,
+                                "attributes": {"0/49/65532": 2},
+                            },
+                        ]
+                    )
+                ]
+            ],
+            "get_thread_border_routers": [
+                [
+                    {"event": "attribute_updated", "data": [1, "0/54/4", -80]},
+                    {"event": "attribute_updated", "data": [1, "0/6/0", True]},
+                    {"event": "attribute_updated", "data": ["bad"]},
+                    {
+                        "event": "node_updated",
+                        "data": {
+                            "node_id": 4,
+                            "available": True,
+                            "attributes": {"0/49/65532": 4},
+                        },
+                    },
+                    {"event": "node_removed", "data": 3},
+                    result([]),
+                ]
+            ],
+            "get_network_topology": [[result({"nodes": [], "connections": []})]],
+        }
+    )
+    source = source_for(
+        MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
+    )
+
+    with pytest.raises(ConnectionError):
+        await source.run()
+
+    assert await store.get_state("matter.transports") == {
+        "node:1": "wifi",
+        "node:4": "ethernet",
+    }
+    stored = await store.get_state("wifi.devices")
+    assert stored["node:1"]["rssi"] == -80
+    assert stored["node:1"]["bssid"] == "02:00:00:00:00:01"
+    links = [e for e in await store.events() if e.kind == kinds.WIFI_LINKS]
+    assert [e.data["devices"][0]["quality"] for e in links] == ["strong", "weak"]
+
+
+def test_the_thread_picture_leaves_other_networks_out() -> None:
+    topology = {
+        "nodes": [
+            {"id": "1", "node_id": 1, "network_type": "thread"},
+            {"id": "2", "node_id": 2, "network_type": "wifi"},
+            {"id": "ap_1", "kind": "wifi_ap", "network_type": "wifi"},
+            {"id": "br_A", "kind": "border_router"},
+        ],
+        "connections": [
+            {"source": "1", "target": "br_A", "network": "thread"},
+            {"source": "2", "target": "ap_1", "network": "wifi"},
+            {"source": "1", "target": "2"},
+        ],
+    }
+
+    part = own_part(topology)
+
+    assert [n["id"] for n in part["nodes"]] == ["1", "br_A"]
+    assert [c["target"] for c in part["connections"]] == ["br_A", "2"]

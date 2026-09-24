@@ -1,4 +1,4 @@
-"""The Thread network as the OpenThread Border Router add-on sees it.
+"""The Thread network as the OpenThread Border Router add-on sees it and logs it.
 
 The border router's REST API reports its role, the partition it belongs to and
 which router leads that partition. A change of any of these is how a mesh
@@ -16,10 +16,11 @@ from typing import Any, ClassVar
 
 import aiohttp
 
-from .. import kinds
-from ..config import OTBR_REST_PORT, OTBR_SLUG
-from ..engine import SOURCES, Source
-from ..supervisor import Supervisor
+from ... import kinds
+from ...config import OTBR_REST_PORT, OTBR_SLUG
+from ...engine import SOURCES, Source
+from ...sources.addon_logs import AddonLogSource
+from ...supervisor import Supervisor
 
 #: Partitions typically settle within a minute; polling every few seconds
 #: catches even short splits.
@@ -99,3 +100,12 @@ class OtbrSource(Source):
                 previous=previous["leader_router_id"],
                 current=node["leader_router_id"],
             )
+
+
+@SOURCES.register("otbr_log")
+class OtbrLog(AddonLogSource):
+    """Mesh splits, radio trouble and IPv6 forwarding from the add-on's log."""
+
+    name: ClassVar[str] = "otbr_log"
+    slug: ClassVar[str] = OTBR_SLUG
+    parser: ClassVar[str] = "openthread"

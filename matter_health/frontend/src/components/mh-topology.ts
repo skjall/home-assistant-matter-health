@@ -1,11 +1,11 @@
-// How the network hangs together, as a tree that stays put.
+// How the network hangs together, as a tree per transport that stays put.
 //
-// Every device is drawn once, on the one way it takes into the network:
-// border routers on the home network, relaying devices on their cheapest path
-// to a border router, battery devices on their parent. The other radio links
-// between relaying devices are counted, not drawn - drawn, they turn the
-// picture into a ball of lines. Positions are computed, not simulated, so
-// nothing moves unless the network itself changed.
+// Every device is drawn once, on the one way it takes into the network. What
+// that way is, each transport says: a Thread device hangs on its parent in the
+// mesh and the mesh on border routers, a Wi-Fi device on its access point, a
+// wired one on the home network. This component draws them all alike, with
+// the words each transport has for its parts. Positions are computed, not
+// simulated, so nothing moves unless the network itself changed.
 //
 // Quiet by default: good links are thin and grey. Colour is kept for what
 // needs attention - a weak link, a device away, a device with an open
@@ -24,7 +24,7 @@ import {
 
 import type { Finding, Severity, Topology, TopologyNode } from "../api";
 import { DEVICE_TARGET, deviceHref, deviceName } from "../ha";
-import { t } from "../i18n";
+import { has, t } from "../i18n";
 import { base } from "../theme";
 
 type Status = "ok" | "resting" | "weak" | "warning" | "problem" | "offline";
@@ -32,11 +32,13 @@ type Status = "ok" | "resting" | "weak" | "warning" | "problem" | "offline";
 interface Item {
   id: string;
   node?: TopologyNode;
+  /** The home network a transport hangs on, or its devices without a way in. */
+  special?: "home" | "no_way";
   children: Item[];
 }
 
+/** Where every transport's gateways hang, as the add-on names it. */
 const HOME = "home";
-const NO_WAY = "no_way";
 
 /** Height of a row in the tree, in pixels. */
 const ROW = 26;
@@ -48,9 +50,9 @@ const LEAF_LABEL = 230;
 const NARROW = 720;
 
 const KIND_ORDER: Record<string, number> = {
-  border_router: 0,
-  router: 1,
-  end_device: 2,
+  gateway: 0,
+  relay: 1,
+  device: 2,
   sleepy: 3,
   unknown: 4,
 };
@@ -87,10 +89,13 @@ function fit(text: string, room: number, inner: boolean): string {
 }
 
 function quality(node: TopologyNode): "strong" | "medium" | "weak" | null {
-  const { strength, lqi } = node.link ?? {};
-  if (strength === "strong" || strength === "medium" || strength === "weak") return strength;
-  if (typeof lqi !== "number") return null;
-  return lqi >= 3 ? "strong" : lqi === 2 ? "medium" : "weak";
+  return node.link?.quality ?? null;
+}
+
+/** The transport's word for something, else the generic one. */
+function word(transport: string, key: string, params = {}): string | null {
+  const full = `transport.${transport}.${key}`;
+  return has(full) ? t(full, params) : null;
 }
 
 export class MhTopology extends LitElement {
@@ -108,6 +113,8 @@ export class MhTopology extends LitElement {
   pointed: string | null = null;
   width = 0;
   private resize?: ResizeObserver;
+  /** Height of the tree being drawn, for placing its tooltip. */
+  private chartHeight = 0;
 
   static override styles = [
     base,
@@ -149,7 +156,6 @@ export class MhTopology extends LitElement {
       }
       .canvas {
         position: relative;
-        overflow-x: auto;
       }
       svg.tree {
         display: block;
@@ -194,16 +200,16 @@ export class MhTopology extends LitElement {
       .node circle {
         stroke-width: 2;
       }
-      .node.border_router circle,
+      .node.gateway circle,
       .node.home circle {
         fill: var(--mh-primary);
         stroke: var(--mh-surface);
       }
-      .node.router circle {
+      .node.relay circle {
         fill: var(--mh-surface);
         stroke: var(--mh-primary);
       }
-      .node.end_device circle,
+      .node.device circle,
       .node.sleepy circle {
         fill: var(--mh-muted);
         stroke: var(--mh-surface);
@@ -313,6 +319,22 @@ export class MhTopology extends LitElement {
       .legend svg {
         overflow: visible;
       }
+      .legend.lines {
+        margin-top: 22px;
+        padding-top: 12px;
+        border-top: 1px solid var(--mh-border);
+      }
+      h3 {
+        margin: 18px 0 8px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--mh-muted);
+      }
+      section + section h3 {
+        margin-top: 26px;
+      }
       .empty {
         margin: 0;
         font-size: 14px;
@@ -398,12 +420,12 @@ export class MhTopology extends LitElement {
         border-radius: 50%;
         background: var(--mh-muted);
       }
-      .dot.border_router {
+      .dot.gateway {
         width: 12px;
         height: 12px;
         background: var(--mh-primary);
       }
-      .dot.router {
+      .dot.relay {
         width: 11px;
         height: 11px;
         background: var(--mh-surface);
@@ -470,19 +492,27 @@ export class MhTopology extends LitElement {
   }
 
   private name(item: Item): string {
-    if (item.id === HOME) return t("topology.home");
-    if (item.id === NO_WAY) return t("topology.no_way");
+    if (item.special === "home") return t("topology.home");
+    if (item.special === "no_way") return t("topology.no_way");
     const node = item.node;
-    if (node?.kind === "unknown") return t("topology.unknown_device");
-    return node?.name ?? t("generic.device");
+    if (!node) return t("generic.device");
+    if (node.kind === "unknown") {
+      return word(node.transport, "unknown") ?? t("generic.device");
+    }
+    if (node.name) return node.name;
+    if (node.kind === "gateway" && node.detail?.address) {
+      const named = word(node.transport, "gateway_named", { address: node.detail.address });
+      if (named) return named;
+    }
+    return t("generic.device");
   }
 
-  /** The tree of items, with every device under the one way it takes in. */
-  private tree(statuses: Map<string, Status>): Item {
-    const nodes = this.topology?.nodes ?? [];
+  /** One transport's tree, with every device under the one way it takes in. */
+  private tree(transport: string, statuses: Map<string, Status>): Item {
+    const nodes = (this.topology?.nodes ?? []).filter((n) => n.transport === transport);
     const items = new Map<string, Item>();
-    const home: Item = { id: HOME, children: [] };
-    const noWay: Item = { id: NO_WAY, children: [] };
+    const home: Item = { id: `${transport}:${HOME}`, special: "home", children: [] };
+    const noWay: Item = { id: `${transport}:no_way`, special: "no_way", children: [] };
     for (const node of nodes) items.set(node.id, { id: node.id, node, children: [] });
     for (const item of items.values()) {
       const parent = item.node?.parent;
@@ -532,10 +562,17 @@ export class MhTopology extends LitElement {
     const item = point.data;
     const node = item.node;
     const lines: TemplateResult[] = [];
-    if (node) lines.push(html`<p>${t(`topology.kind.${node.kind}`)}</p>`);
+    const kind = node ? word(node.transport, `kind.${node.kind}`) : null;
+    if (kind) lines.push(html`<p>${kind}</p>`);
+    // What the transport adds, each part only where the device reported it.
+    const detail = Object.entries(node?.detail ?? {})
+      .filter(([, value]) => value !== null && value !== undefined && value !== "")
+      .map(([key, value]) => (node ? word(node.transport, `detail.${key}`, { [key]: value }) : null))
+      .filter((part): part is string => !!part);
+    if (detail.length) lines.push(html`<p>${detail.join(" · ")}</p>`);
     const parent = point.parent?.data;
     const parentName = parent ? this.name(parent) : null;
-    if (node && parentName && parent?.id !== HOME && parent?.id !== NO_WAY) {
+    if (node && parentName && !parent?.special) {
       lines.push(
         html`<p>
           ${node.missing
@@ -553,10 +590,10 @@ export class MhTopology extends LitElement {
       );
     }
     const children = point.children?.length ?? 0;
-    if (node && (node.kind === "border_router" || node.kind === "router") && children) {
+    if (node && (node.kind === "gateway" || node.kind === "relay") && children) {
       lines.push(html`<p>${t("topology.children", { count: children })}</p>`);
     }
-    if (node?.kind === "router") {
+    if (node?.kind === "relay") {
       lines.push(
         node.alternatives
           ? html`<p>${t("topology.alternatives", { count: node.alternatives })}</p>`
@@ -566,7 +603,10 @@ export class MhTopology extends LitElement {
     const note = this.note(node, status);
     if (note) lines.push(html`<p class=${note[1]}>${note[0]}</p>`);
     const left = x + 270 > this.width ? x - 262 : x + 14;
-    return html`<div class="tip" style="left:${left}px;top:${y + 14}px">
+    // Near the bottom of a short tree the tip opens upwards.
+    const tall = 34 + lines.length * 20;
+    const top = y + 14 + tall > this.chartHeight ? Math.max(0, y - 14 - tall) : y + 14;
+    return html`<div class="tip" style="left:${left}px;top:${top}px">
       <strong>${this.name(item)}</strong>${lines}
     </div>`;
   }
@@ -576,24 +616,26 @@ export class MhTopology extends LitElement {
     return `M${a.x},${a.y}C${mid},${a.y} ${mid},${b.y} ${b.x},${b.y}`;
   }
 
-  private chart(root: Item, statuses: Map<string, Status>): TemplateResult {
+  /** One transport's tree; ``depth`` columns are shared by every transport. */
+  private chart(root: Item, statuses: Map<string, Status>, depth: number): TemplateResult {
     const layout = cluster<Item>()
       .nodeSize([ROW, 1])
       .separation((a, b) => (a.parent === b.parent ? 1 : 1.35))(
       hierarchy(root, (d) => (d.children.length ? d.children : null)),
     );
     const points = layout.descendants();
-    // Every level has its column: home network, bridges, relaying devices.
+    // Every level has its column: home network, gateways, relaying devices.
     // Devices at the end of a branch share the last column, so they read like
-    // a list - except a bridge without devices, which stays with the bridges.
-    const depth = Math.max(1, ...points.map((p) => p.depth));
+    // a list - except a gateway without devices, which stays with the gateways.
+    // The columns are the same for every transport, so gateways line up.
     const column = Math.max(120, (this.width - LEAF_LABEL - 24) / depth);
     const top = Math.min(...points.map((p) => p.x)) - ROW;
     const pos = (p: HierarchyPointNode<Item>) => {
-      const last = !p.children && p.data.node?.kind !== "border_router";
+      const last = !p.children && p.data.node?.kind !== "gateway";
       return { x: 12 + (last ? depth : p.depth) * column, y: p.x - top };
     };
     const height = Math.max(...points.map((p) => p.x)) - top + ROW;
+    this.chartHeight = height;
 
     // What lights up when a device is pointed at: its way home and what hangs on it.
     let lit: Set<string> | null = null;
@@ -609,11 +651,11 @@ export class MhTopology extends LitElement {
     const links = layout.links().map((link) => {
       const status = statuses.get(link.target.data.id) ?? "ok";
       const kind =
-        link.source.data.id === HOME
-          ? link.target.data.id === NO_WAY
+        link.source.data.special === "home"
+          ? link.target.data.special === "no_way"
             ? "no-way"
             : "lan"
-          : link.source.data.id === NO_WAY
+          : link.source.data.special === "no_way"
             ? "no-way"
             : status === "ok"
               ? ""
@@ -626,10 +668,10 @@ export class MhTopology extends LitElement {
       const item = point.data;
       const { x, y } = pos(point);
       const status = statuses.get(item.id) ?? "ok";
-      const kind = item.id === HOME ? "home" : item.id === NO_WAY ? "no-way" : item.node?.kind;
+      const kind =
+        item.special === "home" ? "home" : item.special === "no_way" ? "no-way" : item.node?.kind;
       const inner = !!point.children?.length;
-      const radius =
-        kind === "home" ? 9 : kind === "border_router" ? 7 : kind === "router" ? 5.5 : 4;
+      const radius = kind === "home" ? 9 : kind === "gateway" ? 7 : kind === "relay" ? 5.5 : 4;
       const extra = inner && item.node ? ` · ${point.children?.length}` : "";
       const name = this.name(item);
       const room = inner ? column - 24 : LEAF_LABEL - 14;
@@ -721,23 +763,48 @@ export class MhTopology extends LitElement {
     </ul>`;
   }
 
-  private legend(): TemplateResult {
+  /** The symbols of one transport, named in its words; kinds it lacks are left out. */
+  private legend(transport: string, kinds: Set<string>): TemplateResult {
     const dot = (cls: string, r: number) =>
       html`<svg width="14" height="14" viewBox="-7 -7 14 14">
         ${svg`<g class="node ${cls}"><circle r=${r}></circle></g>`}
       </svg>`;
+    const symbols: [string, string, number][] = [
+      ["gateway", "gateway", 6],
+      ["relay", "relay", 5],
+      ["device", "sleepy", 4],
+    ];
+    return html`<div class="legend">
+      ${symbols.map(([kind, cls, r]) => {
+        const shown = kind === "device" ? kinds.has("device") || kinds.has("sleepy") : kinds.has(kind);
+        const label = shown ? word(transport, `legend.${kind}`) : null;
+        return label ? html`<span>${dot(cls, r)}${label}</span>` : nothing;
+      })}
+    </div>`;
+  }
+
+  /** What the lines mean; the same for every transport. */
+  private lines(): TemplateResult {
     const line = (cls: string) =>
       html`<svg width="26" height="10" viewBox="0 -5 26 10">
         ${svg`<path class="link ${cls}" d="M0,0H26"></path>`}
       </svg>`;
-    return html`<div class="legend">
-      <span>${dot("border_router", 6)}${t("topology.legend.bridge")}</span>
-      <span>${dot("router", 5)}${t("topology.legend.router")}</span>
-      <span>${dot("sleepy", 4)}${t("topology.legend.device")}</span>
+    return html`<div class="legend lines">
       <span>${line("")}${t("topology.legend.good")}</span>
       <span>${line("weak")}${t("topology.legend.weak")}</span>
       <span>${line("offline")}${t("topology.legend.offline")}</span>
     </div>`;
+  }
+
+  /** Transports with the most devices first; each is drawn alike. */
+  private transports(): string[] {
+    const count = new Map<string, number>();
+    for (const node of this.topology?.nodes ?? []) {
+      count.set(node.transport, (count.get(node.transport) ?? 0) + 1);
+    }
+    return [...count.keys()].sort(
+      (a, b) => (count.get(b) ?? 0) - (count.get(a) ?? 0) || a.localeCompare(b),
+    );
   }
 
   override render(): TemplateResult {
@@ -752,7 +819,9 @@ export class MhTopology extends LitElement {
     }
     const worst = this.findingStatus();
     const statuses = new Map(nodes.map((n) => [n.id, this.status(n, worst)] as const));
-    const root = this.tree(statuses);
+    const trees = this.transports()
+      .map((transport) => [transport, this.tree(transport, statuses)] as const)
+      .filter(([, root]) => root.children.length);
     const controls = html`<div class="switch" role="group">
         <button aria-pressed=${!this.onlyProblems} @click=${() => (this.onlyProblems = false)}>
           ${t("topology.all")}
@@ -761,15 +830,27 @@ export class MhTopology extends LitElement {
           ${t("topology.only_problems")}
         </button>
       </div>`;
-    if (this.onlyProblems && !root.children.length) {
+    if (this.onlyProblems && !trees.length) {
       return html`${head(controls)}
         <p class="empty">${t("topology.no_problems")}</p>`;
     }
     if (!this.width) return head(controls);
+    const deepest = (item: Item): number => 1 + Math.max(0, ...item.children.map(deepest));
+    const depth = Math.max(1, ...trees.map(([, root]) => deepest(root) - 1));
+    const narrow = this.width < NARROW;
     return html`${head(controls)}
-      ${this.width < NARROW
-        ? this.outline(root, statuses)
-        : html`${this.chart(root, statuses)}${this.legend()}`}`;
+      ${trees.map(([transport, root]) => {
+        const kinds = new Set(
+          nodes.filter((n) => n.transport === transport).map((n) => n.kind as string),
+        );
+        return html`<section>
+          <h3>${t(`transport.${transport}.name`)}</h3>
+          ${narrow
+            ? this.outline(root, statuses)
+            : html`${this.chart(root, statuses, depth)}${this.legend(transport, kinds)}`}
+        </section>`;
+      })}
+      ${narrow ? nothing : this.lines()}`;
   }
 }
 

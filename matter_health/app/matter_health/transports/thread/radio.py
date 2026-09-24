@@ -18,9 +18,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
-from .. import kinds
-from ..engine import RULES, Context, Rule
-from ..model import Confidence, Event, Finding, Link, Role, Severity
+from ... import kinds
+from ...engine import RULES, Context, Rule
+from ...model import Confidence, Event, Finding, Link, Role, Severity
 
 #: The log reports a crowded channel at most every 30 minutes while it lasts;
 #: without a report for this long it is over.

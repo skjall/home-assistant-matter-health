@@ -22,10 +22,10 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
-from .. import kinds
-from ..config import OTBR_SLUG
-from ..engine import RULES, Context, Rule
-from ..model import Confidence, Event, Finding, Link, Role, Severity
+from ... import kinds
+from ...config import OTBR_SLUG
+from ...engine import RULES, Context, Rule
+from ...model import Confidence, Event, Finding, Link, Role, Severity
 
 #: The warning comes right before the agent starts; an agent started later
 #: than this after the last warning started without it.

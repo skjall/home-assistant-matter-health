@@ -15,10 +15,15 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
-from .. import kinds
-from ..engine import RULES, Context, Rule
-from ..model import Confidence, Event, Finding, Link, Role, Severity
-from .common import MESH_TROUBLE, last_border_router_gone, recent_update, update_link
+from ... import kinds
+from ...engine import RULES, Context, Rule
+from ...model import Confidence, Event, Finding, Link, Role, Severity
+from ...rules.common import (
+    MESH_TROUBLE,
+    last_border_router_gone,
+    recent_update,
+    update_link,
+)
 
 #: Devices going away within this span went together.
 TOGETHER = timedelta(minutes=2)

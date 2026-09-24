@@ -42,10 +42,8 @@ five minutes.
 
 | Source              | Observes                                                         |
 |---------------------|------------------------------------------------------------------|
-| `matter_server`     | Matter Server WebSocket: node availability, border routers, Thread topology |
+| `matter_server`     | Matter Server WebSocket: node availability; attributes and polls for the transports |
 | `matter_server_log` | Matter Server add-on log: every commissioning step                |
-| `otbr`              | OpenThread Border Router REST: role, partition, leader            |
-| `otbr_log`          | OpenThread Border Router add-on log: leader timeouts, foreign partitions |
 | `home_assistant`    | Core WebSocket: device names, plugs switched off and who did it   |
 | `system`            | Supervisor: versions of the pieces involved, the host's IPv6 settings |
 
@@ -60,7 +58,39 @@ the moment they were read, and the source stores how far it has read, so a
 restart neither loses nor repeats anything.
 
 Only read-only interfaces are used. The Matter Server source sends commands
-from a fixed allow-list; the OTBR source never touches the dataset endpoints.
+from a fixed allow-list: its own and those the transports declare. The OTBR
+source never touches the dataset endpoints.
+
+## Transports
+
+Matter runs over Thread, Wi-Fi and Ethernet, and what can go wrong differs
+completely between them. Each transport is a module of its own in
+`matter_health/transports/`, built alike and standing next to the others:
+
+```
+transports/
+  thread/     border routers, the mesh, the OTBR add-on's API and log,
+              and the rules about them
+  wifi/       access points and each device's link to its own
+  ethernet/   wired devices, straight on the home network
+```
+
+A transport subclasses `Transport` and registers under its name. A device
+says which one it uses in its Network Commissioning feature map
+(`0/49/65532`, one bit per transport); the Matter Server source reads that
+and hands each transport the attributes of its devices from the clusters it
+declares, such as Wi-Fi diagnostics (`0/54`). A transport may also `poll`
+the Matter Server with read-only commands it declares - Thread asks for its
+border routers and radio links. It answers two questions for the page, in
+words every transport shares: its part of the network `picture` (gateway,
+relay, device, sleepy, unknown; links rated strong, medium or weak) and a
+`summary` for the overview. Its own sources and rules register like any
+other; a rule shared in idea but not in detail, such as a weak link, is a
+base class in `rules/` that each transport's rule fills in.
+
+Nothing outside a transport's package knows it exists. A new transport is a
+new package, imported in `transports/__init__.py`, with its words under
+`transport.<name>` in the UI translations.
 
 ## Rules
 
@@ -74,19 +104,20 @@ they see with what happened before. `rules/common.py` holds the questions
 several rules ask, such as "was a plug switched off shortly before?" or "was
 something updated the day before?".
 
-| Rule            | Tells                                                          |
-|-----------------|----------------------------------------------------------------|
-| `mesh`          | the Thread mesh lost its leader or fell apart                  |
-| `border_router` | a border router went away, and whether a switched plug did it  |
-| `offline`       | a device stays unreachable                                     |
-| `flaky`         | a device keeps dropping out for a moment                       |
-| `relay`         | a device that relayed for others went, and took them along     |
-| `wave`          | most Thread devices went at the same moment                    |
-| `signal`        | devices hear their parent only faintly                         |
-| `pairing`       | how far adding a device got, why it stopped, what to try       |
-| `radio`         | Home Assistant's own Thread radio: interference, faults, detached |
-| `host`          | the host does not forward IPv6 into the mesh                   |
-| `server`        | the Matter Server forgot its devices                           |
+| Rule            | Where     | Tells                                                  |
+|-----------------|-----------|--------------------------------------------------------|
+| `offline`       | core      | a device stays unreachable                             |
+| `flaky`         | core      | a device keeps dropping out for a moment               |
+| `pairing`       | core      | how far adding a device got, why it stopped, what to try |
+| `server`        | core      | the Matter Server forgot its devices                   |
+| `mesh`          | thread    | the mesh lost its leader or fell apart                 |
+| `border_router` | thread    | a border router went away, and whether a switched plug did it |
+| `relay`         | thread    | a device that relayed for others went, and took them along |
+| `wave`          | thread    | most Thread devices went at the same moment            |
+| `signal`        | thread    | devices hear their parent only faintly                 |
+| `radio`         | thread    | Home Assistant's own radio: interference, faults, detached |
+| `host`          | thread    | the host does not forward IPv6 into the mesh           |
+| `wifi_signal`   | wifi      | devices far from their access point                    |
 
 A rule can declare that its findings may be one consequence of another's
 (`part_of`): a failed pairing during a mesh split, a device gone with its
@@ -124,9 +155,9 @@ Assistant's ingress; requests from anywhere else are refused.
 
 | Route                 | Returns                                          |
 |-----------------------|--------------------------------------------------|
-| `GET /api/overview`   | the state right now: sources, Thread, border routers, devices |
+| `GET /api/overview`   | the state right now: sources, devices, each transport's summary |
 | `GET /api/findings`   | findings of the last days, open ones always      |
-| `GET /api/topology`   | the mesh as a tree, with who is away now         |
+| `GET /api/topology`   | every transport's part of the network, with who is away now |
 | `POST /api/dismiss`   | mark a finding as dealt with, or take that back  |
 | `POST /api/habit`     | say a device comes and goes, or always report it |
 | `GET /api/events`     | the timeline                                     |
@@ -145,13 +176,17 @@ Home Assistant knows the device, its name leads to the device's page.
 
 ## The network picture
 
-The Matter Server reports every radio link it knows, hundreds in a home with
-a few dozen mains-powered devices. `topology.py` reduces them to one way in
-per device: a battery device hangs on its parent; a relaying device takes
-the cheapest path to a border router, priced by link quality the way Thread
-does. Every device then has one line upwards, and each relaying device keeps
-the number of neighbours it could switch to. The page draws that tree once
-and does not move; devices away are shown where they last were.
+Every transport draws its part as a tree with one line upwards per device;
+the page puts them under one another, with shared columns, so gateways line
+up. For Thread that takes work: the Matter Server reports every radio link
+it knows, hundreds in a home with a few dozen mains-powered devices.
+`transports/thread/tree.py` reduces them to one way in per device: a battery
+device hangs on its parent; a relaying device takes the cheapest path to a
+border router, priced by link quality the way Thread does. Each relaying
+device keeps the number of neighbours it could switch to. A Wi-Fi device
+names its access point itself; a wired one hangs on the home network. The
+page draws the trees once and does not move; devices away are shown where
+they last were.
 
 ## Confinement
 
@@ -170,6 +205,7 @@ log, add a pattern to the parser; otherwise extend or add a source.
 and add its keys to all four files in `matter_health/translations/ui/`. The
 page needs no change.
 
-**A new source.** Add a module to `sources/`, register it and import it in
-`sources/__init__.py`. If it needs configuration, add an option to
+**A new source.** Add a module to `sources/` - or to its transport's
+package, if it is about one transport - register it and import it in the
+package's `__init__.py`. If it needs configuration, add an option to
 `config.yaml`, the `Options` dataclass and the option translations.

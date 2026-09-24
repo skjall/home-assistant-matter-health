@@ -5,8 +5,8 @@ from matter_health import kinds
 from matter_health.engine import Context, Engine
 from matter_health.model import Confidence, Severity
 from matter_health.rules.common import last_border_router_gone
-from matter_health.rules.mesh import MeshRule
 from matter_health.store import Store
+from matter_health.transports.thread.mesh import MeshRule
 
 TV_SUBJECT = "br:0a1b2c3d4e5f6071"
 

@@ -4,8 +4,8 @@ from conftest import Clock, at, chain_keys, emit_at, make_engine, only_finding, 
 from matter_health import kinds
 from matter_health.engine import Context, Engine
 from matter_health.model import Severity
-from matter_health.rules.radio import RadioRule
 from matter_health.store import Store
+from matter_health.transports.thread.radio import RadioRule
 
 
 @pytest.fixture

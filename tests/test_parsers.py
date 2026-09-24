@@ -3,7 +3,7 @@ import pytest
 from matter_health import kinds
 from matter_health.parsers import PARSERS, Parsed, clean, peer_node_id
 from matter_health.parsers.matter_js import MatterJsParser
-from matter_health.parsers.openthread import (
+from matter_health.transports.thread.openthread import (
     BUSY_AFTER,
     BUSY_REPEAT_S,
     BUSY_WINDOW_S,

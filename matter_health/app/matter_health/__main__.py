@@ -8,7 +8,7 @@ import os
 
 from aiohttp import web
 
-from . import rules, sources
+from . import rules, sources, transports
 from .config import Options, load_options
 from .engine import Context, Engine
 from .store import Store
@@ -16,8 +16,8 @@ from .web import create_app
 
 _LOGGER = logging.getLogger("matter_health")
 
-# Importing the packages is what registers every source and rule.
-PLUGINS = (sources, rules)
+# Importing the packages is what registers every source, rule and transport.
+PLUGINS = (sources, rules, transports)
 
 
 async def serve(options: Options) -> None:

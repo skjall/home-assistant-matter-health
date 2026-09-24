@@ -26,6 +26,9 @@ THREAD_FOREIGN_PARTITION: Final = "thread.foreign_partition"
 #: Best radio link per device. data: devices: list of {subject, neighbour,
 #: role, rssi, lqi, strength}
 THREAD_TOPOLOGY: Final = "thread.topology"
+#: Each Wi-Fi device's link to its access point, whenever a rating changed.
+#: data: devices: list of {subject, neighbour, rssi, quality}
+WIFI_LINKS: Final = "wifi.links"
 #: The border router's radio could not send because the channel was busy, many
 #: times in a short while. data: count, minutes
 THREAD_CHANNEL_BUSY: Final = "thread.channel_busy"

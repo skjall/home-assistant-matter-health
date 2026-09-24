@@ -16,10 +16,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import ClassVar
 
-from .. import kinds
-from ..engine import RULES, Rule
-from ..model import Confidence, Event, Finding, Link, Role, Severity
-from .common import (
+from ... import kinds
+from ...engine import RULES, Rule
+from ...model import Confidence, Event, Finding, Link, Role, Severity
+from ...rules.common import (
     POWER_CAUSE_WINDOW,
     cause_or_update,
     last_border_router_gone,

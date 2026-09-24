@@ -19,11 +19,8 @@
   "summary": {
     "devices": "Dispositivos",
     "devices_unreachable": "{count} inaccesible | {count} inaccesibles",
-    "border_routers": "Puentes",
-    "mesh": "Red Thread",
-    "mesh_ok": "Conectada",
-    "mesh_unknown": "Desconocido",
-    "devices_unreachable_short": "{count} sin conexión"
+    "devices_unreachable_short": "{count} sin conexión",
+    "disconnected": "sin conexión"
   },
   "role": {
     "cause": "Por qué",
@@ -168,7 +165,8 @@
     "relay_children_gone": "Poco después desaparecieron también {devices}.",
     "relay_impact": "Estos dispositivos tienen que buscar un nuevo camino a la red. Algunos lo logran en minutos, otros mucho después y otros nunca.",
     "server_forgot": "El servidor Matter conocía {count} dispositivos y ahora no conoce ninguno.",
-    "server_forgot_impact": "Ningún dispositivo Matter es accesible. Los dispositivos están bien, pero las llaves para llegar a ellos han desaparecido."
+    "server_forgot_impact": "Ningún dispositivo Matter es accesible. Los dispositivos están bien, pero las llaves para llegar a ellos han desaparecido.",
+    "weak_wifi": "{device} está lejos de su punto de acceso ({rssi} dBm)."
   },
   "origin": {
     "person": "por {by}",
@@ -233,7 +231,8 @@
       "unreachable": "Comprueba que IPv6 en Home Assistant está en «Automático» y que hay un puente en la misma red que Home Assistant.",
       "not_found": "Vuelve a poner el dispositivo en modo de emparejamiento y acerca el móvil. ¿Están el móvil y Home Assistant en la misma red?",
       "timeout": "Inténtalo más cerca de un puente o de un dispositivo Thread con corriente."
-    }
+    },
+    "weak_wifi": "Acerca {device} a un punto de acceso, o pon un punto de acceso cerca de {device}. Comprueba que el dispositivo esté en la red de 2,4 GHz: llega más lejos que la de 5 GHz."
   },
   "phase": {
     "first_contact": {
@@ -292,8 +291,6 @@
     "title": "Tu red ahora mismo",
     "unreachable_title": "Sin respuesta",
     "unreachable_empty": "Todos los dispositivos responden.",
-    "foreign_title": "Otras redes Thread",
-    "foreign_network": "Red «{network}»",
     "sources_missing": "Sin conexión",
     "usual_title": "Va y viene",
     "always_report": "Avisar siempre",
@@ -329,10 +326,9 @@
     "days": "{count} día | {count} días"
   },
   "topology": {
-    "title": "Red Thread",
+    "title": "Red",
     "home": "Red doméstica",
     "no_way": "Sin camino a la red",
-    "unknown_device": "Otro dispositivo Thread",
     "all": "Todo",
     "only_problems": "Solo problemas",
     "empty": "La imagen de la red aparece con la primera lectura. Tarda hasta diez minutos.",
@@ -352,17 +348,7 @@
     "children": "{count} dispositivo depende de él | {count} dispositivos dependen de él",
     "alternatives": "{count} camino más a la red | {count} caminos más a la red",
     "only_way": "Ningún otro camino a la red",
-    "kind": {
-      "border_router": "Puente a la red doméstica",
-      "router": "Reenvía para otros dispositivos",
-      "end_device": "Dispositivo final",
-      "sleepy": "Dispositivo a pilas, da señales de vez en cuando",
-      "unknown": "Dispositivo de otro sistema"
-    },
     "legend": {
-      "bridge": "Puente",
-      "router": "Reenvía",
-      "device": "Dispositivo final",
       "good": "Enlace bueno",
       "weak": "Débil o hallazgo abierto",
       "offline": "No responde"
@@ -370,5 +356,54 @@
     "resting": "fuera, como siempre"
   },
   "finding.open_device": "Abrir en Home Assistant",
-  "finding.open_named": "Abrir {device}"
+  "finding.open_named": "Abrir {device}",
+  "transport": {
+    "thread": {
+      "name": "Thread",
+      "gateways": "{count} puente | {count} puentes",
+      "unknown": "Otro dispositivo Thread",
+      "foreign_title": "Otras redes Thread",
+      "foreign_network": "Red «{network}»",
+      "kind": {
+        "gateway": "Puente a la red doméstica",
+        "relay": "Reenvía para otros dispositivos",
+        "device": "Dispositivo final",
+        "sleepy": "Dispositivo a pilas, da señales de vez en cuando",
+        "unknown": "Dispositivo de otro sistema"
+      },
+      "legend": {
+        "gateway": "Puente",
+        "relay": "Reenvía",
+        "device": "Dispositivo final"
+      }
+    },
+    "wifi": {
+      "name": "Wi-Fi",
+      "gateways": "{count} punto de acceso | {count} puntos de acceso",
+      "gateway_named": "Punto de acceso {address}",
+      "detail": {
+        "ssid": "«{ssid}»",
+        "channel": "Canal {channel}",
+        "security": "{security}",
+        "standard": "802.11{standard}"
+      },
+      "kind": {
+        "gateway": "Punto de acceso de la red doméstica",
+        "device": "Dispositivo Wi-Fi"
+      },
+      "legend": {
+        "gateway": "Punto de acceso",
+        "device": "Dispositivo Wi-Fi"
+      }
+    },
+    "ethernet": {
+      "name": "Ethernet",
+      "kind": {
+        "device": "Conectado por cable a la red doméstica"
+      },
+      "legend": {
+        "device": "Dispositivo con cable"
+      }
+    }
+  }
 }

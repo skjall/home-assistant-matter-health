@@ -30,7 +30,7 @@ PLURAL = " | "
 # the key parity check.
 USED_KEY = re.compile(
     r"""["'`]((?:app|nav|status|summary|role|confidence|finding|link|origin|"""
-    r"""cause|fix|phase|timeline|network|source|thread_role|generic|time|topology)"""
+    r"""cause|fix|phase|timeline|network|source|thread_role|generic|time|topology|transport)"""
     r"""\.[a-z0-9_.]+)["'`]"""
 )
 # File names share it too ("app.js").

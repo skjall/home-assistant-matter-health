@@ -7,8 +7,8 @@ from matter_health import kinds
 from matter_health.config import OTBR_SLUG
 from matter_health.engine import Context, Engine
 from matter_health.model import Confidence, Severity
-from matter_health.rules.host import HostRule
 from matter_health.store import Store
+from matter_health.transports.thread.host import HostRule
 
 
 @pytest.fixture

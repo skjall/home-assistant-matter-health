@@ -28,7 +28,8 @@ from matter_health import kinds, rules
 from matter_health.config import Options
 from matter_health.engine import RULES, Context, Engine, utcnow
 from matter_health.store import Store
-from matter_health.topology import build_tree
+from matter_health.transports.thread.tree import build_tree
+from matter_health.transports.wifi.transport import WifiTransport
 from matter_health.web import create_app
 
 PLUGINS = (rules,)
@@ -41,6 +42,9 @@ NAMES = {
     "node:21": "Desk Lamp Plug",
     "node:30": "Coffee Machine",
     "node:31": "Drawer Button",
+    "node:40": "Garage Plug",
+    "node:41": "Garden Light",
+    "node:42": "Hallway Hub",
     "br:0a1b2c3d4e5f6071": "Living Room TV",
     "br:1b2c3d4e5f607182": "Kitchen Speaker",
     "br:2c3d4e5f60718293": "Bedroom Speaker",
@@ -272,9 +276,27 @@ async def seed(engine: Engine, clock: Clock) -> None:
     await store.set_state(
         "thread.tree", {"at": clock.at.isoformat(), "nodes": build_tree(TOPOLOGY)}
     )
+    thread = [e["subject"] for e in build_tree(TOPOLOGY) if e["subject"]]
+    await store.set_state(
+        "matter.transports",
+        {
+            **{s: "thread" for s in thread if s.startswith("node:")},
+            "node:40": "wifi",
+            "node:41": "wifi",
+            "node:42": "ethernet",
+        },
+    )
+    # Two Wi-Fi devices on the same access point, one of them far from it.
+    wifi = {"0/49/65532": 1, "0/54/0": "AgAAAAAB", "0/54/1": 4, "0/54/3": 6}
+    await WifiTransport(ctx).devices(
+        {
+            "node:40": {**wifi, "0/54/4": -52},
+            "node:41": {**wifi, "0/54/4": -79},
+        }
+    )
     await store.set_state(
         "matter.nodes",
-        {"total": 24, "unavailable": ["node:9", "node:30", "node:31"]},
+        {"total": 27, "unavailable": ["node:9", "node:30", "node:31"]},
     )
     found = await store.findings()
     button = next(f for f in found if f.subjects == ["node:31"] and not f.ended_at)

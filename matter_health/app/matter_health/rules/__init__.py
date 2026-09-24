@@ -1,29 +1,8 @@
-"""Everything the add-on concludes. Each module registers one rule."""
+"""What the add-on concludes whatever the transport. Each module registers one rule.
 
-from . import (
-    border_router,
-    flaky,
-    host,
-    mesh,
-    offline,
-    pairing,
-    radio,
-    relay,
-    server,
-    signal,
-    wave,
-)
+Rules about one transport live with it, in ``matter_health.transports``.
+"""
 
-__all__ = [
-    "border_router",
-    "flaky",
-    "host",
-    "mesh",
-    "offline",
-    "pairing",
-    "radio",
-    "relay",
-    "server",
-    "signal",
-    "wave",
-]
+from . import flaky, offline, pairing, server
+
+__all__ = ["flaky", "offline", "pairing", "server"]

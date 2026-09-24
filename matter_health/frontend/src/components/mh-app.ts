@@ -4,9 +4,11 @@ import {
   mdiAlertCircleOutline,
   mdiAlertOutline,
   mdiDevices,
-  mdiRouterWireless,
+  mdiEthernet,
+  mdiLan,
   mdiShieldCheckOutline,
   mdiSourceBranch,
+  mdiWifi,
 } from "@mdi/js";
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 
@@ -24,6 +26,13 @@ import { icon } from "./mh-finding";
 import "./mh-finding";
 import "./mh-network";
 import "./mh-timeline";
+
+/** A symbol per transport; a new one without its own still gets a network. */
+const TRANSPORT_ICON: Record<string, string> = {
+  thread: mdiSourceBranch,
+  wifi: mdiWifi,
+  ethernet: mdiEthernet,
+};
 
 type Tab = "findings" | "timeline" | "network";
 
@@ -117,9 +126,11 @@ export class MhApp extends LitElement {
         line-height: 1.5;
         color: var(--mh-muted);
       }
+      /* One row whatever the number of transports: devices, then one tile each. */
       .tiles {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
         gap: 12px;
         margin: 14px 0 24px;
       }
@@ -251,6 +262,8 @@ export class MhApp extends LitElement {
         }
         .tiles {
           gap: 8px;
+          grid-auto-flow: row;
+          grid-template-columns: 1fr 1fr;
         }
         .tile {
           padding: 10px 12px;
@@ -422,7 +435,6 @@ export class MhApp extends LitElement {
     const unreachable = overview.devices.unavailable.filter(
       (d) => !d.usual && !d.known,
     ).length;
-    const role = overview.thread?.role;
     return html`<div class="tiles">
       <div class="card tile">
         <span class="ic">${icon(mdiDevices)}</span>
@@ -440,26 +452,22 @@ export class MhApp extends LitElement {
             : nothing}
         </div>
       </div>
-      <div class="card tile">
-        <span class="ic">${icon(mdiRouterWireless)}</span>
-        <div>
-          <div class="v">
-            ${overview.border_routers.filter((r) => r.own !== false).length}
+      ${overview.transports.map(
+        (transport) => html`<div class="card tile">
+          <span class="ic">${icon(TRANSPORT_ICON[transport.name] ?? mdiLan)}</span>
+          <div>
+            <div class="v">${transport.devices}</div>
+            <div class="l">${t(`transport.${transport.name}.name`)}</div>
+            ${transport.connected === false
+              ? html`<div class="l bad">${t("summary.disconnected")}</div>`
+              : transport.gateways !== null
+                ? html`<div class="l">
+                    ${t(`transport.${transport.name}.gateways`, { count: transport.gateways })}
+                  </div>`
+                : nothing}
           </div>
-          <div class="l">${t("summary.border_routers")}</div>
-        </div>
-      </div>
-      <div class="card tile">
-        <span class="ic">${icon(mdiSourceBranch)}</span>
-        <div>
-          <div class="v">
-            ${role && role !== "detached" && role !== "disabled"
-              ? t("summary.mesh_ok")
-              : t("summary.mesh_unknown")}
-          </div>
-          <div class="l">${t("summary.mesh")}</div>
-        </div>
-      </div>
+        </div>`,
+      )}
     </div>`;
   }
 

@@ -61,15 +61,24 @@ export interface BorderRouter {
 }
 
 export interface TopologyNode {
+  /** Unique across transports. */
   id: string;
   subject: string | null;
-  kind: "border_router" | "router" | "end_device" | "sleepy" | "unknown";
-  /** The node this one takes its way in through; "home" for a border router. */
+  /** The transport this node belongs to: thread, wifi, ethernet. */
+  transport: string;
+  /** What the node is on its transport, in words every transport shares. */
+  kind: "gateway" | "relay" | "device" | "sleepy" | "unknown";
+  /** The node this one takes its way in through; "home" for a gateway. */
   parent: string | null;
-  link: { rssi?: number | null; lqi?: number | null; strength?: string | null };
+  link: {
+    rssi?: number | null;
+    quality?: "strong" | "medium" | "weak" | null;
+  };
   /** Other relaying neighbours a relaying device could switch to. */
   alternatives: number;
   vendor: string | null;
+  /** What the transport has to add, such as a Wi-Fi channel. */
+  detail?: Record<string, string | number | null>;
   name: string | null;
   device_id?: string | null;
   available: boolean;
@@ -80,8 +89,19 @@ export interface TopologyNode {
 }
 
 export interface Topology {
-  at: string | null;
   nodes: TopologyNode[];
+}
+
+/** What the overview says about one transport. */
+export interface TransportSummary {
+  name: string;
+  devices: number;
+  /** What connects it to the home network; null where nothing does. */
+  gateways: number | null;
+  /** Whether it works as a whole; null where there is nothing to tell. */
+  connected: boolean | null;
+  /** Thread: border routers of other networks nearby. */
+  foreign?: BorderRouter[];
 }
 
 export interface UnavailableDevice {
@@ -98,16 +118,11 @@ export interface UnavailableDevice {
 
 export interface Overview {
   sources: Record<string, SourceStatus>;
-  thread: {
-    role: string | null;
-    router_count: number | null;
-    network_name: string | null;
-  } | null;
-  border_routers: BorderRouter[];
   devices: {
     total: number | null;
     unavailable: UnavailableDevice[];
   };
+  transports: TransportSummary[];
   open: Record<Severity, number>;
   now: string;
   /** Version of the page the add-on serves now. */

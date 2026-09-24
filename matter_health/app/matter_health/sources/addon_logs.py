@@ -8,7 +8,7 @@ from typing import Any, ClassVar
 
 import aiohttp
 
-from ..config import MATTER_SERVER_SLUG, OTBR_SLUG
+from ..config import MATTER_SERVER_SLUG
 from ..engine import SOURCES, Source
 from ..parsers import PARSERS, LineParser
 from ..supervisor import LogLine, Supervisor
@@ -100,12 +100,3 @@ class MatterServerLog(AddonLogSource):
     name: ClassVar[str] = "matter_server_log"
     slug: ClassVar[str] = MATTER_SERVER_SLUG
     parser: ClassVar[str] = "matter_js"
-
-
-@SOURCES.register("otbr_log")
-class OtbrLog(AddonLogSource):
-    """Mesh splits from the OpenThread Border Router add-on."""
-
-    name: ClassVar[str] = "otbr_log"
-    slug: ClassVar[str] = OTBR_SLUG
-    parser: ClassVar[str] = "openthread"

@@ -1,9 +1,11 @@
-"""Devices, border routers and radio links, from the Matter Server's websocket.
+"""Devices and how they reach Home Assistant, from the Matter Server's websocket.
 
-The Matter Server already tracks which devices are reachable, which border
-routers announce themselves and how well every Thread device hears its
-neighbours. This source only reads that; it never sends a command that
-changes anything.
+The Matter Server already tracks which devices are reachable and keeps every
+attribute they report. This source only reads that; it never sends a command
+that changes anything. What a device's transport means - border routers,
+access points, radio links - is the transports' business: this source hands
+each one the attributes of its devices and lets it ask the server the
+read-only questions it declares.
 """
 
 from __future__ import annotations
@@ -12,9 +14,6 @@ import asyncio
 import contextlib
 import itertools
 import json
-import time
-from collections import Counter
-from collections.abc import Iterable
 from typing import Any, ClassVar
 
 import aiohttp
@@ -23,136 +22,37 @@ from .. import kinds
 from ..config import MATTER_SERVER_PORT, MATTER_SERVER_SLUG
 from ..engine import SOURCES, Source
 from ..supervisor import Supervisor
-from ..topology import build_tree, remember_parents
+from ..transports import FEATURE_MAP, TRANSPORTS, Transport, transport_of
 
-#: Border routers come and go with power; a minute is quick enough to tie a
-#: disappearance to a switch that was turned off just before.
-BORDER_ROUTER_POLL_S = 60.0
-
-#: A border router missing from this many polls in a row is reported gone.
-GONE_AFTER_ROUNDS = 2
-
-#: Link quality changes slowly; the topology is also expensive for the server
-#: to collect.
-TOPOLOGY_POLL_S = 600.0
+#: How often the transports may ask the server something. Border routers come
+#: and go with power; a minute is quick enough to tie a disappearance to a
+#: switch that was turned off just before.
+POLL_S = 60.0
 
 #: Answers to a read command; the topology of a large home takes a while.
 COMMAND_TIMEOUT_S = 120.0
 
-#: The only commands this source sends. All of them only read.
-READ_COMMANDS = frozenset(
-    {"start_listening", "get_thread_border_routers", "get_network_topology"}
-)
+
+def read_commands() -> frozenset[str]:
+    """Return the only commands this source sends: its own and the transports'."""
+    commands = {"start_listening"}
+    for transport in TRANSPORTS:
+        commands |= transport.commands
+    return frozenset(commands)
 
 
-def border_router_name(raw: dict[str, Any]) -> str:
-    """Return a readable name for a border router announcement.
-
-    Announcements carry the host name, e.g. ``Living-Room-Speaker.local.``;
-    that is what the owner named the device, with dashes for spaces.
-    """
-    host = str(raw.get("hostname") or "").removesuffix(".").removesuffix(".local")
-    if host:
-        return host.replace("-", " ")
-    return str(raw.get("modelName") or raw.get("vendorName") or "Border router")
-
-
-def display_name(raw: dict[str, Any]) -> str | None:
-    """Return a better name than the host name, where the announcement implies one.
-
-    Home Assistant's own border router announces itself with the add-on's
-    host name, which reads like a technical label; it is Home Assistant's.
-    """
-    if raw.get("vendorName") == "Home Assistant":
-        return "Home Assistant"
-    return None
-
-
-#: Thread roles that pass messages on for others.
-RELAYING_ROLES = frozenset({"router", "leader"})
-
-#: Devices that report no neighbour table of their own; their parent's entry
-#: is the one link they have.
-CHILD_ROLES = frozenset({"sleepy_end_device", "end_device", "reed", "child"})
-
-
-def link_summary(topology: dict[str, Any]) -> list[dict[str, Any]]:
-    """For every device, its best link to a neighbour that relays.
-
-    A device is only as well connected as its strongest way into the mesh.
-    Only routers and border routers pass messages on; a strong signal from a
-    battery sensor next door helps nobody.
-
-    Each connection carries what the ``source`` device measured of the
-    ``target`` (``source_to_target``) and, if the target reports too, the
-    other way round. A device's own measurement counts first; what a
-    neighbour heard of it stands in only where the device measured nothing.
-    A router or border router that reports no measurements at all is left
-    out: nothing can be said about its reception.
-    """
-    nodes = {node["id"]: node for node in topology.get("nodes", [])}
-    own: dict[str, dict[str, dict[str, Any]]] = {}
-    heard: dict[str, dict[str, dict[str, Any]]] = {}
-    for link in topology.get("connections", []):
-        source, target = link["source"], link["target"]
-        for measurer, measured, direction in (
-            (source, target, "source_to_target"),
-            (target, source, "target_to_source"),
-        ):
-            value = link.get(direction) or {}
-            if value.get("rssi") is None:
-                continue
-            own.setdefault(measurer, {})[measured] = value
-            heard.setdefault(measured, {})[measurer] = value
-
-    def relays(node_id: str) -> bool:
-        node = nodes.get(node_id, {})
-        return node.get("kind") == "border_router" or node.get("role") in (
-            RELAYING_ROLES
-        )
-
-    summary = []
-    for node_id, node in nodes.items():
-        child = node.get("role") in CHILD_ROLES
-        if not own.get(node_id) and not child:
-            continue
-        candidates = {**heard.get(node_id, {}), **own.get(node_id, {})}
-        options = [
-            (value, neighbour)
-            for neighbour, value in candidates.items()
-            if relays(neighbour)
-        ]
-        if not options:
-            continue
-        value, neighbour = max(options, key=lambda item: item[0]["rssi"])
-        summary.append(
-            {
-                "subject": _subject(node) or f"thread:{node_id}",
-                "neighbour": _subject(nodes.get(neighbour, {})),
-                "role": node.get("role"),
-                "rssi": value["rssi"],
-                "lqi": value.get("lqi"),
-                "strength": value.get("strength"),
-            }
-        )
-    return sorted(summary, key=lambda item: str(item["subject"]))
-
-
-def _by_name(info: dict[str, Any]) -> str:
-    return str(info.get("name", "")).lower()
-
-
-def _subject(node: dict[str, Any]) -> str | None:
-    if node.get("node_id") is not None:
-        return f"node:{node['node_id']}"
-    if node.get("ext_address"):
-        return f"br:{str(node['ext_address']).lower()}"
-    return None
+def wanted(path: str) -> bool:
+    """Whether an attribute tells a transport anything."""
+    return path == FEATURE_MAP or any(
+        path.startswith(prefix)
+        for transport in TRANSPORTS
+        for prefix in transport.clusters
+    )
 
 
 @SOURCES.register("matter_server")
 class MatterServerSource(Source):
-    """Reachability of devices, border routers and radio links."""
+    """Reachability of devices, and what their transports need to know."""
 
     name: ClassVar[str] = "matter_server"
 
@@ -162,9 +62,10 @@ class MatterServerSource(Source):
         self._ids = itertools.count(1)
         self._pending: dict[str, asyncio.Future[Any]] = {}
         self._available: dict[int, bool] = {}
-        self._border_routers: dict[str, dict[str, Any]] = {}
-        self._missing: dict[str, int] = {}
-        self._first_round = True
+        self._attributes: dict[int, dict[str, Any]] = {}
+        self.transports: dict[str, Transport] = {
+            name: TRANSPORTS.get(name)(self.ctx) for name in TRANSPORTS.names()
+        }
 
     async def run(self) -> None:
         """Stay connected, listen for device changes and poll the rest."""
@@ -193,33 +94,16 @@ class MatterServerSource(Source):
                         await reader
 
     async def _poll(self, ws: aiohttp.ClientWebSocketResponse) -> None:
-        next_topology = 0.0
-        while True:
-            await self._border_routers_seen(
-                await self._command(ws, "get_thread_border_routers")
-            )
-            if time.monotonic() >= next_topology:
-                topology = await self._command(ws, "get_network_topology")
-                links = link_summary(topology)
-                # Kept for rules that ask later who hung on whom.
-                await self.ctx.store.set_state("thread.links", links)
-                await self._tree(topology)
-                await self.emit(kinds.THREAD_TOPOLOGY, devices=links)
-                next_topology = time.monotonic() + TOPOLOGY_POLL_S
-            await asyncio.sleep(BORDER_ROUTER_POLL_S)
+        async def ask(command: str) -> Any:
+            return await self._command(ws, command)
 
-    async def _tree(self, topology: dict[str, Any]) -> None:
-        """Keep the mesh as a tree for the page, and who hung on whom."""
-        home = await self._home_network(self._border_routers.values())
-        tree = build_tree(topology, home)
-        await self.ctx.store.set_state(
-            "thread.tree", {"at": self.ctx.now().isoformat(), "nodes": tree}
-        )
-        known = await self.ctx.store.get_state("thread.parents") or {}
-        await self.ctx.store.set_state("thread.parents", remember_parents(tree, known))
+        while True:
+            for transport in self.transports.values():
+                await transport.poll(ask)
+            await asyncio.sleep(POLL_S)
 
     async def _command(self, ws: aiohttp.ClientWebSocketResponse, command: str) -> Any:
-        if command not in READ_COMMANDS:
+        if command not in read_commands():
             raise ValueError(f"{command} is not a read-only command")
         message_id = str(next(self._ids))
         future: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
@@ -255,15 +139,46 @@ class MatterServerSource(Source):
         data = message.get("data")
         if event in ("node_added", "node_updated") and isinstance(data, dict):
             await self._node_seen(data, added=event == "node_added")
+        elif event == "attribute_updated" and isinstance(data, list) and len(data) == 3:
+            node_id, path, value = data
+            if wanted(str(path)):
+                self._attributes.setdefault(int(node_id), {})[str(path)] = value
+                await self._tell_transports()
         elif event == "node_removed" and data is not None:
             node_id = int(data)
             self._available.pop(node_id, None)
+            self._attributes.pop(node_id, None)
             await self._save_availability()
+            await self._tell_transports()
             await self.emit(
                 kinds.MATTER_NODE_REMOVED,
                 f"node:{node_id}",
                 name=self.ctx.names.get(f"node:{node_id}"),
             )
+
+    def _remember(self, node: dict[str, Any]) -> None:
+        """Keep the attributes of a node that tell a transport anything."""
+        attributes = node.get("attributes") or {}
+        self._attributes[int(node["node_id"])] = {
+            path: value for path, value in attributes.items() if wanted(path)
+        }
+
+    async def _tell_transports(self) -> None:
+        """Say which transport each device uses and hand each its devices."""
+        by_transport: dict[str, dict[str, dict[str, Any]]] = {
+            name: {} for name in self.transports
+        }
+        mine: dict[str, str] = {}
+        for node_id, attributes in sorted(self._attributes.items()):
+            name = transport_of(attributes)
+            if name is None:
+                continue
+            subject = f"node:{node_id}"
+            mine[subject] = name
+            by_transport[name][subject] = attributes
+        await self.ctx.store.set_state("matter.transports", mine)
+        for name, transport in self.transports.items():
+            await transport.devices(by_transport[name])
 
     async def _nodes_known(self, nodes: list[dict[str, Any]]) -> None:
         before = await self.ctx.store.get_state("matter.nodes") or {}
@@ -273,7 +188,9 @@ class MatterServerSource(Source):
             await self.emit(kinds.MATTER_NODES_LOST, previous=before["total"])
         for node in nodes or []:
             self._available[int(node["node_id"])] = bool(node.get("available"))
+            self._remember(node)
         await self._save_availability()
+        await self._tell_transports()
 
     async def _save_availability(self) -> None:
         """Keep the current picture for the overview page."""
@@ -306,72 +223,6 @@ class MatterServerSource(Source):
             )
         self._available[node_id] = available
         await self._save_availability()
-
-    async def _border_routers_seen(self, announced: list[dict[str, Any]]) -> None:
-        """Compare this round's announcements with what was there before.
-
-        Border routers are told apart by host name: some regenerate their
-        Thread extended address on every restart, the host name stays. A
-        router counts as gone only when it is missing from two rounds in a
-        row, so one incomplete answer does not report the whole house as lost.
-        """
-        current: dict[str, dict[str, Any]] = {}
-        for raw in announced or []:
-            ext = str(raw.get("extAddressHex") or "").lower()
-            if not ext:
-                continue
-            name = border_router_name(raw)
-            current[name] = {
-                "subject": f"br:{ext}",
-                # Keyed by the announced name, shown by the one the user gave.
-                "name": self.ctx.names.match(name) or display_name(raw) or name,
-                "vendor": raw.get("vendorName"),
-                "model": raw.get("modelName"),
-                "network": raw.get("networkName"),
-                "pan": str(raw.get("extendedPanIdHex") or "").lower() or None,
-            }
-            self.ctx.names.set(f"br:{ext}", current[name]["name"])
-        home = await self._home_network(current.values())
-        for info in current.values():
-            # A router whose network is not announced is given the benefit of
-            # the doubt; wrongly hiding a real bridge would be worse.
-            info["own"] = home is None or info["pan"] in (None, home)
-        # Only the very first answer is a baseline. Deciding by an empty list
-        # instead would swallow the return of the last router that went away.
-        first_round, self._first_round = self._first_round, False
-        for name, info in current.items():
-            self._missing.pop(name, None)
-            if not first_round and name not in self._border_routers:
-                await self._border_router_event(kinds.BORDER_ROUTER_APPEARED, info)
-            self._border_routers[name] = info
-        for name in list(self._border_routers.keys() - current.keys()):
-            self._missing[name] = self._missing.get(name, 0) + 1
-            if self._missing[name] >= GONE_AFTER_ROUNDS:
-                info = self._border_routers.pop(name)
-                self._missing.pop(name)
-                await self._border_router_event(kinds.BORDER_ROUTER_GONE, info)
-        await self.ctx.store.set_state(
-            "border_routers", sorted(self._border_routers.values(), key=_by_name)
-        )
-
-    async def _home_network(self, routers: Iterable[dict[str, Any]]) -> str | None:
-        """Return the Extended PAN ID of the Thread network Home Assistant uses.
-
-        Other products - some hubs, for instance - run a Thread network of
-        their own next to it. Their border routers are announced alike but
-        carry nothing for the devices Home Assistant controls. The network
-        of Home Assistant's own border router decides; without one, the
-        network most border routers belong to.
-        """
-        routers = [r for r in routers if r["pan"]]
-        node = await self.ctx.store.get_state("otbr.node") or {}
-        own_name = node.get("network_name")
-        for router in routers:
-            if own_name and router["network"] == own_name:
-                return str(router["pan"])
-        counted = Counter(str(r["pan"]) for r in routers)
-        return counted.most_common(1)[0][0] if counted else None
-
-    async def _border_router_event(self, kind: str, info: dict[str, Any]) -> None:
-        details = {key: value for key, value in info.items() if key != "subject"}
-        await self.emit(kind, info["subject"], **details)
+        if "attributes" in node:
+            self._remember(node)
+            await self._tell_transports()

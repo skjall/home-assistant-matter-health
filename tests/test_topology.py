@@ -1,6 +1,6 @@
 from typing import Any
 
-from matter_health.topology import ROOT, build_tree, remember_parents
+from matter_health.transports.thread.tree import ROOT, build_tree, remember_parents
 
 
 def node(ident: str, **fields: Any) -> dict[str, Any]:

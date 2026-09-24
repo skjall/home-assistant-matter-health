@@ -25,11 +25,12 @@ Technical detail is one click away, for whoever wants it.
 </p>
 
 <p align="center">
-  <img src="docs/images/network.png" width="840" alt="The Thread network as a tree: border routers, the devices relaying through them, and the end devices, with a weak link and an unreachable device marked">
+  <img src="docs/images/network.png" width="840" alt="The network, one tree per transport: Thread with its border routers and relaying devices, Wi-Fi with its access point, Ethernet; a weak link and an unreachable device marked">
 </p>
 
-The network is drawn as it is used: every device on the one way it takes
-into the mesh, so a weak link or a device gone shows where it hangs.
+The network is drawn as it is used, one picture per transport - Thread,
+Wi-Fi, Ethernet: every device on the one way it takes in, so a weak link or
+a device gone shows where it hangs.
 
 The screenshots show invented data from `scripts/demo.py`.
 

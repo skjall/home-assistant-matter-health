@@ -1,5 +1,8 @@
-"""Everything the add-on observes. Each module registers one or more sources."""
+"""What the add-on observes whatever the transport. Each module registers sources.
 
-from . import addon_logs, home_assistant, matter_server, otbr, system
+Sources of one transport live with it, in ``matter_health.transports``.
+"""
 
-__all__ = ["addon_logs", "home_assistant", "matter_server", "otbr", "system"]
+from . import addon_logs, home_assistant, matter_server, system
+
+__all__ = ["addon_logs", "home_assistant", "matter_server", "system"]

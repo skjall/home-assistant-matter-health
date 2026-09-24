@@ -9,9 +9,9 @@ from pytest_aiohttp import AiohttpServer
 
 from matter_health import kinds
 from matter_health.engine import Context
-from matter_health.sources import otbr
-from matter_health.sources.otbr import OtbrSource
 from matter_health.store import Store
+from matter_health.transports.thread import otbr
+from matter_health.transports.thread.otbr import OtbrSource
 
 
 def node(state: str, partition: int, leader: int, routers: int = 3) -> dict[str, Any]:

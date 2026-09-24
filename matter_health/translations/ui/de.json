@@ -19,11 +19,8 @@
   "summary": {
     "devices": "Geräte",
     "devices_unreachable": "{count} nicht erreichbar | {count} nicht erreichbar",
-    "border_routers": "Border Router",
-    "mesh": "Thread-Netz",
-    "mesh_ok": "Verbunden",
-    "mesh_unknown": "Unbekannt",
-    "devices_unreachable_short": "{count} offline"
+    "devices_unreachable_short": "{count} offline",
+    "disconnected": "nicht verbunden"
   },
   "role": {
     "cause": "Warum",
@@ -168,7 +165,8 @@
     "relay_children_gone": "Kurz danach waren auch {devices} weg.",
     "relay_impact": "Diese Geräte müssen sich einen neuen Weg ins Netz suchen. Manche schaffen das in Minuten, manche erst nach langer Zeit, manche gar nicht.",
     "server_forgot": "Der Matter-Server kannte {count} Geräte und kennt jetzt keines mehr.",
-    "server_forgot_impact": "Kein Matter-Gerät ist erreichbar. Die Geräte selbst sind in Ordnung, aber die Schlüssel zu ihnen sind weg."
+    "server_forgot_impact": "Kein Matter-Gerät ist erreichbar. Die Geräte selbst sind in Ordnung, aber die Schlüssel zu ihnen sind weg.",
+    "weak_wifi": "{device} ist weit vom Access Point entfernt ({rssi} dBm)."
   },
   "origin": {
     "person": "von {by}",
@@ -233,7 +231,8 @@
       "unreachable": "Prüfe, ob IPv6 in Home Assistant auf „Automatisch“ steht und ob eine Brücke im selben Netz hängt wie Home Assistant.",
       "not_found": "Versetz das Gerät erneut in den Kopplungsmodus und halte das Handy nah daran. Sind Handy und Home Assistant im selben Netz?",
       "timeout": "Versuch es näher an einer Brücke oder einem Thread-Gerät mit Dauerstrom."
-    }
+    },
+    "weak_wifi": "Stell {device} näher an einen Access Point, oder setz einen Access Point in die Nähe von {device}. Achte darauf, dass das Gerät im 2,4-GHz-Netz ist – das reicht weiter als 5 GHz."
   },
   "phase": {
     "first_contact": {
@@ -292,8 +291,6 @@
     "title": "Dein Netz gerade jetzt",
     "unreachable_title": "Nicht erreichbar",
     "unreachable_empty": "Alle Geräte reagieren.",
-    "foreign_title": "Andere Thread-Netze",
-    "foreign_network": "Netz „{network}“",
     "sources_missing": "Nicht verbunden",
     "usual_title": "Kommt und geht",
     "always_report": "Immer melden",
@@ -329,10 +326,9 @@
     "days": "{count} Tag | {count} Tage"
   },
   "topology": {
-    "title": "Thread-Netz",
+    "title": "Netz",
     "home": "Heimnetz",
     "no_way": "Ohne Weg ins Netz",
-    "unknown_device": "Fremdes Thread-Gerät",
     "all": "Alles",
     "only_problems": "Nur Probleme",
     "empty": "Das Netzbild entsteht beim ersten Abruf. Das dauert bis zu zehn Minuten.",
@@ -352,17 +348,7 @@
     "children": "{count} Gerät hängt daran | {count} Geräte hängen daran",
     "alternatives": "{count} weiterer Weg ins Netz | {count} weitere Wege ins Netz",
     "only_way": "Kein anderer Weg ins Netz",
-    "kind": {
-      "border_router": "Brücke ins Heimnetz",
-      "router": "Leitet für andere Geräte weiter",
-      "end_device": "Endgerät",
-      "sleepy": "Batteriegerät, meldet sich in Abständen",
-      "unknown": "Gerät eines anderen Systems"
-    },
     "legend": {
-      "bridge": "Brücke",
-      "router": "Leitet weiter",
-      "device": "Endgerät",
       "good": "Gute Verbindung",
       "weak": "Schwach oder Befund offen",
       "offline": "Nicht erreichbar"
@@ -370,5 +356,54 @@
     "resting": "weg, wie üblich"
   },
   "finding.open_device": "In Home Assistant öffnen",
-  "finding.open_named": "{device} öffnen"
+  "finding.open_named": "{device} öffnen",
+  "transport": {
+    "thread": {
+      "name": "Thread",
+      "gateways": "{count} Brücke | {count} Brücken",
+      "unknown": "Fremdes Thread-Gerät",
+      "foreign_title": "Andere Thread-Netze",
+      "foreign_network": "Netz „{network}“",
+      "kind": {
+        "gateway": "Brücke ins Heimnetz",
+        "relay": "Leitet für andere Geräte weiter",
+        "device": "Endgerät",
+        "sleepy": "Batteriegerät, meldet sich in Abständen",
+        "unknown": "Gerät eines anderen Systems"
+      },
+      "legend": {
+        "gateway": "Brücke",
+        "relay": "Leitet weiter",
+        "device": "Endgerät"
+      }
+    },
+    "wifi": {
+      "name": "WLAN",
+      "gateways": "{count} Access Point | {count} Access Points",
+      "gateway_named": "Access Point {address}",
+      "detail": {
+        "ssid": "„{ssid}“",
+        "channel": "Kanal {channel}",
+        "security": "{security}",
+        "standard": "802.11{standard}"
+      },
+      "kind": {
+        "gateway": "Access Point im Heimnetz",
+        "device": "WLAN-Gerät"
+      },
+      "legend": {
+        "gateway": "Access Point",
+        "device": "WLAN-Gerät"
+      }
+    },
+    "ethernet": {
+      "name": "Ethernet",
+      "kind": {
+        "device": "Per Kabel im Heimnetz"
+      },
+      "legend": {
+        "device": "Kabelgerät"
+      }
+    }
+  }
 }

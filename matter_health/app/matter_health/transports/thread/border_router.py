@@ -19,10 +19,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
-from .. import kinds
-from ..engine import RULES, Context, Rule
-from ..model import Confidence, Event, Finding, Link, Role, Severity
-from .common import power_off_link
+from ... import kinds
+from ...engine import RULES, Context, Rule
+from ...model import Confidence, Event, Finding, Link, Role, Severity
+from ...rules.common import power_off_link
 
 #: Restarts of speakers and TV boxes take about this long.
 GONE_FOR = timedelta(minutes=5)

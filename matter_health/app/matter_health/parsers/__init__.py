@@ -49,7 +49,8 @@ def peer_node_id(peer: str) -> int:
     return int(peer.split(":", 1)[1], 16)
 
 
-# Import the parsers so they register themselves.
-from . import matter_js, openthread  # noqa: E402
+# Import the parsers so they register themselves; a transport's own log
+# parser lives with the transport.
+from . import matter_js  # noqa: E402
 
-__all__ = ["PARSERS", "LineParser", "Parsed", "clean", "matter_js", "openthread"]
+__all__ = ["PARSERS", "LineParser", "Parsed", "clean", "matter_js"]

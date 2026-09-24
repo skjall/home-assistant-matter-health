@@ -19,11 +19,8 @@
   "summary": {
     "devices": "Appareils",
     "devices_unreachable": "{count} injoignable | {count} injoignables",
-    "border_routers": "Passerelles",
-    "mesh": "Réseau Thread",
-    "mesh_ok": "Connecté",
-    "mesh_unknown": "Inconnu",
-    "devices_unreachable_short": "{count} hors ligne"
+    "devices_unreachable_short": "{count} hors ligne",
+    "disconnected": "non connecté"
   },
   "role": {
     "cause": "Pourquoi",
@@ -168,7 +165,8 @@
     "relay_children_gone": "Peu après, {devices} ont disparu aussi.",
     "relay_impact": "Ces appareils doivent trouver un nouveau chemin vers le réseau. Certains y arrivent en quelques minutes, d'autres bien plus tard, d'autres jamais.",
     "server_forgot": "Le serveur Matter connaissait {count} appareils et n'en connaît plus aucun.",
-    "server_forgot_impact": "Aucun appareil Matter n'est joignable. Les appareils vont bien, mais les clés pour y accéder ont disparu."
+    "server_forgot_impact": "Aucun appareil Matter n'est joignable. Les appareils vont bien, mais les clés pour y accéder ont disparu.",
+    "weak_wifi": "{device} est loin de son point d'accès ({rssi} dBm)."
   },
   "origin": {
     "person": "par {by}",
@@ -233,7 +231,8 @@
       "unreachable": "Vérifie que l'IPv6 de Home Assistant est sur « Automatique » et qu'un pont se trouve sur le même réseau que Home Assistant.",
       "not_found": "Remets l'appareil en mode appairage et garde le téléphone tout près. Le téléphone et Home Assistant sont-ils sur le même réseau ?",
       "timeout": "Réessaie plus près d'un pont ou d'un appareil Thread sur secteur."
-    }
+    },
+    "weak_wifi": "Rapproche {device} d'un point d'accès, ou place un point d'accès près de {device}. Vérifie que l'appareil est sur le réseau 2,4 GHz – il porte plus loin que le 5 GHz."
   },
   "phase": {
     "first_contact": {
@@ -292,8 +291,6 @@
     "title": "Ton réseau en ce moment",
     "unreachable_title": "Injoignables",
     "unreachable_empty": "Tous les appareils répondent.",
-    "foreign_title": "Autres réseaux Thread",
-    "foreign_network": "Réseau « {network} »",
     "sources_missing": "Non connecté",
     "usual_title": "Va et vient",
     "always_report": "Toujours signaler",
@@ -329,10 +326,9 @@
     "days": "{count} jour | {count} jours"
   },
   "topology": {
-    "title": "Réseau Thread",
+    "title": "Réseau",
     "home": "Réseau domestique",
     "no_way": "Sans chemin vers le réseau",
-    "unknown_device": "Autre appareil Thread",
     "all": "Tout",
     "only_problems": "Problèmes seulement",
     "empty": "L'image du réseau apparaît au premier relevé. Cela prend jusqu'à dix minutes.",
@@ -352,17 +348,7 @@
     "children": "{count} appareil en dépend | {count} appareils en dépendent",
     "alternatives": "{count} autre chemin vers le réseau | {count} autres chemins vers le réseau",
     "only_way": "Aucun autre chemin vers le réseau",
-    "kind": {
-      "border_router": "Pont vers le réseau domestique",
-      "router": "Relaie pour d'autres appareils",
-      "end_device": "Appareil final",
-      "sleepy": "Appareil sur pile, se manifeste de temps en temps",
-      "unknown": "Appareil d'un autre système"
-    },
     "legend": {
-      "bridge": "Pont",
-      "router": "Relais",
-      "device": "Appareil final",
       "good": "Bonne liaison",
       "weak": "Faible ou constat ouvert",
       "offline": "Injoignable"
@@ -370,5 +356,54 @@
     "resting": "absent, comme d'habitude"
   },
   "finding.open_device": "Ouvrir dans Home Assistant",
-  "finding.open_named": "Ouvrir {device}"
+  "finding.open_named": "Ouvrir {device}",
+  "transport": {
+    "thread": {
+      "name": "Thread",
+      "gateways": "{count} pont | {count} ponts",
+      "unknown": "Autre appareil Thread",
+      "foreign_title": "Autres réseaux Thread",
+      "foreign_network": "Réseau « {network} »",
+      "kind": {
+        "gateway": "Pont vers le réseau domestique",
+        "relay": "Relaie pour d'autres appareils",
+        "device": "Appareil final",
+        "sleepy": "Appareil sur pile, se manifeste de temps en temps",
+        "unknown": "Appareil d'un autre système"
+      },
+      "legend": {
+        "gateway": "Pont",
+        "relay": "Relais",
+        "device": "Appareil final"
+      }
+    },
+    "wifi": {
+      "name": "Wi-Fi",
+      "gateways": "{count} point d'accès | {count} points d'accès",
+      "gateway_named": "Point d'accès {address}",
+      "detail": {
+        "ssid": "« {ssid} »",
+        "channel": "Canal {channel}",
+        "security": "{security}",
+        "standard": "802.11{standard}"
+      },
+      "kind": {
+        "gateway": "Point d'accès du réseau domestique",
+        "device": "Appareil Wi-Fi"
+      },
+      "legend": {
+        "gateway": "Point d'accès",
+        "device": "Appareil Wi-Fi"
+      }
+    },
+    "ethernet": {
+      "name": "Ethernet",
+      "kind": {
+        "device": "Relié par câble au réseau domestique"
+      },
+      "legend": {
+        "device": "Appareil filaire"
+      }
+    }
+  }
 }

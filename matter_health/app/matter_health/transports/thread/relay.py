@@ -14,9 +14,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
-from .. import kinds
-from ..engine import RULES, Context, Rule
-from ..model import Event, Finding, Link, Role, Severity
+from ... import kinds
+from ...engine import RULES, Context, Rule
+from ...model import Event, Finding, Link, Role, Severity
 
 #: Children notice a lost parent within a few minutes.
 FOLLOW_WITHIN = timedelta(minutes=10)

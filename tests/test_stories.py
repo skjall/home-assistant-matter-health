@@ -1,12 +1,12 @@
 from datetime import UTC, datetime, timedelta
 
 from matter_health.model import Finding, Severity
-from matter_health.rules.border_router import BorderRouterRule
-from matter_health.rules.mesh import MeshRule
 from matter_health.rules.offline import OfflineRule
 from matter_health.rules.pairing import PairingRule
-from matter_health.rules.signal import SignalRule
 from matter_health.stories import stories
+from matter_health.transports.thread.border_router import BorderRouterRule
+from matter_health.transports.thread.mesh import MeshRule
+from matter_health.transports.thread.signal import SignalRule
 
 T0 = datetime(2030, 1, 1, 20, 0, tzinfo=UTC)
 RULES = (MeshRule, BorderRouterRule, PairingRule, OfflineRule, SignalRule)

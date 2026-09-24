@@ -25,6 +25,7 @@ from ..engine import Engine, event_payload
 from ..model import Finding
 from ..rules.habits import HABITS
 from ..stories import stories
+from ..transports import ROOT, TRANSPORTS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -165,9 +166,8 @@ async def overview(request: web.Request) -> web.Response:
     return web.json_response(
         {
             "sources": engine.status,
-            "thread": await store.get_state("otbr.node"),
-            "border_routers": await store.get_state("border_routers") or [],
             "devices": {"total": nodes.get("total"), "unavailable": unavailable},
+            "transports": await transport_summaries(engine),
             "open": {
                 severity: sum(1 for f in open_findings if f.severity.value == severity)
                 for severity in ("problem", "warning", "info")
@@ -178,44 +178,53 @@ async def overview(request: web.Request) -> web.Response:
     )
 
 
-async def topology(request: web.Request) -> web.Response:
-    """Return the mesh as a tree, with names and who is away now.
+async def transport_summaries(engine: Engine) -> list[dict[str, Any]]:
+    """Return what each transport in use says about itself, most devices first.
 
-    Devices away are usually missing from the latest picture of the mesh;
-    they are shown under the parent they had when last seen.
+    A transport counts as in use when a device uses it or it has gateways,
+    such as border routers of a Thread network nothing is paired to yet.
+    """
+    mine: dict[str, str] = await engine.ctx.store.get_state("matter.transports") or {}
+    summaries = []
+    for name in TRANSPORTS.names():
+        devices = sum(1 for transport in mine.values() if transport == name)
+        summary = await TRANSPORTS.get(name)(engine.ctx).summary(devices)
+        if devices or summary.get("gateways"):
+            summaries.append({"name": name, "devices": devices, **summary})
+    return sorted(summaries, key=lambda s: -int(s["devices"]))
+
+
+async def topology(request: web.Request) -> web.Response:
+    """Return every transport's part of the network, with names and who is away.
+
+    Ids are made unique across transports by prefixing the transport; the
+    home network every transport hangs on keeps its id.
     """
     engine = request.app[ENGINE]
     store = engine.ctx.store
     names = engine.ctx.names
-    tree = await store.get_state("thread.tree") or {}
-    parents: dict[str, str] = await store.get_state("thread.parents") or {}
     nodes = await store.get_state("matter.nodes") or {}
     away = set(nodes.get("unavailable", []))
-    entries = [dict(entry) for entry in tree.get("nodes", [])]
-    by_subject = {e["subject"]: e["id"] for e in entries if e.get("subject")}
-    for subject in sorted(away - by_subject.keys()):
-        entries.append(
-            {
-                "id": subject,
-                "subject": subject,
-                "kind": "end_device",
-                "parent": by_subject.get(parents.get(subject, "")),
-                "link": {},
-                "alternatives": 0,
-                "vendor": None,
-                "missing": True,
-            }
-        )
     dismissed = await store.get_state(DISMISSED) or {}
     usual, known = await absences(store, await store.findings(), dismissed)
-    for entry in entries:
-        subject = entry.get("subject")
-        entry["name"] = names.get(subject)
-        entry["device_id"] = names.device(subject)
-        entry["available"] = subject not in away
-        # Away, but as expected or as the user knows: no alarm in the picture.
-        entry["resting"] = subject in away and (subject in usual or subject in known)
-    return web.json_response({"at": tree.get("at"), "nodes": entries})
+    entries = []
+    for name in TRANSPORTS.names():
+        for raw in await TRANSPORTS.get(name)(engine.ctx).picture(away):
+            entry = dict(raw)
+            entry["transport"] = name
+            entry["id"] = f"{name}:{raw['id']}"
+            parent = raw.get("parent")
+            entry["parent"] = parent if parent in (ROOT, None) else f"{name}:{parent}"
+            subject = entry.get("subject")
+            entry["name"] = names.get(subject)
+            entry["device_id"] = names.device(subject)
+            entry["available"] = subject not in away
+            # Away, but as expected or as the user knows: no alarm in the picture.
+            entry["resting"] = subject in away and (
+                subject in usual or subject in known
+            )
+            entries.append(entry)
+    return web.json_response({"nodes": entries})
 
 
 async def findings(request: web.Request) -> web.Response:

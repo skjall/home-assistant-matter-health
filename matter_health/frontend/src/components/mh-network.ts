@@ -13,6 +13,7 @@ import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 
 import type {
   BorderRouter,
+  TransportSummary,
   Finding,
   Overview,
   Topology,
@@ -109,6 +110,27 @@ export class MhNetwork extends LitElement {
     `,
   ];
 
+  /** Networks of the same transport nearby that carry nothing for this one. */
+  private foreign(transport: TransportSummary): TemplateResult | typeof nothing {
+    const networks = new Map<string, BorderRouter[]>();
+    for (const router of transport.foreign ?? []) {
+      const network = router.network ?? "?";
+      networks.set(network, [...(networks.get(network) ?? []), router]);
+    }
+    if (!networks.size) return nothing;
+    const name = transport.name;
+    return html`<section class="card">
+      <h2>${t(`transport.${name}.foreign_title`)}</h2>
+      ${[...networks].map(
+        ([network, routers]) =>
+          html`<h3>${t(`transport.${name}.foreign_network`, { network })}</h3>
+            <ul class="grid">
+              ${routers.map((router) => this.router(router))}
+            </ul>`,
+      )}
+    </section>`;
+  }
+
   private router(router: BorderRouter): TemplateResult {
     return html`<li>
       <span class="router">${icon(mdiRouterWireless)}</span>
@@ -149,28 +171,12 @@ export class MhNetwork extends LitElement {
     const known = away.filter((d) => d.known);
     const usual = away.filter((d) => !d.known && (d.usual || d.comes_and_goes === true));
     const surprising = away.filter((d) => !known.includes(d) && !usual.includes(d));
-    const foreign = new Map<string, BorderRouter[]>();
-    for (const router of overview.border_routers.filter((r) => r.own === false)) {
-      const network = router.network ?? "?";
-      foreign.set(network, [...(foreign.get(network) ?? []), router]);
-    }
     return html`
       <section class="card">
         <mh-topology .topology=${this.topology} .findings=${this.findings}></mh-topology>
       </section>
 
-      ${foreign.size
-        ? html`<section class="card">
-            <h2>${t("network.foreign_title")}</h2>
-            ${[...foreign].map(
-              ([network, routers]) =>
-                html`<h3>${t("network.foreign_network", { network })}</h3>
-                  <ul class="grid">
-                    ${routers.map((router) => this.router(router))}
-                  </ul>`,
-            )}
-          </section>`
-        : nothing}
+      ${overview.transports.map((transport) => this.foreign(transport))}
 
       <section class="card">
         <h2>${t("network.unreachable_title")}</h2>

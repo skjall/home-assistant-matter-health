@@ -4,8 +4,8 @@ from conftest import Clock, at, chain_keys, emit_at, make_engine, only_finding, 
 from matter_health import kinds
 from matter_health.engine import Context, Engine
 from matter_health.model import Confidence, Severity
-from matter_health.rules.wave import WaveRule
 from matter_health.store import Store
+from matter_health.transports.thread.wave import WaveRule
 
 THREAD = [f"node:{n}" for n in range(1, 7)]
 

@@ -155,7 +155,16 @@ async def test_overview(
     await engine.set_status("otbr", ok=False, detail="refused")
     await store.set_state("matter.nodes", {"total": 3, "unavailable": ["node:7"]})
     await store.set_state("otbr.node", {"role": "leader"})
-    await store.set_state("border_routers", [{"name": "Living Room TV"}])
+    await store.set_state(
+        "border_routers",
+        [{"name": "Living Room TV"}, {"name": "Neighbour Hub", "own": False}],
+    )
+    await store.set_state(
+        "matter.transports", {"node:7": "thread", "node:8": "wifi", "node:9": "thread"}
+    )
+    await store.set_state(
+        "wifi.devices", {"node:8": {"bssid": "02:00:00:00:00:01", "rssi": -50}}
+    )
     await store.put_finding(finding("a", Severity.PROBLEM, 0, ended=False), T0)
     await store.put_finding(finding("b", Severity.WARNING, 0, ended=False), T0)
     await store.put_finding(finding("c", Severity.WARNING, 0, ended=True), T0)
@@ -167,8 +176,6 @@ async def test_overview(
         "sources": {
             "otbr": {"ok": False, "since": T0.isoformat(), "detail": "refused"}
         },
-        "thread": {"role": "leader"},
-        "border_routers": [{"name": "Living Room TV"}],
         "devices": {
             "total": 3,
             "unavailable": [
@@ -182,6 +189,16 @@ async def test_overview(
                 }
             ],
         },
+        "transports": [
+            {
+                "name": "thread",
+                "devices": 2,
+                "gateways": 1,
+                "connected": True,
+                "foreign": [{"name": "Neighbour Hub", "own": False}],
+            },
+            {"name": "wifi", "devices": 1, "gateways": 1, "connected": None},
+        ],
         "open": {"problem": 1, "warning": 1, "info": 0},
         "now": T0.isoformat(),
         "build": web_app.page_version(),
@@ -195,8 +212,7 @@ async def test_overview_before_anything_is_known(
 
     body = await (await client.get("/api/overview")).json()
 
-    assert body["thread"] is None
-    assert body["border_routers"] == []
+    assert body["transports"] == []
     assert body["devices"] == {"total": None, "unavailable": []}
     assert body["open"] == {"problem": 0, "warning": 0, "info": 0}
 
@@ -563,20 +579,63 @@ async def test_topology_names_devices_and_places_the_missing(
 
     body = await (await client.get("/api/topology")).json()
 
-    assert body["at"] == T0.isoformat()
     nodes = {n["id"]: n for n in body["nodes"]}
-    assert nodes["br_A"]["name"] == "Speaker"
-    assert nodes["br_A"]["available"] is True
-    assert nodes["1"]["name"] == "Plug"
-    assert nodes["1"]["available"] is False
-    assert nodes["node:2"]["parent"] == "1"
-    assert nodes["node:2"]["missing"] is True
-    assert nodes["node:3"]["parent"] is None
-    assert nodes["node:3"]["resting"] is True
-    assert nodes["node:2"]["resting"] is False
-    assert nodes["br_A"]["resting"] is False
-    assert nodes["1"]["device_id"] == "device-plug"
-    assert nodes["br_A"]["device_id"] is None
+    # Ids carry their transport; kinds are said the same way for every one.
+    assert nodes["thread:br_A"]["name"] == "Speaker"
+    assert nodes["thread:br_A"]["kind"] == "gateway"
+    assert nodes["thread:br_A"]["parent"] == "home"
+    assert nodes["thread:br_A"]["transport"] == "thread"
+    assert nodes["thread:br_A"]["available"] is True
+    assert nodes["thread:1"]["name"] == "Plug"
+    assert nodes["thread:1"]["kind"] == "relay"
+    assert nodes["thread:1"]["parent"] == "thread:br_A"
+    assert nodes["thread:1"]["available"] is False
+    assert nodes["thread:node:2"]["parent"] == "thread:1"
+    assert nodes["thread:node:2"]["missing"] is True
+    assert nodes["thread:node:3"]["parent"] is None
+    assert nodes["thread:node:3"]["resting"] is True
+    assert nodes["thread:node:2"]["resting"] is False
+    assert nodes["thread:br_A"]["resting"] is False
+    assert nodes["thread:1"]["device_id"] == "device-plug"
+    assert nodes["thread:br_A"]["device_id"] is None
+
+
+async def test_topology_shows_each_transport_alike(
+    aiohttp_client: AiohttpClient,
+    store: Store,
+    engine: Engine,
+    translations: Path,
+) -> None:
+    await store.set_state(
+        "matter.transports",
+        {"node:4": "wifi", "node:5": "wifi", "node:6": "ethernet", "node:7": "wifi"},
+    )
+    await store.set_state(
+        "wifi.devices",
+        {
+            "node:4": {"bssid": "02:00:00:00:00:01", "rssi": -50, "ssid": "Home"},
+            "node:5": {"bssid": "02:00:00:00:00:01", "rssi": -80, "channel": 6},
+        },
+    )
+    await store.set_state("matter.nodes", {"total": 4, "unavailable": ["node:5"]})
+    client = await aiohttp_client(build(engine, translations))
+
+    body = await (await client.get("/api/topology")).json()
+
+    nodes = {n["id"]: n for n in body["nodes"]}
+    access_point = nodes["wifi:ap:02:00:00:00:00:01"]
+    assert access_point["kind"] == "gateway"
+    assert access_point["parent"] == "home"
+    assert access_point["detail"]["address"] == "00:00:01"
+    assert nodes["wifi:node:4"]["parent"] == "wifi:ap:02:00:00:00:00:01"
+    assert nodes["wifi:node:4"]["link"]["quality"] == "strong"
+    # Away, it stays with the access point it had.
+    assert nodes["wifi:node:5"]["available"] is False
+    assert nodes["wifi:node:5"]["link"]["quality"] == "weak"
+    # A device that reported no link has no way in to show.
+    assert nodes["wifi:node:7"]["parent"] is None
+    assert nodes["ethernet:node:6"]["parent"] == "home"
+    assert nodes["ethernet:node:6"]["transport"] == "ethernet"
 
 
 async def test_topology_before_the_first_reading(
@@ -586,4 +645,4 @@ async def test_topology_before_the_first_reading(
 
     body = await (await client.get("/api/topology")).json()
 
-    assert body == {"at": None, "nodes": []}
+    assert body == {"nodes": []}

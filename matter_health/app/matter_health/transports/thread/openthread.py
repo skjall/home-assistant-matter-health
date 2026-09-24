@@ -22,8 +22,8 @@ import time
 from collections import deque
 from collections.abc import Callable
 
-from .. import kinds
-from . import PARSERS, LineParser, Parsed, clean
+from ... import kinds
+from ...parsers import PARSERS, LineParser, Parsed, clean
 
 #: A message repeated within this many seconds belongs to the same episode.
 REPEAT_WINDOW_S = 30.0

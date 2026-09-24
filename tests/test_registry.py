@@ -30,11 +30,13 @@ def test_unknown_name_names_the_kind() -> None:
 
 
 def test_plugins_register_themselves_on_import() -> None:
-    from matter_health import rules, sources
+    from matter_health import rules, sources, transports
     from matter_health.engine import RULES, SOURCES
     from matter_health.parsers import PARSERS
+    from matter_health.transports import TRANSPORTS
 
-    assert rules.__all__ and sources.__all__
+    assert rules.__all__ and sources.__all__ and transports.__all__
+    assert TRANSPORTS.names() == ["ethernet", "thread", "wifi"]
 
     assert RULES.names() == [
         "border_router",
@@ -48,6 +50,7 @@ def test_plugins_register_themselves_on_import() -> None:
         "server",
         "signal",
         "wave",
+        "wifi_signal",
     ]
     assert SOURCES.names() == [
         "home_assistant",

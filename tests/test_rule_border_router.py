@@ -6,8 +6,8 @@ from conftest import Clock, at, chain_keys, emit_at, make_engine, only_finding, 
 from matter_health import kinds
 from matter_health.engine import Context, Engine
 from matter_health.model import Confidence, Finding, Severity
-from matter_health.rules.border_router import BorderRouterRule
 from matter_health.store import Store
+from matter_health.transports.thread.border_router import BorderRouterRule
 
 TV = {"name": "Living Room TV", "vendor": "Acme", "model": "TV Box"}
 TV_SUBJECT = "br:0a1b2c3d4e5f6071"

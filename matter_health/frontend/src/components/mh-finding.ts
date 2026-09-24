@@ -188,7 +188,8 @@ export class MhFinding extends LitElement {
         --soft: var(--mh-impact-soft);
         --dot: var(--mh-impact-dot);
       }
-      .role-fix {
+      .role-fix,
+      .role-good {
         --ink: var(--mh-fix);
         --soft: var(--mh-fix-soft);
         --dot: var(--mh-fix-dot);
@@ -378,8 +379,10 @@ export class MhFinding extends LitElement {
   }
 
   private step(role: Role, links: Link[]): TemplateResult {
-    return html`<li class="step role-${role} ${role}">
-      <span class="node">${icon(ROLE_ICON[role])}</span>
+    // Good news - a device added, a problem that went away - is no alarm.
+    const good = role === "effect" && this.severity() === "info" && !!this.finding.ended_at;
+    return html`<li class="step role-${good ? "good" : role} ${role}">
+      <span class="node">${icon(good ? mdiCheckCircleOutline : ROLE_ICON[role])}</span>
       <div>
         <div class="label">${t(`role.${role}`)}</div>
         <div class="texts">
