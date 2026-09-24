@@ -358,7 +358,10 @@
         "medium": "Signal moyen",
         "weak": "Signal faible",
         "unknown": "Signal inconnu"
-      }
+      },
+      "home": "Liaison au réseau domestique",
+      "bridge": "Pont Matter",
+      "bridged": "Derrière un pont Matter"
     },
     "resting": "absent, comme d'habitude",
     "color": {
@@ -366,7 +369,9 @@
       "status": "État",
       "transport": "Transport",
       "signal": "Signal"
-    }
+    },
+    "bridge": "Pont Matter pour {count} appareil | Pont Matter pour {count} appareils",
+    "bridged": "Derrière un pont Matter, via sa propre radio"
   },
   "finding.open_device": "Ouvrir dans Home Assistant",
   "finding.open_named": "Ouvrir {device}",

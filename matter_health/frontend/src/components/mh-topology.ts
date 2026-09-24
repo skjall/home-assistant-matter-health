@@ -113,6 +113,14 @@ function quality(node: TopologyNode): "strong" | "medium" | "weak" | null {
   return node.link?.quality ?? null;
 }
 
+/** A node's symbol: a circle, or a diamond for a Matter bridge. */
+function shape(radius: number, cls: string, bridge: boolean): SVGTemplateResult {
+  if (!bridge) return svg`<circle class=${cls} r=${radius}></circle>`;
+  const side = radius * 1.6;
+  return svg`<rect class=${cls} x=${-side / 2} y=${-side / 2} width=${side} height=${side}
+    transform="rotate(45)"></rect>`;
+}
+
 /** The transport's word for something, else the generic one. */
 function word(transport: string, key: string, params = {}): string | null {
   const full = `transport.${transport}.${key}`;
@@ -189,10 +197,16 @@ export class MhTopology extends LitElement {
         stroke-width: 1.5;
         transition: opacity 0.15s;
       }
+      /* How a gateway or wired device reaches the home network - cable or
+         Wi-Fi, nothing tells - is none of the transports' links. */
       .link.lan {
-        stroke: var(--mh-primary);
-        stroke-opacity: 0.35;
+        stroke: var(--mh-muted);
+        stroke-opacity: 0.45;
         stroke-width: 2;
+      }
+      .link.bridged {
+        stroke: var(--mh-muted);
+        stroke-opacity: 0.7;
       }
       .link.weak,
       .link.warning {
@@ -215,15 +229,10 @@ export class MhTopology extends LitElement {
       .link.dash-offline {
         stroke-dasharray: 4 4;
       }
-      /* By transport: every link in the transport's colour, softer on the
-         home network. */
+      /* By transport: every link a transport carries in its colour. */
       .link.by-transport {
         stroke: var(--c);
         stroke-opacity: 0.7;
-      }
-      .link.by-transport.lan {
-        stroke-opacity: 0.4;
-        stroke-width: 2;
       }
       /* By signal: each device's link to its parent. */
       .link.q-strong {
@@ -246,25 +255,25 @@ export class MhTopology extends LitElement {
         outline: none;
         transition: opacity 0.15s;
       }
-      .node circle {
+      .node :is(circle, rect) {
         stroke-width: 2;
       }
-      .node.gateway circle,
-      .node.home circle {
+      .node.gateway :is(circle, rect),
+      .node.home :is(circle, rect) {
         fill: var(--c, var(--mh-primary));
         stroke: var(--mh-surface);
       }
-      .node.relay circle {
+      .node.relay :is(circle, rect) {
         fill: var(--mh-surface);
         stroke: var(--c, var(--mh-primary));
       }
-      .node.device circle,
-      .node.sleepy circle {
+      .node.device :is(circle, rect),
+      .node.sleepy :is(circle, rect) {
         fill: var(--mh-muted);
         stroke: var(--mh-surface);
         stroke-width: 1.5;
       }
-      .node.unknown circle {
+      .node.unknown :is(circle, rect) {
         fill: var(--mh-surface);
         stroke: var(--mh-muted);
         stroke-dasharray: 2 2;
@@ -458,6 +467,10 @@ export class MhTopology extends LitElement {
         border-radius: 50%;
         background: var(--mh-muted);
       }
+      .dot.bridge {
+        border-radius: 2px;
+        transform: rotate(45deg);
+      }
       .dot.gateway {
         width: 12px;
         height: 12px;
@@ -620,7 +633,8 @@ export class MhTopology extends LitElement {
   /** The colour of a transport, where the view shows transports. */
   private tint(item: Item): string {
     const transport = item.node?.transport;
-    return this.colorBy === "transport" && transport
+    // A device behind a bridge is on the bridge's radio, not on a transport.
+    return this.colorBy === "transport" && transport && !item.node?.bridged
       ? `--c: var(--mh-${transport}, var(--mh-muted))`
       : "";
   }
@@ -629,14 +643,18 @@ export class MhTopology extends LitElement {
   private linkClass(target: Item, fromHome: boolean, status: Status): string {
     const dash =
       status === "offline" ? "dash-offline" : status === "resting" ? "dash-resting" : "";
+    // A gateway's way into the home network is not its transport's; a wired
+    // device's is.
+    if (fromHome && target.node?.kind === "gateway") return `lan ${dash}`;
     if (this.colorBy === "transport") {
-      return `by-transport ${fromHome ? "lan" : ""} ${dash}`;
+      return `${target.node?.bridged ? "bridged" : "by-transport"} ${dash}`;
     }
     if (this.colorBy === "signal") {
       const q = target.node ? quality(target.node) : null;
-      return fromHome || !q ? dash : `q-${q} ${dash}`;
+      return q ? `q-${q} ${dash}` : dash;
     }
-    return fromHome ? `lan ${dash}` : status === "ok" ? "" : status;
+    if (fromHome) return `lan ${dash}`;
+    return status === "ok" ? "" : status;
   }
 
   private note(node: TopologyNode | undefined, status: Status): [string, string] | null {
@@ -659,7 +677,14 @@ export class MhTopology extends LitElement {
     const item = point.data;
     const node = item.node;
     const lines: TemplateResult[] = [];
-    const kind = node ? word(node.transport, `kind.${node.kind}`) : null;
+    const children = point.children?.length ?? 0;
+    const kind = node?.bridged
+      ? t("topology.bridged")
+      : node?.bridge
+        ? t("topology.bridge", { count: children })
+        : node
+          ? word(node.transport, `kind.${node.kind}`)
+          : null;
     if (kind) lines.push(html`<p>${kind}</p>`);
     // What the transport adds, each part only where the device reported it.
     const detail = Object.entries(node?.detail ?? {})
@@ -686,8 +711,7 @@ export class MhTopology extends LitElement {
         </p>`,
       );
     }
-    const children = point.children?.length ?? 0;
-    if (node && (node.kind === "gateway" || node.kind === "relay") && children) {
+    if (node && !node.bridge && (node.kind === "gateway" || node.kind === "relay") && children) {
       lines.push(html`<p>${t("topology.children", { count: children })}</p>`);
     }
     if (node?.kind === "relay") {
@@ -772,7 +796,14 @@ export class MhTopology extends LitElement {
       const kind =
         item.special === "home" ? "home" : item.special === "no_way" ? "no-way" : item.node?.kind;
       const inner = !!point.children?.length;
-      const radius = kind === "home" ? 9 : kind === "gateway" ? 7 : kind === "relay" ? 5.5 : 4;
+      const radius =
+        kind === "home"
+          ? 9
+          : kind === "gateway"
+            ? 7
+            : kind === "relay" || item.node?.bridge
+              ? 5.5
+              : 4;
       const extra = inner && item.node ? ` · ${point.children?.length}` : "";
       const name = this.name(item);
       const room = inner ? column - 24 : LEAF_LABEL - 14;
@@ -785,8 +816,8 @@ export class MhTopology extends LitElement {
           @pointerleave=${() => (this.pointed = null)}
           @focus=${() => (this.pointed = item.id)}
           @blur=${() => (this.pointed = null)}>
-        ${kind === "no-way" ? nothing : svg`<circle r=${radius}></circle>`}
-        ${status !== "ok" ? svg`<circle class="ring ${status}" r=${radius}></circle>` : nothing}
+        ${kind === "no-way" ? nothing : shape(radius, "", !!item.node?.bridge)}
+        ${status !== "ok" ? shape(radius, `ring ${status}`, !!item.node?.bridge) : nothing}
         ${label !== name ? svg`<title>${name}</title>` : nothing}
         ${this.linked(
           item.node?.device_id,
@@ -825,7 +856,10 @@ export class MhTopology extends LitElement {
     const kind = item.node?.kind ?? "unknown";
     return html`<li>
       <div class="row ${item.children.length ? "inner" : ""}">
-        <span class="dot ${kind} ${this.dotClass(item, status)}" style=${this.tint(item)}></span>
+        <span
+          class="dot ${kind} ${item.node?.bridge ? "bridge" : ""} ${this.dotClass(item, status)}"
+          style=${this.tint(item)}
+        ></span>
         <span class="name">${deviceName(this.name(item), item.node?.device_id)}</span>
         ${note ? html`<span class="note ${note[1]}">${note[0]}</span>` : nothing}
       </div>
@@ -858,7 +892,9 @@ export class MhTopology extends LitElement {
             <details ?open=${this.onlyProblems || troubled(bridge)}>
               <summary>
                 <span
-                  class="dot ${bridge.node?.kind ?? "unknown"} ${this.dotClass(
+                  class="dot ${bridge.node?.kind ?? "unknown"} ${bridge.node?.bridge
+                    ? "bridge"
+                    : ""} ${this.dotClass(
                     bridge,
                     statuses.get(bridge.id) ?? "ok",
                   )}"
@@ -883,9 +919,9 @@ export class MhTopology extends LitElement {
   /** The symbols, named in the words of the transports that have them. */
   private symbols(order: string[]): TemplateResult {
     const nodes = this.topology?.nodes ?? [];
-    const dot = (cls: string, r: number) =>
+    const dot = (cls: string, r: number, bridge = false) =>
       html`<svg width="14" height="14" viewBox="-7 -7 14 14">
-        ${svg`<g class="node ${cls}"><circle r=${r}></circle></g>`}
+        ${svg`<g class="node ${cls}">${shape(r, "", bridge)}</g>`}
       </svg>`;
     const named = (kind: string) =>
       order
@@ -899,21 +935,30 @@ export class MhTopology extends LitElement {
       ${gateway ? html`<span>${dot("gateway", 6)}${gateway}</span>` : nothing}
       ${relay ? html`<span>${dot("relay", 5)}${relay}</span>` : nothing}
       <span>${dot("sleepy", 4)}${t("topology.legend.device")}</span>
+      ${nodes.some((n) => n.bridge)
+        ? html`<span>${dot("device", 5, true)}${t("topology.legend.bridge")}</span>`
+        : nothing}
     </div>`;
   }
 
   /** What the colours mean in the chosen view. */
-  private colors(order: string[]): TemplateResult {
+  private colors(order: string[], lines = true): TemplateResult {
     const line = (cls: string, style = "") =>
       html`<svg width="26" height="10" viewBox="0 -5 26 10">
         ${svg`<path class="link ${cls}" style=${style} d="M0,0H26"></path>`}
       </svg>`;
+    const bridged = (this.topology?.nodes ?? []).some((n) => n.bridged);
     const entries: [TemplateResult, string][] =
       this.colorBy === "transport"
-        ? order.map((transport) => [
-            line("by-transport", `--c: var(--mh-${transport}, var(--mh-muted))`),
-            t(`transport.${transport}.name`),
-          ])
+        ? [
+            ...order.map((transport): [TemplateResult, string] => [
+              line("by-transport", `--c: var(--mh-${transport}, var(--mh-muted))`),
+              t(`transport.${transport}.name`),
+            ]),
+            ...(bridged
+              ? [[line("bridged"), t("topology.legend.bridged")] as [TemplateResult, string]]
+              : []),
+          ]
         : this.colorBy === "signal"
           ? [
               [line("q-strong"), t("topology.legend.signal.strong")],
@@ -927,6 +972,7 @@ export class MhTopology extends LitElement {
               [line("weak"), t("topology.legend.weak")],
               [line("offline"), t("topology.legend.offline")],
             ];
+    if (lines) entries.unshift([line("lan"), t("topology.legend.home")]);
     return html`<div class="legend lines">
       ${entries.map(([symbol, label]) => html`<span>${symbol}${label}</span>`)}
     </div>`;
@@ -998,7 +1044,7 @@ export class MhTopology extends LitElement {
     if (this.width < NARROW) {
       // The outline shows no lines; only colours other than state need saying.
       return html`${head(controls)}${this.outline(root, statuses)}
-      ${this.colorBy === "status" ? nothing : this.colors(order)}`;
+      ${this.colorBy === "status" ? nothing : this.colors(order, false)}`;
     }
     const deepest = (item: Item): number => 1 + Math.max(0, ...item.children.map(deepest));
     return html`${head(controls)}

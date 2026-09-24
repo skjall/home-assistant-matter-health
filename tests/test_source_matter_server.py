@@ -5,7 +5,7 @@ from aiohttp import web
 from conftest import T0, FakeSupervisor, source_for, start_supervisor
 from pytest_aiohttp import AiohttpServer
 
-from matter_health import kinds
+from matter_health import bridges, kinds
 from matter_health.engine import Context
 from matter_health.sources import matter_server
 from matter_health.sources.matter_server import MatterServerSource
@@ -543,3 +543,94 @@ def test_the_thread_picture_leaves_other_networks_out() -> None:
 
     assert [n["id"] for n in part["nodes"]] == ["1", "br_A"]
     assert [c["target"] for c in part["connections"]] == ["br_A", "2"]
+
+
+async def test_devices_behind_a_bridge_come_and_go(
+    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+) -> None:
+    ctx.names.set("node:5:4", "Hall Door")
+    behind = {
+        "0/49/65532": 4,
+        "3/57/5": "Balcony Light",
+        "4/57/5": "Door Sensor",
+        "4/57/17": True,
+    }
+    fake = FakeMatterServer(
+        {
+            "start_listening": [
+                [result([{"node_id": 5, "available": True, "attributes": behind}])]
+            ],
+            "get_thread_border_routers": [
+                [
+                    {"event": "attribute_updated", "data": [5, "4/57/17", False]},
+                    {"event": "attribute_updated", "data": [5, "6/57/5", "Stairs"]},
+                    result([]),
+                ]
+            ],
+            "get_network_topology": [[result({"nodes": [], "connections": []})]],
+        }
+    )
+    source = source_for(
+        MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
+    )
+
+    with pytest.raises(ConnectionError):
+        await source.run()
+
+    found = [(e.kind, e.subject, e.data) for e in await store.events()]
+    # What was there on connecting is the baseline, not news.
+    assert found[:2] == [
+        (kinds.MATTER_NODE_UNAVAILABLE, "node:5:4", {"name": "Hall Door"}),
+        (kinds.MATTER_NODE_ADDED, "node:5:6", {"name": "Stairs"}),
+    ]
+    # Named by the bridge until Home Assistant says better.
+    assert ctx.names.get("node:5:3") == "Balcony Light"
+    assert await store.get_state("matter.nodes") == {
+        "total": 4,
+        "unavailable": ["node:5:4"],
+    }
+    stored = await store.get_state(bridges.BRIDGED)
+    assert [d["subject"] for d in stored["node:5"]] == [
+        "node:5:3",
+        "node:5:4",
+        "node:5:6",
+    ]
+
+
+async def test_with_the_bridge_away_only_the_bridge_is_news(
+    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+) -> None:
+    behind = {"0/49/65532": 4, "3/57/5": "Lamp", "3/57/17": True}
+    fake = FakeMatterServer(
+        {
+            "start_listening": [
+                [result([{"node_id": 5, "available": True, "attributes": behind}])]
+            ],
+            "get_thread_border_routers": [
+                [
+                    {
+                        "event": "node_updated",
+                        "data": {"node_id": 5, "available": False},
+                    },
+                    {"event": "attribute_updated", "data": [5, "3/57/17", False]},
+                    {"event": "node_removed", "data": 5},
+                    result([]),
+                ]
+            ],
+            "get_network_topology": [[result({"nodes": [], "connections": []})]],
+        }
+    )
+    source = source_for(
+        MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
+    )
+
+    with pytest.raises(ConnectionError):
+        await source.run()
+
+    found = [(e.kind, e.subject) for e in await store.events()]
+    assert found[:3] == [
+        (kinds.MATTER_NODE_UNAVAILABLE, "node:5"),
+        (kinds.MATTER_NODE_REMOVED, "node:5"),
+        (kinds.MATTER_NODE_REMOVED, "node:5:3"),
+    ]
+    assert await store.get_state("matter.nodes") == {"total": 0, "unavailable": []}

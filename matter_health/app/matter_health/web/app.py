@@ -20,7 +20,7 @@ from typing import Any
 
 from aiohttp import web
 
-from .. import kinds
+from .. import bridges, kinds
 from ..engine import Engine, event_payload
 from ..model import Finding
 from ..rules.habits import HABITS
@@ -207,23 +207,25 @@ async def topology(request: web.Request) -> web.Response:
     away = set(nodes.get("unavailable", []))
     dismissed = await store.get_state(DISMISSED) or {}
     usual, known = await absences(store, await store.findings(), dismissed)
+    # Devices behind a bridge hang on the bridge, not on a transport.
+    nodes_away = {s for s in away if not bridges.is_bridged(s)}
     entries = []
     for name in TRANSPORTS.names():
-        for raw in await TRANSPORTS.get(name)(engine.ctx).picture(away):
+        for raw in await TRANSPORTS.get(name)(engine.ctx).picture(nodes_away):
             entry = dict(raw)
             entry["transport"] = name
             entry["id"] = f"{name}:{raw['id']}"
             parent = raw.get("parent")
             entry["parent"] = parent if parent in (ROOT, None) else f"{name}:{parent}"
-            subject = entry.get("subject")
-            entry["name"] = names.get(subject)
-            entry["device_id"] = names.device(subject)
-            entry["available"] = subject not in away
-            # Away, but as expected or as the user knows: no alarm in the picture.
-            entry["resting"] = subject in away and (
-                subject in usual or subject in known
-            )
             entries.append(entry)
+    entries += await bridges.picture(store, entries)
+    for entry in entries:
+        subject = entry.get("subject")
+        entry["name"] = names.get(subject)
+        entry["device_id"] = names.device(subject)
+        entry["available"] = subject not in away
+        # Away, but as expected or as the user knows: no alarm in the picture.
+        entry["resting"] = subject in away and (subject in usual or subject in known)
     return web.json_response({"nodes": entries})
 
 

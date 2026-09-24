@@ -24,7 +24,7 @@ from aiohttp import web
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "matter_health" / "app"))
 
-from matter_health import kinds, rules
+from matter_health import bridges, kinds, rules
 from matter_health.config import Options
 from matter_health.engine import RULES, Context, Engine, utcnow
 from matter_health.store import Store
@@ -45,6 +45,9 @@ NAMES = {
     "node:40": "Garage Plug",
     "node:41": "Garden Light",
     "node:42": "Hallway Hub",
+    "node:42:3": "Balcony Light",
+    "node:42:4": "Hall Door Sensor",
+    "node:42:5": "Stairs Switch",
     "br:0a1b2c3d4e5f6071": "Living Room TV",
     "br:1b2c3d4e5f607182": "Kitchen Speaker",
     "br:2c3d4e5f60718293": "Bedroom Speaker",
@@ -294,9 +297,17 @@ async def seed(engine: Engine, clock: Clock) -> None:
             "node:41": {**wifi, "0/54/4": -79},
         }
     )
+    # The wired hub is a bridge for three Zigbee devices; it lost one of them.
+    behind = {
+        "3/57/5": "Balcony Light",
+        "4/57/5": "Hall Door Sensor",
+        "5/57/5": "Stairs Switch",
+        "5/57/17": False,
+    }
+    await store.set_state(bridges.BRIDGED, {"node:42": bridges.bridged(42, behind)})
     await store.set_state(
         "matter.nodes",
-        {"total": 27, "unavailable": ["node:9", "node:30", "node:31"]},
+        {"total": 30, "unavailable": ["node:30", "node:31", "node:42:5", "node:9"]},
     )
     found = await store.findings()
     button = next(f for f in found if f.subjects == ["node:31"] and not f.ended_at)

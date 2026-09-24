@@ -17,14 +17,17 @@ from typing import Any, ClassVar
 
 import aiohttp
 
-from .. import kinds
+from .. import bridges, kinds
 from ..engine import SOURCES, Source
 
 _LOGGER = logging.getLogger(__name__)
 
 #: Matter devices are identified in the device registry as
-#: ``deviceid_<compressed fabric id>-<node id in hex>-MatterNodeDevice``.
-MATTER_IDENTIFIER = re.compile(r"^deviceid_[0-9A-Fa-f]+-([0-9A-Fa-f]+)-")
+#: ``deviceid_<compressed fabric id>-<node id in hex>-MatterNodeDevice``; a
+#: device behind a bridge ends in its endpoint instead.
+MATTER_IDENTIFIER = re.compile(
+    r"^deviceid_[0-9A-Fa-f]+-([0-9A-Fa-f]+)-(?:MatterNodeDevice|(\d+))$"
+)
 
 #: A switch counts as able to cut power when it says it is an outlet, or when
 #: its device also measures power - which a smart plug does and a software
@@ -235,7 +238,13 @@ class HomeAssistantSource(Source):
             for domain, identifier in device.get("identifiers", []):
                 match = MATTER_IDENTIFIER.match(str(identifier))
                 if domain == "matter" and match:
-                    subject = f"node:{int(match.group(1), 16)}"
+                    node_id = int(match.group(1), 16)
+                    endpoint = match.group(2)
+                    subject = (
+                        bridges.subject(node_id, int(endpoint))
+                        if endpoint
+                        else f"node:{node_id}"
+                    )
                     self.ctx.names.set(subject, name)
                     self.ctx.names.set_device(subject, device.get("id"))
 

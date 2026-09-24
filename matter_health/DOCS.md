@@ -44,6 +44,14 @@ signal. Pointing at it shows the channel and encryption it uses.
 
 **Ethernet**: wired devices, directly on your home network.
 
+The grey lines from your home network to a bridge or access point are how
+that one is connected - by cable or Wi-Fi, which the add-on cannot tell.
+
+**Matter bridges** (a diamond) make devices of other systems - Zigbee,
+Z-Wave and others - available over Matter. Those devices hang on the bridge.
+When the bridge loses one of them, it is reported like any device that does
+not respond, even though the bridge itself is fine.
+
 On a phone the picture is shown as an outline, one bridge or access point at
 a time.
 

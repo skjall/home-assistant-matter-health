@@ -358,7 +358,10 @@
         "medium": "Mittleres Signal",
         "weak": "Schwaches Signal",
         "unknown": "Signal unbekannt"
-      }
+      },
+      "home": "Anbindung ans Heimnetz",
+      "bridge": "Matter-Bridge",
+      "bridged": "Hinter einer Bridge"
     },
     "resting": "weg, wie üblich",
     "color": {
@@ -366,7 +369,9 @@
       "status": "Zustand",
       "transport": "Transport",
       "signal": "Signal"
-    }
+    },
+    "bridge": "Matter-Bridge für {count} Gerät | Matter-Bridge für {count} Geräte",
+    "bridged": "Hinter einer Matter-Bridge, über deren eigenen Funk"
   },
   "finding.open_device": "In Home Assistant öffnen",
   "finding.open_named": "{device} öffnen",

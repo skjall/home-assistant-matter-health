@@ -92,6 +92,20 @@ Nothing outside a transport's package knows it exists. A new transport is a
 new package, imported in `transports/__init__.py`, with its words under
 `transport.<name>` in the UI translations.
 
+### Bridges
+
+A Matter bridge - for Zigbee, Z-Wave or a vendor's own radio - is one node
+on some transport; each device behind it is an endpoint of that node with
+the Bridged Device Basic Information cluster (`57`). Bridging is therefore
+not a transport. `bridges.py` reads those endpoints, and the Matter Server
+source follows each as a subject of its own, `node:<node id>:<endpoint>`:
+it is added, removed, reachable or not by the bridge's `Reachable`
+attribute, and so goes through the same rules as any device. While the
+bridge itself is away, only the bridge counts as away. Home Assistant names
+such a device by a registry identifier ending in its endpoint instead of
+`MatterNodeDevice`. In the picture it hangs on its bridge, marked
+`bridged`; its link is not a Matter transport's.
+
 ## Rules
 
 A rule (`matter_health/rules/`) subclasses `Rule`, registers under a name and
@@ -181,7 +195,10 @@ transport's gateways - border routers, access points - and its wired devices
 hang on the same home network, grouped by transport, and every device has
 one line upwards. The colours answer one question at a time, chosen by the
 viewer and remembered in their browser: state (the default), transport or
-signal strength. A device's state stays on its symbol in every view. For Thread that takes work: the Matter Server reports every radio link
+signal strength. A device's state stays on its symbol in every view. The
+line from the home network to a gateway is drawn neutral in every view:
+whether a border router or access point is wired or on Wi-Fi, nothing the
+add-on reads tells, and it is not the transport's link. For Thread that takes work: the Matter Server reports every radio link
 it knows, hundreds in a home with a few dozen mains-powered devices.
 `transports/thread/tree.py` reduces them to one way in per device: a battery
 device hangs on its parent; a relaying device takes the cheapest path to a

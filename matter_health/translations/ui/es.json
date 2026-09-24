@@ -358,7 +358,10 @@
         "medium": "Señal media",
         "weak": "Señal débil",
         "unknown": "Señal desconocida"
-      }
+      },
+      "home": "Conexión a la red doméstica",
+      "bridge": "Puente Matter",
+      "bridged": "Tras un puente Matter"
     },
     "resting": "fuera, como siempre",
     "color": {
@@ -366,7 +369,9 @@
       "status": "Estado",
       "transport": "Transporte",
       "signal": "Señal"
-    }
+    },
+    "bridge": "Puente Matter para {count} dispositivo | Puente Matter para {count} dispositivos",
+    "bridged": "Tras un puente Matter, por su propia radio"
   },
   "finding.open_device": "Abrir en Home Assistant",
   "finding.open_named": "Abrir {device}",

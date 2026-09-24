@@ -86,6 +86,10 @@ export interface TopologyNode {
   missing?: boolean;
   /** Away as it usually is, or as the user knows. */
   resting?: boolean;
+  /** A Matter bridge: other networks' devices hang on it. */
+  bridge?: boolean;
+  /** Behind a bridge, on a network that is not Matter's. */
+  bridged?: boolean;
 }
 
 export interface Topology {

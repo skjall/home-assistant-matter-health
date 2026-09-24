@@ -10,7 +10,7 @@ from aiohttp import ClientResponse, web
 from conftest import T0, Clock, at, make_engine
 from pytest_aiohttp import AiohttpClient
 
-from matter_health import kinds
+from matter_health import bridges, kinds
 from matter_health.engine import Context, Engine
 from matter_health.model import Finding, Link, Role, Severity
 from matter_health.store import Store
@@ -636,6 +636,36 @@ async def test_topology_shows_each_transport_alike(
     assert nodes["wifi:node:7"]["parent"] is None
     assert nodes["ethernet:node:6"]["parent"] == "home"
     assert nodes["ethernet:node:6"]["transport"] == "ethernet"
+
+
+async def test_topology_hangs_bridged_devices_on_their_bridge(
+    aiohttp_client: AiohttpClient,
+    store: Store,
+    engine: Engine,
+    translations: Path,
+) -> None:
+    engine.ctx.names.set("node:6:3", "Balcony Light")
+    await store.set_state("matter.transports", {"node:6": "ethernet"})
+    await store.set_state(
+        bridges.BRIDGED,
+        {"node:6": bridges.bridged(6, {"3/57/5": "x", "4/57/17": False})},
+    )
+    await store.set_state("matter.nodes", {"total": 3, "unavailable": ["node:6:4"]})
+    client = await aiohttp_client(build(engine, translations))
+
+    body = await (await client.get("/api/topology")).json()
+
+    nodes = {n["id"]: n for n in body["nodes"]}
+    assert nodes["ethernet:node:6"]["bridge"] is True
+    lamp = nodes["ethernet:node:6/3"]
+    assert lamp["parent"] == "ethernet:node:6"
+    assert lamp["bridged"] is True
+    assert lamp["name"] == "Balcony Light"
+    assert nodes["ethernet:node:6/4"]["available"] is False
+    # Not drawn a second time as a device of some transport.
+    assert [n["id"] for n in body["nodes"] if n["subject"] == "node:6:4"] == [
+        "ethernet:node:6/4"
+    ]
 
 
 async def test_topology_before_the_first_reading(

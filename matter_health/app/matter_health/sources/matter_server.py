@@ -6,6 +6,10 @@ that changes anything. What a device's transport means - border routers,
 access points, radio links - is the transports' business: this source hands
 each one the attributes of its devices and lets it ask the server the
 read-only questions it declares.
+
+Devices behind a bridge are endpoints of the bridge's node; this source
+follows whether the bridge still reaches each of them (see :mod:`..bridges`),
+so they come and go like any other device.
 """
 
 from __future__ import annotations
@@ -18,7 +22,7 @@ from typing import Any, ClassVar
 
 import aiohttp
 
-from .. import kinds
+from .. import bridges, kinds
 from ..config import MATTER_SERVER_PORT, MATTER_SERVER_SLUG
 from ..engine import SOURCES, Source
 from ..supervisor import Supervisor
@@ -42,11 +46,15 @@ def read_commands() -> frozenset[str]:
 
 
 def wanted(path: str) -> bool:
-    """Whether an attribute tells a transport anything."""
-    return path == FEATURE_MAP or any(
-        path.startswith(prefix)
-        for transport in TRANSPORTS
-        for prefix in transport.clusters
+    """Whether an attribute tells a transport, or about a bridged device, anything."""
+    return (
+        path == FEATURE_MAP
+        or bridges.wanted(path)
+        or any(
+            path.startswith(prefix)
+            for transport in TRANSPORTS
+            for prefix in transport.clusters
+        )
     )
 
 
@@ -63,6 +71,8 @@ class MatterServerSource(Source):
         self._pending: dict[str, asyncio.Future[Any]] = {}
         self._available: dict[int, bool] = {}
         self._attributes: dict[int, dict[str, Any]] = {}
+        #: Devices behind bridges, by subject; None until the first answer.
+        self._behind: dict[str, dict[str, Any]] | None = None
         self.transports: dict[str, Transport] = {
             name: TRANSPORTS.get(name)(self.ctx) for name in TRANSPORTS.names()
         }
@@ -143,18 +153,17 @@ class MatterServerSource(Source):
             node_id, path, value = data
             if wanted(str(path)):
                 self._attributes.setdefault(int(node_id), {})[str(path)] = value
-                await self._tell_transports()
+                await self._attributes_changed()
         elif event == "node_removed" and data is not None:
             node_id = int(data)
             self._available.pop(node_id, None)
             self._attributes.pop(node_id, None)
-            await self._save_availability()
-            await self._tell_transports()
             await self.emit(
                 kinds.MATTER_NODE_REMOVED,
                 f"node:{node_id}",
                 name=self.ctx.names.get(f"node:{node_id}"),
             )
+            await self._attributes_changed()
 
     def _remember(self, node: dict[str, Any]) -> None:
         """Keep the attributes of a node that tell a transport anything."""
@@ -162,6 +171,52 @@ class MatterServerSource(Source):
         self._attributes[int(node["node_id"])] = {
             path: value for path, value in attributes.items() if wanted(path)
         }
+
+    async def _attributes_changed(self) -> None:
+        await self._tell_transports()
+        await self._bridges_seen()
+        await self._save_availability()
+
+    async def _bridges_seen(self) -> None:
+        """Follow the devices behind bridges: added, removed, reachable or not.
+
+        The first answer after starting is only a baseline; what changed
+        before it is caught up with by the rules that compare states.
+        """
+        current: dict[str, dict[str, Any]] = {}
+        by_bridge: dict[str, list[dict[str, Any]]] = {}
+        for node_id, attributes in sorted(self._attributes.items()):
+            devices = bridges.bridged(node_id, attributes)
+            if devices:
+                by_bridge[f"node:{node_id}"] = devices
+            for device in devices:
+                current[device["subject"]] = device
+                # What the bridge calls it, until Home Assistant says better.
+                if device["label"] and not self.ctx.names.get(device["subject"]):
+                    self.ctx.names.set(device["subject"], device["label"])
+        before, self._behind = self._behind, current
+        await self.ctx.store.set_state(bridges.BRIDGED, by_bridge)
+        if before is None:
+            return
+        for subject, device in current.items():
+            name = self.ctx.names.get(subject)
+            if subject not in before:
+                await self.emit(kinds.MATTER_NODE_ADDED, subject, name=name)
+            elif before[subject]["reachable"] != device["reachable"] and (
+                # With the bridge away, the bridge is the news.
+                self._available.get(int(subject.split(":")[1]), True)
+            ):
+                await self.emit(
+                    kinds.MATTER_NODE_AVAILABLE
+                    if device["reachable"]
+                    else kinds.MATTER_NODE_UNAVAILABLE,
+                    subject,
+                    name=name,
+                )
+        for subject in sorted(before.keys() - current.keys()):
+            await self.emit(
+                kinds.MATTER_NODE_REMOVED, subject, name=self.ctx.names.get(subject)
+            )
 
     async def _tell_transports(self) -> None:
         """Say which transport each device uses and hand each its devices."""
@@ -189,20 +244,29 @@ class MatterServerSource(Source):
         for node in nodes or []:
             self._available[int(node["node_id"])] = bool(node.get("available"))
             self._remember(node)
-        await self._save_availability()
-        await self._tell_transports()
+        await self._attributes_changed()
 
     async def _save_availability(self) -> None:
-        """Keep the current picture for the overview page."""
+        """Keep the current picture for the overview page.
+
+        A device behind a bridge counts as away only while its bridge is
+        there to say so; with the bridge away, the bridge is the news.
+        """
+        unavailable = [
+            f"node:{node_id}"
+            for node_id, available in self._available.items()
+            if not available
+        ]
+        behind = self._behind or {}
+        for subject, device in behind.items():
+            bridge = int(subject.split(":")[1])
+            if not device["reachable"] and self._available.get(bridge, True):
+                unavailable.append(subject)
         await self.ctx.store.set_state(
             "matter.nodes",
             {
-                "total": len(self._available),
-                "unavailable": sorted(
-                    f"node:{node_id}"
-                    for node_id, available in self._available.items()
-                    if not available
-                ),
+                "total": len(self._available) + len(behind),
+                "unavailable": sorted(unavailable),
             },
         )
 
@@ -222,7 +286,8 @@ class MatterServerSource(Source):
                 name=name,
             )
         self._available[node_id] = available
-        await self._save_availability()
         if "attributes" in node:
             self._remember(node)
-            await self._tell_transports()
+            await self._attributes_changed()
+        else:
+            await self._save_availability()

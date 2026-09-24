@@ -400,3 +400,25 @@ async def test_a_failed_name_refresh_is_logged(
     assert [r.getMessage() for r in caplog.records] == [
         "could not refresh device names: gone"
     ]
+
+
+def test_a_device_behind_a_bridge_is_named_apart_from_its_bridge(ctx: Context) -> None:
+    source = HomeAssistantSource(ctx)
+    source.learn_device_names(
+        [
+            {
+                "id": "dev-bridge",
+                "name": "Hub",
+                "identifiers": [["matter", "deviceid_ABCDEF-2B-MatterNodeDevice"]],
+            },
+            {
+                "id": "dev-lamp",
+                "name": "Balcony Light",
+                "identifiers": [["matter", "deviceid_ABCDEF-2B-3"]],
+            },
+        ]
+    )
+
+    assert ctx.names.get("node:43") == "Hub"
+    assert ctx.names.get("node:43:3") == "Balcony Light"
+    assert ctx.names.device("node:43:3") == "dev-lamp"
