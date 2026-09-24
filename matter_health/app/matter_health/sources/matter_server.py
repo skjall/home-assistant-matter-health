@@ -67,43 +67,71 @@ def display_name(raw: dict[str, Any]) -> str | None:
     return None
 
 
-def link_summary(topology: dict[str, Any]) -> list[dict[str, Any]]:
-    """For every device, its best radio link.
+#: Thread roles that pass messages on for others.
+RELAYING_ROLES = frozenset({"router", "leader"})
 
-    A device is only as well connected as its strongest neighbour: a battery
-    sensor talks to exactly one parent, a mains device to several routers.
+#: Devices that report no neighbour table of their own; their parent's entry
+#: is the one link they have.
+CHILD_ROLES = frozenset({"sleepy_end_device", "end_device", "reed", "child"})
+
+
+def link_summary(topology: dict[str, Any]) -> list[dict[str, Any]]:
+    """For every device, its best link to a neighbour that relays.
+
+    A device is only as well connected as its strongest way into the mesh.
+    Only routers and border routers pass messages on; a strong signal from a
+    battery sensor next door helps nobody.
+
+    Each connection carries what the ``source`` device measured of the
+    ``target`` (``source_to_target``) and, if the target reports too, the
+    other way round. A device's own measurement counts first; what a
+    neighbour heard of it stands in only where the device measured nothing.
+    A router or border router that reports no measurements at all is left
+    out: nothing can be said about its reception.
     """
     nodes = {node["id"]: node for node in topology.get("nodes", [])}
-    best: dict[str, dict[str, Any]] = {}
+    own: dict[str, dict[str, dict[str, Any]]] = {}
+    heard: dict[str, dict[str, dict[str, Any]]] = {}
     for link in topology.get("connections", []):
-        for here, there, direction in (
-            (link["source"], link["target"], "target_to_source"),
-            (link["target"], link["source"], "source_to_target"),
+        source, target = link["source"], link["target"]
+        for measurer, measured, direction in (
+            (source, target, "source_to_target"),
+            (target, source, "target_to_source"),
         ):
-            heard = link.get(direction) or {}
-            rssi = heard.get("rssi")
-            if rssi is None:
+            value = link.get(direction) or {}
+            if value.get("rssi") is None:
                 continue
-            current = best.get(here)
-            if current is None or rssi > current["rssi"]:
-                best[here] = {
-                    "rssi": rssi,
-                    "lqi": heard.get("lqi"),
-                    "strength": heard.get("strength") or link.get("strength"),
-                    "neighbour": there,
-                }
-    summary = []
-    for node_id, link in best.items():
+            own.setdefault(measurer, {})[measured] = value
+            heard.setdefault(measured, {})[measurer] = value
+
+    def relays(node_id: str) -> bool:
         node = nodes.get(node_id, {})
-        neighbour = nodes.get(link["neighbour"], {})
+        return node.get("kind") == "border_router" or node.get("role") in (
+            RELAYING_ROLES
+        )
+
+    summary = []
+    for node_id, node in nodes.items():
+        child = node.get("role") in CHILD_ROLES
+        if not own.get(node_id) and not child:
+            continue
+        candidates = {**heard.get(node_id, {}), **own.get(node_id, {})}
+        options = [
+            (value, neighbour)
+            for neighbour, value in candidates.items()
+            if relays(neighbour)
+        ]
+        if not options:
+            continue
+        value, neighbour = max(options, key=lambda item: item[0]["rssi"])
         summary.append(
             {
                 "subject": _subject(node) or f"thread:{node_id}",
-                "neighbour": _subject(neighbour),
+                "neighbour": _subject(nodes.get(neighbour, {})),
                 "role": node.get("role"),
-                "rssi": link["rssi"],
-                "lqi": link["lqi"],
-                "strength": link["strength"],
+                "rssi": value["rssi"],
+                "lqi": value.get("lqi"),
+                "strength": value.get("strength"),
             }
         )
     return sorted(summary, key=lambda item: str(item["subject"]))

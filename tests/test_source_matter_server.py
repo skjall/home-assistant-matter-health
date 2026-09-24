@@ -325,67 +325,97 @@ def test_border_router_name(raw: dict[str, Any], name: str) -> None:
     assert border_router_name(raw) == name
 
 
-def test_link_summary_keeps_the_best_link_per_device() -> None:
-    topology = {
-        "nodes": [
-            {"id": "n1", "node_id": 1, "role": "router"},
-            {"id": "n2", "node_id": 2, "role": "sleepy_end_device"},
-            {"id": "b1", "ext_address": "0A1B2C3D4E5F6071", "role": "leader"},
-            {"id": "x"},
-        ],
-        "connections": [
+TOPOLOGY_NODES = [
+    {"id": "plug", "node_id": 1, "role": "router"},
+    {"id": "lamp", "node_id": 2, "role": "router"},
+    {"id": "spare", "node_id": 3, "role": "reed"},
+    {"id": "sensor", "node_id": 4, "role": "sleepy_end_device"},
+    {"id": "quiet", "node_id": 5, "role": "router"},
+    {"id": "tv", "kind": "border_router", "ext_address": "0A1B2C3D4E5F6071"},
+]
+
+
+def summary_of(connections: list[dict[str, Any]]) -> dict[str, tuple[Any, ...]]:
+    found = link_summary({"nodes": TOPOLOGY_NODES, "connections": connections})
+    return {item["subject"]: (item["neighbour"], item["rssi"]) for item in found}
+
+
+def test_a_device_is_judged_by_what_it_hears_itself() -> None:
+    # The plug hears the TV well; the lamp hears the plug only faintly. That
+    # faint value says something about the lamp, not about the plug.
+    found = summary_of(
+        [
+            {"source": "plug", "target": "tv", "source_to_target": {"rssi": -60}},
+            {"source": "lamp", "target": "plug", "source_to_target": {"rssi": -92}},
+        ]
+    )
+
+    assert found["node:1"] == ("br:0a1b2c3d4e5f6071", -60)
+    assert found["node:2"] == ("node:1", -92)
+
+
+def test_only_neighbours_that_relay_count() -> None:
+    # A device next door that passes nothing on is no way into the mesh.
+    found = summary_of(
+        [
+            {"source": "plug", "target": "spare", "source_to_target": {"rssi": -40}},
+            {"source": "plug", "target": "lamp", "source_to_target": {"rssi": -80}},
+        ]
+    )
+
+    assert found["node:1"] == ("node:2", -80)
+
+
+def test_a_child_is_judged_by_its_parents_entry() -> None:
+    found = summary_of(
+        [
             {
-                "source": "n1",
-                "target": "b1",
-                "source_to_target": {"rssi": -60, "lqi": 3},
-                "target_to_source": {"rssi": -55, "lqi": 3, "strength": "strong"},
+                "source": "plug",
+                "target": "sensor",
+                "source_to_target": {"rssi": -90, "lqi": 1, "strength": "weak"},
             },
+        ]
+    )
+
+    assert found["node:4"] == ("node:1", -90)
+    (sensor,) = [
+        item
+        for item in link_summary(
             {
-                # Heard in one direction only; the strength is the link's.
-                "source": "n2",
-                "target": "n1",
-                "target_to_source": {"rssi": -88, "lqi": 1},
-                "strength": "weak",
-            },
-            {"source": "n2", "target": "b1", "target_to_source": {"rssi": -92}},
-            {"source": "x", "target": "zz", "source_to_target": {"rssi": -70}},
-        ],
+                "nodes": TOPOLOGY_NODES,
+                "connections": [
+                    {
+                        "source": "sensor",
+                        "target": "plug",
+                        "target_to_source": {"rssi": -90, "lqi": 1, "strength": "weak"},
+                    }
+                ],
+            }
+        )
+        if item["subject"] == "node:4"
+    ]
+    assert sensor == {
+        "subject": "node:4",
+        "neighbour": "node:1",
+        "role": "sleepy_end_device",
+        "rssi": -90,
+        "lqi": 1,
+        "strength": "weak",
     }
 
-    assert link_summary(topology) == [
-        {
-            "subject": "br:0a1b2c3d4e5f6071",
-            "neighbour": "node:1",
-            "role": "leader",
-            "rssi": -60,
-            "lqi": 3,
-            "strength": None,
-        },
-        {
-            "subject": "node:1",
-            "neighbour": "br:0a1b2c3d4e5f6071",
-            "role": "router",
-            "rssi": -55,
-            "lqi": 3,
-            "strength": "strong",
-        },
-        {
-            "subject": "node:2",
-            "neighbour": "node:1",
-            "role": "sleepy_end_device",
-            "rssi": -88,
-            "lqi": 1,
-            "strength": "weak",
-        },
-        {
-            "subject": "thread:zz",
-            "neighbour": None,
-            "role": None,
-            "rssi": -70,
-            "lqi": None,
-            "strength": None,
-        },
-    ]
+
+def test_a_router_that_reports_nothing_is_not_judged() -> None:
+    found = summary_of(
+        [
+            {"source": "plug", "target": "quiet", "source_to_target": {"rssi": -95}},
+            {"source": "plug", "target": "spare", "source_to_target": None},
+            {"source": "spare", "target": "ghost", "source_to_target": {"rssi": -50}},
+        ]
+    )
+
+    # The plug is judged by what it hears; the quiet router is not judged.
+    # The spare device hears only something that relays nothing.
+    assert found == {"node:1": ("node:5", -95)}
     assert link_summary({}) == []
 
 
