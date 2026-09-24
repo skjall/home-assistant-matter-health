@@ -24,6 +24,13 @@ Technical detail is one click away, for whoever wants it.
   <img src="docs/images/mobile-dark.png" width="200" alt="The same page on a phone in dark mode">
 </p>
 
+<p align="center">
+  <img src="docs/images/network.png" width="840" alt="The Thread network as a tree: border routers, the devices relaying through them, and the end devices, with a weak link and an unreachable device marked">
+</p>
+
+The network is drawn as it is used: every device on the one way it takes
+into the mesh, so a weak link or a device gone shows where it hangs.
+
 The screenshots show invented data from `scripts/demo.py`.
 
 ## What it recognises

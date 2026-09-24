@@ -47,11 +47,17 @@ five minutes.
 | `otbr`              | OpenThread Border Router REST: role, partition, leader            |
 | `otbr_log`          | OpenThread Border Router add-on log: leader timeouts, foreign partitions |
 | `home_assistant`    | Core WebSocket: device names, plugs switched off and who did it   |
+| `system`            | Supervisor: versions of the pieces involved, the host's IPv6 settings |
 
 Log sources reuse one class, `AddonLogSource`, with a line parser from
-`matter_health/parsers/`. A parser turns one log line into zero or one
-`Parsed` event; adding support for a new log message is a pattern in its
+`matter_health/parsers/`. A parser turns one log line into zero or more
+`Parsed` events; adding support for a new log message is a pattern in its
 table.
+
+The Supervisor starts every log stream with the last lines already written.
+Each line comes with its journal time, events carry that time rather than
+the moment they were read, and the source stores how far it has read, so a
+restart neither loses nor repeats anything.
 
 Only read-only interfaces are used. The Matter Server source sends commands
 from a fixed allow-list; the OTBR source never touches the dataset endpoints.
@@ -65,7 +71,35 @@ ended without an event of its own ("nothing happened for five minutes").
 
 Rules look back through the store (`ctx.store.events(...)`) to connect what
 they see with what happened before. `rules/common.py` holds the questions
-several rules ask, such as "was a plug switched off shortly before?".
+several rules ask, such as "was a plug switched off shortly before?" or "was
+something updated the day before?".
+
+| Rule            | Tells                                                          |
+|-----------------|----------------------------------------------------------------|
+| `mesh`          | the Thread mesh lost its leader or fell apart                  |
+| `border_router` | a border router went away, and whether a switched plug did it  |
+| `offline`       | a device stays unreachable                                     |
+| `flaky`         | a device keeps dropping out for a moment                       |
+| `relay`         | a device that relayed for others went, and took them along     |
+| `wave`          | most Thread devices went at the same moment                    |
+| `signal`        | devices hear their parent only faintly                         |
+| `pairing`       | how far adding a device got, why it stopped, what to try       |
+| `radio`         | Home Assistant's own Thread radio: interference, faults, detached |
+| `host`          | the host does not forward IPv6 into the mesh                   |
+| `server`        | the Matter Server forgot its devices                           |
+
+A rule can declare that its findings may be one consequence of another's
+(`part_of`): a failed pairing during a mesh split, a device gone with its
+relay. `stories.py` nests such findings under the one that explains them.
+
+### What is normal for a device
+
+Some devices are away by habit: a plug that gets unplugged, a button without
+batteries. `rules/habits.py` learns from the last two weeks how often and how
+long each device is usually away. `offline` stays quiet while an absence is
+within that, and says "longer than usual" when it is not. The user can also
+say it themselves - "comes and goes" or "always report" - which is kept apart
+from what was learned and wins over it.
 
 ## Findings
 
@@ -92,13 +126,40 @@ Assistant's ingress; requests from anywhere else are refused.
 |-----------------------|--------------------------------------------------|
 | `GET /api/overview`   | the state right now: sources, Thread, border routers, devices |
 | `GET /api/findings`   | findings of the last days, open ones always      |
+| `GET /api/topology`   | the mesh as a tree, with who is away now         |
+| `POST /api/dismiss`   | mark a finding as dealt with, or take that back  |
+| `POST /api/habit`     | say a device comes and goes, or always report it |
 | `GET /api/events`     | the timeline                                     |
 | `GET /api/stream`     | server-sent events: new findings and events      |
+| `GET /api/languages`  | the languages the UI speaks                      |
 | `GET /api/i18n/{lang}`| the UI words for one language                    |
 
 The page (`matter_health/frontend/`) is a few Lit components bundled with
 esbuild into the Python package. It follows the language and dark mode of the
-Home Assistant frontend it is embedded in.
+Home Assistant frontend it is embedded in. The overview names the build it
+belongs to; a page left open across an update reloads itself.
+
+Names of devices are looked up when a finding is shown, not when it is
+written: a device renamed after pairing appears under its new name. Where
+Home Assistant knows the device, its name leads to the device's page.
+
+## The network picture
+
+The Matter Server reports every radio link it knows, hundreds in a home with
+a few dozen mains-powered devices. `topology.py` reduces them to one way in
+per device: a battery device hangs on its parent; a relaying device takes
+the cheapest path to a border router, priced by link quality the way Thread
+does. Every device then has one line upwards, and each relaying device keeps
+the number of neighbours it could switch to. The page draws that tree once
+and does not move; devices away are shown where they last were.
+
+## Confinement
+
+The add-on runs under its own AppArmor profile (`matter_health/apparmor.txt`).
+Python may reach the network, read its code and write only to `/data` and
+`/tmp`; it runs no other program and holds no capabilities. The test deploy
+copies code in with `docker cp` for that reason: nothing inside the container
+may write to its own code.
 
 ## Adding things
 

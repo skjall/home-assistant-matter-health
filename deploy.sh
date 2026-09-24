@@ -65,8 +65,10 @@ if [[ -z "$CONTAINER" ]]; then
   exit 1
 fi
 echo "[2/3] Copying code into $CONTAINER"
-tar -C "$addon" -czf - --exclude=__pycache__ app translations |
-  remote "docker exec -i $CONTAINER tar -xzf - -C $APP_PATH"
+# docker cp, not a tar inside the container: the add-on's AppArmor profile
+# keeps anything running in it from writing to its own code.
+tar -C "$addon" -cf - --exclude=__pycache__ app translations |
+  remote "docker cp - $CONTAINER:$APP_PATH"
 
 echo "[3/3] Restarting"
 remote "docker restart $CONTAINER >/dev/null"

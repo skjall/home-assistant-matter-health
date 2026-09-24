@@ -1,0 +1,52 @@
+name: Claude Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    # Run on every human PR, or when a human writes "@claude" in a comment.
+    # Skip bot-initiated events (e.g. Renovate): the action refuses bot actors,
+    # and dependency bumps don't need an AI review.
+    #
+    # Skip PRs from forks: GitHub withholds repository secrets and refuses
+    # `id-token: write` for `pull_request` events raised from a fork, so
+    # CLAUDE_CODE_OAUTH_TOKEN is empty and the job can only fail. Review those
+    # by commenting "@claude" on the PR instead — `issue_comment` runs in this
+    # repository's context and does receive the secret.
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.user.type != 'Bot' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' && github.event.comment.user.type != 'Bot' && contains(github.event.comment.body, '@claude'))
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Review the changes in this pull request. Focus on:
+            - Correctness bugs and regressions
+            - Security concerns (this add-on talks to Home Assistant via tokens/WebSocket)
+            - Adherence to the repo conventions in CLAUDE.md (type hints, docstrings,
+              Black 120-char line length, English log messages)
+            Post concise inline comments on the specific lines that need attention.
+            Skip nitpicks; only raise findings worth acting on.
+            Ignore lock files and generated/built artifacts (package-lock.json,
+            anything under static/) — review only hand-written source changes.
+          # Swap to claude-opus-4-8 for deeper reviews at higher quota cost.
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 100

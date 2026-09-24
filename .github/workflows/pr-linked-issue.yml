@@ -1,0 +1,75 @@
+name: PR linked issue
+
+# Contributor PRs must reference an issue (Closes/Fixes/Resolves #N). Otherwise
+# they get a "needs issue" label and a failing check until an issue is linked.
+# Bots (Renovate/Dependabot) and maintainers (owner/members/collaborators) are
+# exempt — they don't need to file an issue for their own changes.
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const pr = context.payload.pull_request;
+            const LABEL = "needs issue";
+
+            // Remove a stale "needs issue" label if one is present (self-healing
+            // for PRs labelled before an exemption applied, e.g. older bot PRs).
+            const clearLabel = async () => {
+              const labels = (
+                await github.rest.issues.listLabelsOnIssue({ ...repo, issue_number: pr.number })
+              ).data.map((l) => l.name);
+              if (labels.includes(LABEL)) {
+                await github.rest.issues.removeLabel({ ...repo, issue_number: pr.number, name: LABEL }).catch(() => {});
+              }
+            };
+
+            // Bot PRs (Renovate / Dependabot) don't need a linked issue — they are
+            // tracked centrally via the dependency dashboard.
+            if (pr.user.type === "Bot" || /\[bot\]$/.test(pr.user.login) || pr.user.login === "renovate-bot") {
+              core.info(`Bot PR by ${pr.user.login} — skipping linked-issue check`);
+              await clearLabel();
+              return;
+            }
+
+            // Maintainer PRs (repo owner, org members, collaborators) are exempt.
+            // External contributors (CONTRIBUTOR / FIRST_TIME_CONTRIBUTOR / NONE)
+            // must still link an issue.
+            const MAINTAINER = ["OWNER", "MEMBER", "COLLABORATOR"];
+            if (MAINTAINER.includes(pr.author_association)) {
+              core.info(`Maintainer PR (${pr.author_association}) by ${pr.user.login} — skipping linked-issue check`);
+              await clearLabel();
+              return;
+            }
+
+            const body = pr.body || "";
+            const re = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/i;
+            const linked = re.test(body);
+
+            const labels = (
+              await github.rest.issues.listLabelsOnIssue({ ...repo, issue_number: pr.number })
+            ).data.map((l) => l.name);
+
+            if (linked) {
+              if (labels.includes(LABEL)) {
+                await github.rest.issues.removeLabel({ ...repo, issue_number: pr.number, name: LABEL }).catch(() => {});
+              }
+            } else {
+              if (!labels.includes(LABEL)) {
+                await github.rest.issues.addLabels({ ...repo, issue_number: pr.number, labels: [LABEL] });
+              }
+              core.setFailed(
+                "This PR does not reference an issue. Add 'Closes #<issue>' (or Fixes/Resolves) to the description."
+              );
+            }

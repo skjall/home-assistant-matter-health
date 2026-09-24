@@ -1,0 +1,75 @@
+name: "🐛 Bug report"
+description: Report a problem with the Matter Health add-on
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+        Please include as much detail as possible so we can reproduce the issue.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched existing issues and this has not been reported yet
+          required: true
+        - label: I am running the latest available version of the add-on
+          required: true
+  - type: input
+    id: addon-version
+    attributes:
+      label: Add-on version
+      description: See Settings → Add-ons → Matter Health (e.g. 0.1.0)
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2025.7.2"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the problem?
+      placeholder: |
+        1. Pair a device / unplug a border router / ...
+        2. Open the add-on
+        3. See finding '...'
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Add-on logs
+      description: Relevant log output (Settings → Add-ons → Matter Health → Logs). This is automatically formatted, no backticks needed.
+      render: shell
+  - type: textarea
+    id: finding
+    attributes:
+      label: Finding details
+      description: If a finding is wrong or missing, open it, press "Details" and paste what it shows. Remove names you do not want to share.
+      render: text
+  - type: dropdown
+    id: setup
+    attributes:
+      label: Your network
+      description: Which of these are part of your setup?
+      multiple: true
+      options:
+        - "Home Assistant's OpenThread Border Router add-on"
+        - "Apple border routers (HomePod, Apple TV)"
+        - "Google border routers (Nest Hub, Nest Wifi)"
+        - "Other border routers"
+        - "Matter over Wi-Fi"

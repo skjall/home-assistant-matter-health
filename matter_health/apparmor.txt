@@ -1,0 +1,63 @@
+abi <abi/3.0>,
+
+#include <tunables/global>
+
+# The add-on reads logs and APIs over the network and keeps its own database
+# in /data. It needs no capabilities, writes nowhere else, and runs no program
+# but Python.
+
+profile matter_health flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # s6-overlay, which starts and stops the service: it reads its own tree
+  # and writes only below /run.
+  /** r,
+  signal (send) set=(kill,term,int,hup,cont),
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /run/{,**} rwk,
+  /dev/tty rw,
+
+  # The service script, which hands over to Python.
+  /run.sh ix,
+  /usr/local/bin/python3* cx -> python,
+
+  profile python flags=(attach_disconnected,mediate_deleted) {
+    #include <abstractions/base>
+
+    # HTTP and WebSocket to the Supervisor, Home Assistant, the Matter Server
+    # and the border router; datagrams for name lookups.
+    network inet stream,
+    network inet6 stream,
+    network inet dgram,
+    network inet6 dgram,
+
+    signal (receive) set=(kill,term,int,hup,cont),
+
+    /usr/local/bin/python3* rm,
+    /usr/local/lib/** rm,
+    /usr/lib/** rm,
+    /lib/** rm,
+    /etc/** r,
+    /opt/matter_health/** r,
+
+    # The findings database and the add-on options.
+    /data/ r,
+    /data/** rwk,
+    /tmp/ r,
+    /tmp/** rwk,
+
+    /proc/** r,
+    /dev/urandom r,
+    /dev/null rw,
+    /dev/shm/** rwk,
+    /sys/devices/system/cpu/** r,
+  }
+}

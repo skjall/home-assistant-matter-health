@@ -57,3 +57,22 @@ minor release, `!` or `BREAKING CHANGE` a major one; `chore`, `docs`, `ci`,
 
 Work happens on branches named `<type>/<what-it-does>` and reaches `main`
 through a pull request whose title is itself a Conventional Commit.
+
+## Issues and pull requests
+
+A few rules keep issues and pull requests tidy, most of them automated:
+
+- **Every pull request references an issue** with `Closes #123` (or `Fixes`,
+  `Resolves`). Without one it gets the `needs issue` label and a failing
+  check. Renovate and the maintainer are exempt.
+- **One status label at a time**, moved along automatically: `status: triage`
+  when opened, `status: in progress` when assigned, `status: in review` once a
+  pull request links it, `status: done` when closed.
+- **A possible duplicate** gets a comment linking the issues that look alike.
+- **An unclear report** is answered in the issue, with `status: needs info`,
+  rather than guessed at.
+- **Reviews:** Claude reviews every pull request from a person; one from an
+  outside contributor also asks the maintainer.
+- **The `semver:` label** follows from the pull request title.
+- **Branches** are deleted on merge; a weekly job removes those already in
+  `main` and lists old unmerged ones without touching them.
