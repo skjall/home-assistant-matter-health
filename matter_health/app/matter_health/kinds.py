@@ -30,7 +30,7 @@ THREAD_FOREIGN_PARTITION: Final = "thread.foreign_partition"
 THREAD_PARTITIONS: Final = "thread.partitions"
 #: What the radio counters of the devices that stay awake counted since the
 #: last reading. data: devices: list of {subject, cca_per_hour (the channel
-#: was busy when sending), busy_per_hour, retry_share}
+#: was busy when sending), busy_per_hour, retries_per_frame}
 THREAD_INTERFERENCE: Final = "thread.interference"
 #: Best radio link per device. data: devices: list of {subject, neighbour,
 #: role, rssi, lqi, strength}

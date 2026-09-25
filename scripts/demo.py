@@ -351,7 +351,7 @@ async def seed(engine: Engine, clock: Clock) -> None:
                     "subject": s,
                     "cca_per_hour": r,
                     "busy_per_hour": 0,
-                    "retry_share": 0.05,
+                    "retries_per_frame": 0.05,
                 }
                 for s, r in radio.items()
             ],

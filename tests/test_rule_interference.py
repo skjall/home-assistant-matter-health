@@ -17,7 +17,7 @@ def engine(ctx: Context) -> Engine:
 
 def reading(*busy: int | None) -> list[dict[str, Any]]:
     return [
-        {"subject": f"node:{i}", "cca_per_hour": rate, "retry_share": 0.1}
+        {"subject": f"node:{i}", "cca_per_hour": rate, "retries_per_frame": 0.1}
         for i, rate in enumerate(busy, start=1)
     ]
 

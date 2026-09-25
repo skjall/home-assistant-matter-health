@@ -163,7 +163,7 @@ def rates(
     return {
         "cca_per_hour": round(deltas["cca"] / hours),
         "busy_per_hour": round(deltas["busy"] / hours),
-        "retry_share": round(deltas["retry"] / deltas["tx"], 3)
+        "retries_per_frame": round(deltas["retry"] / deltas["tx"], 3)
         if deltas["tx"]
         else None,
     }

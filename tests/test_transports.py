@@ -226,14 +226,14 @@ def test_counter_rates_per_hour() -> None:
     ) == {
         "cca_per_hour": 120,
         "busy_per_hour": 4,
-        "retry_share": 0.2,
+        "retries_per_frame": 0.2,
     }
     # Nothing sent: no share to tell.
     same = {"tx": 1000, "retry": 100, "cca": 10, "busy": 1, "at": later}
     assert rates(before, same) == {
         "cca_per_hour": 0,
         "busy_per_hour": 0,
-        "retry_share": None,
+        "retries_per_frame": None,
     }
     # A restarted device counts from zero again.
     assert (
@@ -358,7 +358,7 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
     assert radio["devices"]["node:1"] == {
         "cca_per_hour": 36,
         "busy_per_hour": 0,
-        "retry_share": 0.0,
+        "retries_per_frame": 0.0,
     }
     reported = [e for e in await store.events() if e.kind == kinds.THREAD_INTERFERENCE]
     assert [d["subject"] for d in reported[0].data["devices"]] == ["node:1", "node:2"]
