@@ -29,9 +29,9 @@ time, connects what happens across them and tells you:
 Technical detail is one click away, for whoever wants it.
 
 <p align="center">
-  <img src="docs/images/findings-desktop.png" width="620" alt="Findings: a lasting Thread network split, told from what happened to what to do, naming the bridge cut off and the one coordinating the rest; next to it, radio interference measured around one device">
+  <img src="docs/images/findings-desktop.png" width="600" alt="Findings: a lasting Thread network split, told from what happened to what to do, naming the bridge cut off and the one coordinating the rest; next to it, radio interference measured around one device">
   &nbsp;
-  <img src="docs/images/findings-phone.png" width="210" alt="The same finding on a phone in dark mode">
+  <img src="docs/images/findings-phone.png" width="200" alt="The same finding on a phone in dark mode">
 </p>
 
 <p align="center">
