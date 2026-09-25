@@ -32,7 +32,17 @@ for others on their best path to a bridge, battery devices on the device they
 hang on. The many
 other radio links between relaying devices are not drawn; pointing at a
 relaying device tells how many other ways into the network it has. One with
-none depends on a single neighbour.
+none depends on a single neighbour. Pointing at a bridge or relaying device
+also tells its role in the mesh - the one that coordinates it is named - and,
+for relaying devices, how often they found the radio channel busy.
+
+When the mesh has split into parts that do not reach each other, the bridges
+in the other part are marked, and one finding names them and the bridge that
+coordinates the main part. When relaying devices keep finding the channel
+busy, a finding tells whether it happens everywhere - usually a Wi-Fi network
+on an overlapping channel, often a neighbour's - or around a few devices,
+which it names. Devices that drop out in the same time are listed under such
+a finding instead of each on its own.
 
 Good links stay grey. A weak link, a device that does not respond or a device
 with an open finding is coloured; **Problems only** hides everything else.
@@ -91,7 +101,8 @@ does not hide them for good; it tells them apart:
 
 ## What it reads
 
-- The Matter Server add-on: its WebSocket API (read-only commands) and its log.
+- The Matter Server add-on: its WebSocket API (read-only commands, including
+  reading the radio counters of devices that stay awake) and its log.
 - The OpenThread Border Router add-on: its REST status and its log.
 - Home Assistant: device names, and which plugs were switched off by whom.
 - The Supervisor: versions of Home Assistant, its operating system and the

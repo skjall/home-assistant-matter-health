@@ -23,6 +23,15 @@ THREAD_LEADER_LOST: Final = "thread.leader_lost"
 #: The border router heard a router of another partition, i.e. the mesh is
 #: split. data: -
 THREAD_FOREIGN_PARTITION: Final = "thread.foreign_partition"
+#: The border routers of the home network, grouped by the partition each
+#: announces; more than one part means the mesh is split. Emitted when the
+#: grouping changes. data: parts: list of {partition, leader (name or null),
+#: border_routers: list of {subject, name, role}}, Home Assistant's first
+THREAD_PARTITIONS: Final = "thread.partitions"
+#: What the radio counters of the devices that stay awake counted since the
+#: last reading. data: devices: list of {subject, cca_per_hour (the channel
+#: was busy when sending), busy_per_hour, retry_share}
+THREAD_INTERFERENCE: Final = "thread.interference"
 #: Best radio link per device. data: devices: list of {subject, neighbour,
 #: role, rssi, lqi, strength}
 THREAD_TOPOLOGY: Final = "thread.topology"

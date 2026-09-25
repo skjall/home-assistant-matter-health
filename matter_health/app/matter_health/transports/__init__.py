@@ -36,8 +36,9 @@ ROOT = "home"
 #: Home Assistant does not control.
 KINDS = frozenset({"gateway", "relay", "device", "sleepy", "unknown"})
 
-#: A read-only question to the Matter Server: command in, answer out.
-Ask = Callable[[str], Awaitable[Any]]
+#: A read-only question to the Matter Server: command and its arguments in,
+#: answer out.
+Ask = Callable[..., Awaitable[Any]]
 
 
 class Transport(ABC):

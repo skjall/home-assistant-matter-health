@@ -61,6 +61,10 @@ interface Item {
 /** Where every transport's gateways hang, as the add-on names it. */
 const HOME = "home";
 
+/** How often a device may find the channel busy before it counts as disturbed;
+ * the same threshold the add-on's interference rule uses. */
+const BUSY_PER_HOUR = 60;
+
 /** Height of a row in the tree, in pixels. */
 const ROW = 26;
 
@@ -255,25 +259,26 @@ export class MhTopology extends LitElement {
         outline: none;
         transition: opacity 0.15s;
       }
-      .node :is(circle, rect) {
+      /* The kind draws the symbol; a state's ring is drawn on top of it. */
+      .node :is(circle, rect):not(.ring) {
         stroke-width: 2;
       }
-      .node.gateway :is(circle, rect),
-      .node.home :is(circle, rect) {
+      .node.gateway :is(circle, rect):not(.ring),
+      .node.home :is(circle, rect):not(.ring) {
         fill: var(--c, var(--mh-primary));
         stroke: var(--mh-surface);
       }
-      .node.relay :is(circle, rect) {
+      .node.relay :is(circle, rect):not(.ring) {
         fill: var(--mh-surface);
         stroke: var(--c, var(--mh-primary));
       }
-      .node.device :is(circle, rect),
-      .node.sleepy :is(circle, rect) {
+      .node.device :is(circle, rect):not(.ring),
+      .node.sleepy :is(circle, rect):not(.ring) {
         fill: var(--mh-muted);
         stroke: var(--mh-surface);
         stroke-width: 1.5;
       }
-      .node.unknown :is(circle, rect) {
+      .node.unknown :is(circle, rect):not(.ring) {
         fill: var(--mh-surface);
         stroke: var(--mh-muted);
         stroke-dasharray: 2 2;
@@ -574,7 +579,7 @@ export class MhTopology extends LitElement {
     if (!node.available) return node.resting ? "resting" : "offline";
     const finding = node.subject ? worst.get(node.subject) : undefined;
     if (finding === "problem") return "problem";
-    if (finding === "warning") return "warning";
+    if (finding === "warning" || node.apart) return "warning";
     return quality(node) === "weak" ? "weak" : "ok";
   }
 
@@ -690,6 +695,7 @@ export class MhTopology extends LitElement {
     if (!node) return null;
     if (status === "offline") return [t("topology.offline"), "bad"];
     if (status === "resting") return [t("topology.resting"), ""];
+    if (node.apart) return [t("topology.apart"), "meh"];
     if (status === "problem" || status === "warning") {
       return [t("topology.finding_open"), status === "problem" ? "bad" : "meh"];
     }
@@ -722,6 +728,18 @@ export class MhTopology extends LitElement {
       .filter((part): part is string => !!part);
     if (detail.length) lines.push(html`<p>${detail.join(" · ")}</p>`);
     if (node?.uplink) lines.push(html`${this.uplinkLine(node)}`);
+    if (node?.role && has(`thread_role.${node.role}`)) {
+      lines.push(
+        html`<p>${t("topology.role_line", { role: t(`thread_role.${node.role}`) })}</p>`,
+      );
+    }
+    if (typeof node?.channel_busy_per_hour === "number") {
+      lines.push(
+        html`<p class=${node.channel_busy_per_hour >= BUSY_PER_HOUR ? "meh" : ""}>
+          ${t("topology.channel_busy", { count: node.channel_busy_per_hour })}
+        </p>`,
+      );
+    }
     const parent = point.parent?.data;
     const parentName = parent ? this.name(parent) : null;
     if (node && parentName && !parent?.special) {

@@ -112,6 +112,15 @@
     },
     "server_forgot": {
       "title": "The Matter Server no longer knows your devices"
+    },
+    "thread_split": {
+      "title": "Your Thread network has fallen into {count} parts"
+    },
+    "interference_wide": {
+      "title": "Something interferes with the Thread channel everywhere"
+    },
+    "interference_local": {
+      "title": "Something interferes around {devices}"
     }
   },
   "link": {
@@ -166,7 +175,15 @@
     "relay_impact": "These devices have to find a new way into the network. Some manage within minutes, some only after a long time, some not at all.",
     "server_forgot": "The Matter Server knew {count} devices and now knows none.",
     "server_forgot_impact": "No Matter device can be reached. The devices themselves are fine, but the keys to them are gone.",
-    "weak_wifi": "{device} is far from its access point ({rssi} dBm)."
+    "weak_wifi": "{device} is far from its access point ({rssi} dBm).",
+    "thread_split": "{apart} works in a part of the network of its own, apart from the main part. | {apart} work in a part of the network of their own, apart from the main part.",
+    "thread_split_leader": "{leader} coordinates the main part.",
+    "thread_split_no_leader": "None of the bridges says which one coordinates the main part.",
+    "thread_split_impact": "The parts do not reach each other: devices on a bridge in the other part get commands from Home Assistant late or not at all, and battery devices drop out one by one.",
+    "interference_wide_cause": "Something sends on the same channel that can be heard all over your home – usually a Wi-Fi network on an overlapping channel, often a neighbour's.",
+    "interference_local_cause": "Something near these devices sends on the same channel – an access point, a microwave oven or a Zigbee device.",
+    "interference_wide": "{count} of {total} devices that relay keep finding the channel busy – {rate} times an hour on average.",
+    "interference_local": "{devices} keeps finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever. | {devices} keep finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever."
   },
   "origin": {
     "person": "by {by}",
@@ -232,7 +249,9 @@
       "not_found": "Put the device into pairing mode again and keep the phone close to it. Are the phone and Home Assistant in the same network?",
       "timeout": "Try again closer to a bridge or a mains-powered Thread device."
     },
-    "weak_wifi": "Move {device} closer to an access point, or put an access point near {device}. Make sure the device is on the 2.4 GHz network – it reaches further than 5 GHz."
+    "weak_wifi": "Move {device} closer to an access point, or put an access point near {device}. Make sure the device is on the 2.4 GHz network – it reaches further than 5 GHz.",
+    "thread_split": "The network usually comes back together by itself. If the split lasts, unplug {apart} for a moment; it will then join the main part again. | The network usually comes back together by itself. If the split lasts, unplug {apart} for a moment; they will then join the main part again.",
+    "interference_local": "Look for what sends near {devices}, and move it further away or to another channel."
   },
   "phase": {
     "first_contact": {
@@ -380,7 +399,10 @@
       "via": "via {via}",
       "short_wired": "Cable",
       "short_wireless": "Wi-Fi"
-    }
+    },
+    "role_line": "In the Thread network: {role}",
+    "apart": "in a part of the network cut off from the rest",
+    "channel_busy": "Channel busy: {count} times an hour"
   },
   "finding.open_device": "Open in Home Assistant",
   "finding.open_named": "Open {device}",

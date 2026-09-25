@@ -112,6 +112,15 @@
     },
     "server_forgot": {
       "title": "El servidor Matter ya no conoce tus dispositivos"
+    },
+    "thread_split": {
+      "title": "Tu red Thread se ha dividido en {count} partes"
+    },
+    "interference_wide": {
+      "title": "Algo interfiere en el canal Thread en todas partes"
+    },
+    "interference_local": {
+      "title": "Algo interfiere alrededor de {devices}"
     }
   },
   "link": {
@@ -166,7 +175,15 @@
     "relay_impact": "Estos dispositivos tienen que buscar un nuevo camino a la red. Algunos lo logran en minutos, otros mucho después y otros nunca.",
     "server_forgot": "El servidor Matter conocía {count} dispositivos y ahora no conoce ninguno.",
     "server_forgot_impact": "Ningún dispositivo Matter es accesible. Los dispositivos están bien, pero las llaves para llegar a ellos han desaparecido.",
-    "weak_wifi": "{device} está lejos de su punto de acceso ({rssi} dBm)."
+    "weak_wifi": "{device} está lejos de su punto de acceso ({rssi} dBm).",
+    "thread_split": "{apart} funciona en una parte de la red aparte, separada de la parte principal. | {apart} funcionan en una parte de la red aparte, separada de la parte principal.",
+    "thread_split_leader": "{leader} coordina la parte principal.",
+    "thread_split_no_leader": "Ninguno de los puentes indica cuál coordina la parte principal.",
+    "thread_split_impact": "Las partes no se alcanzan: los dispositivos conectados a un puente de la otra parte reciben las órdenes de Home Assistant tarde o nunca, y los dispositivos a pilas se van cayendo uno tras otro.",
+    "interference_wide_cause": "Algo emite en el mismo canal y se oye en toda la casa – normalmente una Wi-Fi en un canal que se solapa, a menudo la de un vecino.",
+    "interference_local_cause": "Algo cerca de estos dispositivos emite en el mismo canal – un punto de acceso, un microondas o un dispositivo Zigbee.",
+    "interference_wide": "{count} de {total} dispositivos que reenvían encuentran el canal ocupado una y otra vez – {rate} veces por hora de media.",
+    "interference_local": "{devices} encuentra el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca. | {devices} encuentran el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca."
   },
   "origin": {
     "person": "por {by}",
@@ -232,7 +249,9 @@
       "not_found": "Vuelve a poner el dispositivo en modo de emparejamiento y acerca el móvil. ¿Están el móvil y Home Assistant en la misma red?",
       "timeout": "Inténtalo más cerca de un puente o de un dispositivo Thread con corriente."
     },
-    "weak_wifi": "Acerca {device} a un punto de acceso, o pon un punto de acceso cerca de {device}. Comprueba que el dispositivo esté en la red de 2,4 GHz: llega más lejos que la de 5 GHz."
+    "weak_wifi": "Acerca {device} a un punto de acceso, o pon un punto de acceso cerca de {device}. Comprueba que el dispositivo esté en la red de 2,4 GHz: llega más lejos que la de 5 GHz.",
+    "thread_split": "Normalmente la red vuelve a unirse sola. Si la separación dura, desenchufa {apart} un momento; después se unirá de nuevo a la parte principal. | Normalmente la red vuelve a unirse sola. Si la separación dura, desenchufa {apart} un momento; después se unirán de nuevo a la parte principal.",
+    "interference_local": "Busca qué emite cerca de {devices} y aléjalo o ponlo en otro canal."
   },
   "phase": {
     "first_contact": {
@@ -380,7 +399,10 @@
       "via": "a través de {via}",
       "short_wired": "Cable",
       "short_wireless": "Wi-Fi"
-    }
+    },
+    "role_line": "En la red Thread: {role}",
+    "apart": "en una parte de la red separada del resto",
+    "channel_busy": "Canal ocupado: {count} veces por hora"
   },
   "finding.open_device": "Abrir en Home Assistant",
   "finding.open_named": "Abrir {device}",

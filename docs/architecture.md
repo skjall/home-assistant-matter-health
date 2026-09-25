@@ -81,7 +81,13 @@ says which one it uses in its Network Commissioning feature map
 and hands each transport the attributes of its devices from the clusters it
 declares, such as Wi-Fi diagnostics (`0/54`). A transport may also `poll`
 the Matter Server with read-only commands it declares - Thread asks for its
-border routers and radio links. It answers two questions for the page, in
+border routers and radio links. Border routers announce their role and the
+partition they are in; one not heard for half an hour is taken as gone,
+though the Matter Server keeps listing it. Every ten minutes Thread also reads
+the MAC counters (`0/53/22`, `/33`, `/36`, `/38`) of devices that stay awake
+and keep them, with `read_attribute` - the cached values are not kept
+current - and turns the difference to the last reading into rates per hour.
+It answers two questions for the page, in
 words every transport shares: its part of the network `picture` (gateway,
 relay, device, sleepy, unknown; links rated strong, medium or weak) and a
 `summary` for the overview. Its own sources and rules register like any
@@ -150,6 +156,8 @@ something updated the day before?".
 | `pairing`       | core      | how far adding a device got, why it stopped, what to try |
 | `server`        | core      | the Matter Server forgot its devices                   |
 | `mesh`          | thread    | the mesh lost its leader or fell apart                 |
+| `partitions`    | thread    | border routers stay in different partitions: the mesh is split |
+| `interference`  | thread    | awake devices keep finding the channel busy, home-wide or locally |
 | `border_router` | thread    | a border router went away, and whether a switched plug did it |
 | `relay`         | thread    | a device that relayed for others went, and took them along |
 | `wave`          | thread    | most Thread devices went at the same moment            |
@@ -160,7 +168,12 @@ something updated the day before?".
 
 A rule can declare that its findings may be one consequence of another's
 (`part_of`): a failed pairing during a mesh split, a device gone with its
-relay. `stories.py` nests such findings under the one that explains them.
+relay. `stories.py` nests such findings under the one that explains them,
+and a story that is itself part of a larger one hands its parts up: a leader
+lost at the start of a lasting split, and the devices that went with it,
+are told in the split's story. Devices dropping out are part of the split,
+interference and radio stories too, so one cause is shown instead of its
+many consequences.
 
 ### What is normal for a device
 

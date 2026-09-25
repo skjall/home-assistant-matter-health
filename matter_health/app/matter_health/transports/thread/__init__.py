@@ -7,9 +7,11 @@ its part of the network picture. Importing the package registers them.
 from . import (
     border_router,
     host,
+    interference,
     mesh,
     openthread,
     otbr,
+    partitions,
     radio,
     relay,
     signal,
@@ -20,9 +22,11 @@ from . import (
 __all__ = [
     "border_router",
     "host",
+    "interference",
     "mesh",
     "openthread",
     "otbr",
+    "partitions",
     "radio",
     "relay",
     "signal",

@@ -39,4 +39,12 @@ def stories(
             if story.started_at - before <= finding.started_at <= end + after:
                 belongs[finding.key] = story.key
                 break
+    # A story can be part of a larger one - a leader lost at the start of a
+    # lasting split. Its own parts are then told in the larger story too.
+    for key, story_key in belongs.items():
+        seen = {key}
+        while story_key in belongs and story_key not in seen:
+            seen.add(story_key)
+            story_key = belongs[story_key]
+        belongs[key] = story_key
     return belongs

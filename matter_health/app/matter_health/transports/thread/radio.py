@@ -51,6 +51,12 @@ class RadioRule(Rule):
 
     name: ClassVar[str] = "radio"
     part_of: ClassVar[frozenset[str]] = frozenset({"mesh"})
+    #: A crowded channel or a failing radio explains devices dropping out
+    #: meanwhile.
+    story_margin: ClassVar[tuple[timedelta, timedelta] | None] = (
+        timedelta(minutes=10),
+        timedelta(minutes=10),
+    )
     listens: ClassVar[frozenset[str]] = frozenset(
         {kinds.THREAD_CHANNEL_BUSY, kinds.THREAD_RADIO_FAULT, kinds.THREAD_STATE}
     )

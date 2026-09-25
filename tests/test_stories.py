@@ -6,10 +6,18 @@ from matter_health.rules.pairing import PairingRule
 from matter_health.stories import stories
 from matter_health.transports.thread.border_router import BorderRouterRule
 from matter_health.transports.thread.mesh import MeshRule
+from matter_health.transports.thread.partitions import PartitionRule
 from matter_health.transports.thread.signal import SignalRule
 
 T0 = datetime(2030, 1, 1, 20, 0, tzinfo=UTC)
-RULES = (MeshRule, BorderRouterRule, PairingRule, OfflineRule, SignalRule)
+RULES = (
+    MeshRule,
+    BorderRouterRule,
+    PairingRule,
+    OfflineRule,
+    SignalRule,
+    PartitionRule,
+)
 
 
 def finding(
@@ -74,3 +82,16 @@ def test_the_earliest_matching_story_wins() -> None:
     ]
 
     assert stories(found, RULES, T0) == {"border_router:tv": "mesh:a"}
+
+
+def test_a_story_within_a_larger_one_hands_its_parts_up() -> None:
+    found = [
+        finding("partitions:a", "partitions", 0, Severity.PROBLEM, lasted=None),
+        finding("mesh:a", "mesh", -1),
+        finding("border_router:tv", "border_router", 1),
+    ]
+
+    assert stories(found, RULES, T0 + timedelta(hours=1)) == {
+        "mesh:a": "partitions:a",
+        "border_router:tv": "partitions:a",
+    }

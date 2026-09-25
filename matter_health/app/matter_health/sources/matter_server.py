@@ -104,22 +104,30 @@ class MatterServerSource(Source):
                         await reader
 
     async def _poll(self, ws: aiohttp.ClientWebSocketResponse) -> None:
-        async def ask(command: str) -> Any:
-            return await self._command(ws, command)
+        async def ask(command: str, **args: Any) -> Any:
+            return await self._command(ws, command, args)
 
         while True:
             for transport in self.transports.values():
                 await transport.poll(ask)
             await asyncio.sleep(POLL_S)
 
-    async def _command(self, ws: aiohttp.ClientWebSocketResponse, command: str) -> Any:
+    async def _command(
+        self,
+        ws: aiohttp.ClientWebSocketResponse,
+        command: str,
+        args: dict[str, Any] | None = None,
+    ) -> Any:
         if command not in read_commands():
             raise ValueError(f"{command} is not a read-only command")
         message_id = str(next(self._ids))
         future: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
         self._pending[message_id] = future
+        message: dict[str, Any] = {"message_id": message_id, "command": command}
+        if args:
+            message["args"] = args
         try:
-            await ws.send_json({"message_id": message_id, "command": command})
+            await ws.send_json(message)
             return await asyncio.wait_for(future, COMMAND_TIMEOUT_S)
         finally:
             self._pending.pop(message_id, None)

@@ -147,7 +147,11 @@ async def test_device_changes_become_events(
     with pytest.raises(ConnectionError, match="Matter Server closed"):
         await source.run()
 
-    found = [(e.kind, e.subject, e.data) for e in await store.events()]
+    found = [
+        (e.kind, e.subject, e.data)
+        for e in await store.events()
+        if e.kind != kinds.THREAD_PARTITIONS
+    ]
     assert found == [
         (kinds.MATTER_NODE_UNAVAILABLE, "node:1", {"name": "Living Room Plug"}),
         (kinds.MATTER_NODE_ADDED, "node:3", {"name": None}),
@@ -252,7 +256,7 @@ async def test_border_routers_come_and_go(
     found = [
         (e.kind, e.subject, e.data)
         for e in await store.events()
-        if e.kind != kinds.THREAD_TOPOLOGY
+        if e.kind not in (kinds.THREAD_TOPOLOGY, kinds.THREAD_PARTITIONS)
     ]
     unknown = {"network": None, "pan": None, "own": True}
     tv = {"name": "Living Room TV (Wall)", "vendor": "Acme", "model": "TV Box"}
@@ -269,7 +273,13 @@ async def test_border_routers_come_and_go(
     ]
     assert found[4:] == [(kinds.BORDER_ROUTER_APPEARED, "br:0a1b2c3d4e5f6071", tv)]
     assert await store.get_state("border_routers") == [
-        {"subject": "br:0a1b2c3d4e5f6071", **tv, "addresses": []}
+        {
+            "subject": "br:0a1b2c3d4e5f6071",
+            **tv,
+            "addresses": [],
+            "role": None,
+            "partition": None,
+        }
     ]
     assert ctx.names.get("br:1122334455667788") == "Hub Mini"
     assert await store.get_state("matter.nodes") == {"total": 0, "unavailable": []}

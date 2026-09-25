@@ -5,13 +5,24 @@ how well every Thread device hears its neighbours. This transport reads both:
 the border routers every minute, so their disappearance can be tied to a
 switch turned off just before, and the radio links every ten minutes, since
 link quality changes slowly and the server takes a while to collect it.
+
+Border routers say more in their announcements than their name: their role
+in the mesh and the partition they belong to. Border routers of one network
+in different partitions mean the mesh has fallen apart.
+
+Every ten minutes the transport also reads the radio counters of the devices
+that stay awake. How often each found the channel busy since the last
+reading shows where on the channel something else is sending: everywhere
+alike, or around a few devices.
 """
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections import Counter
 from collections.abc import Iterable
+from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
 from ... import kinds
@@ -47,6 +58,30 @@ QUALITY = {3: "strong", 2: "medium", 1: "weak", 0: "weak"}
 #: Roles in which the border router takes part in the mesh.
 CONNECTED_ROLES = frozenset({"router", "leader", "child"})
 
+#: A border router's role in its announcement's state bitmap (bits 9-10).
+ANNOUNCED_ROLES = {0: "disabled", 1: "child", 2: "router", 3: "leader"}
+
+#: A border router that has not announced itself for this much longer than
+#: the others is gone, even if the Matter Server still lists it.
+SILENT_AFTER = timedelta(minutes=30)
+
+#: The radio counters of Thread Network Diagnostics, by what they count.
+COUNTERS = {"tx": "0/53/22", "retry": "0/53/33", "cca": "0/53/36", "busy": "0/53/38"}
+
+#: The cluster's routing role, and its feature map: bit 3 means the device
+#: keeps MAC counters.
+ROUTING_ROLE = "0/53/1"
+DIAGNOSTICS_FEATURES = "0/53/65532"
+MAC_COUNTERS = 0b1000
+
+#: Routing roles of devices that stay awake: end device, router-eligible,
+#: router, leader. A sleepy device is not asked; it would have to wake up.
+AWAKE_ROLES = frozenset({3, 4, 5, 6})
+LEADER_ROLE = 6
+
+#: One device's answer may take this long; a silent one is skipped.
+READ_TIMEOUT_S = 15.0
+
 
 def border_router_name(raw: dict[str, Any]) -> str:
     """Return a readable name for a border router announcement.
@@ -69,6 +104,69 @@ def display_name(raw: dict[str, Any]) -> str | None:
     if raw.get("vendorName") == "Home Assistant":
         return "Home Assistant"
     return None
+
+
+def announced_role(raw: dict[str, Any]) -> str | None:
+    """Return the role a border router announces, from its state bitmap."""
+    try:
+        bitmap = int(str(raw.get("stateBitmapHex") or ""), 16)
+    except ValueError:
+        return None
+    return ANNOUNCED_ROLES[(bitmap >> 9) & 0b11]
+
+
+def partitions(routers: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Group the border routers of the home network by the partition they are in.
+
+    Home Assistant's own border router's partition comes first, then the
+    others by size. Each part names its leader, where one of its border
+    routers leads it.
+    """
+    parts: dict[str, list[dict[str, Any]]] = {}
+    for router in routers:
+        if router.get("own") is not False and router.get("partition"):
+            parts.setdefault(str(router["partition"]), []).append(router)
+
+    def order(item: tuple[str, list[dict[str, Any]]]) -> tuple[bool, int, str]:
+        ours = any(r.get("vendor") == "Home Assistant" for r in item[1])
+        return (not ours, -len(item[1]), item[0])
+
+    return [
+        {
+            "partition": partition,
+            "leader": next(
+                (r["name"] for r in members if r.get("role") == "leader"), None
+            ),
+            "border_routers": [
+                {"subject": r["subject"], "name": r["name"], "role": r.get("role")}
+                for r in sorted(members, key=_by_name)
+            ],
+        }
+        for partition, members in sorted(parts.items(), key=order)
+    ]
+
+
+def rates(
+    before: dict[str, Any], after: dict[str, Any]
+) -> dict[str, float | int | None] | None:
+    """Return what a device's counters did between two readings, per hour.
+
+    None when there is nothing to compare: readings at the same moment, or
+    counters that went back because the device restarted.
+    """
+    hours = (
+        datetime.fromisoformat(after["at"]) - datetime.fromisoformat(before["at"])
+    ).total_seconds() / 3600
+    deltas = {name: after[name] - before[name] for name in COUNTERS}
+    if hours <= 0 or any(delta < 0 for delta in deltas.values()):
+        return None
+    return {
+        "cca_per_hour": round(deltas["cca"] / hours),
+        "busy_per_hour": round(deltas["busy"] / hours),
+        "retry_share": round(deltas["retry"] / deltas["tx"], 3)
+        if deltas["tx"]
+        else None,
+    }
 
 
 def own_part(topology: dict[str, Any]) -> dict[str, Any]:
@@ -182,8 +280,9 @@ class ThreadTransport(Transport):
     name: ClassVar[str] = "thread"
     feature: ClassVar[int] = 0b10
     commands: ClassVar[frozenset[str]] = frozenset(
-        {"get_thread_border_routers", "get_network_topology"}
+        {"get_thread_border_routers", "get_network_topology", "read_attribute"}
     )
+    clusters: ClassVar[tuple[str, ...]] = (ROUTING_ROLE, DIAGNOSTICS_FEATURES)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Start with nothing known."""
@@ -192,6 +291,9 @@ class ThreadTransport(Transport):
         self._missing: dict[str, int] = {}
         self._first_round = True
         self._next_topology = 0.0
+        self._parts: list[dict[str, Any]] | None = None
+        #: Devices whose radio counters are read, by subject.
+        self._measured: list[str] = []
 
     async def poll(self, ask: Ask) -> None:
         """Read the border routers, and now and then the radio links."""
@@ -203,7 +305,69 @@ class ThreadTransport(Transport):
             await self.ctx.store.set_state("thread.links", links)
             await self.tree(topology)
             await self.ctx.emit(kinds.THREAD_TOPOLOGY, "matter_server", devices=links)
+            await self.measure(ask)
             self._next_topology = time.monotonic() + TOPOLOGY_POLL_S
+
+    async def devices(self, attributes: dict[str, dict[str, Any]]) -> None:
+        """Note each device's routing role, and which keep radio counters."""
+        roles = {
+            subject: attrs[ROUTING_ROLE]
+            for subject, attrs in attributes.items()
+            if isinstance(attrs.get(ROUTING_ROLE), int)
+        }
+        await self.ctx.store.set_state("thread.roles", roles)
+        self._measured = sorted(
+            subject
+            for subject, attrs in attributes.items()
+            if roles.get(subject) in AWAKE_ROLES
+            and isinstance(attrs.get(DIAGNOSTICS_FEATURES), int)
+            and attrs[DIAGNOSTICS_FEATURES] & MAC_COUNTERS
+        )
+
+    async def measure(self, ask: Ask) -> None:
+        """Read the radio counters of the devices that stay awake.
+
+        What they counted since the last reading, per hour, is kept for the
+        page and reported to the rules.
+        """
+        nodes = await self.ctx.store.get_state("matter.nodes") or {}
+        away = set(nodes.get("unavailable", []))
+        readings: dict[str, dict[str, Any]] = dict(
+            await self.ctx.store.get_state("thread.counters") or {}
+        )
+        now = self.ctx.now().isoformat()
+        measured: dict[str, dict[str, Any]] = {}
+        for subject in self._measured:
+            if subject in away:
+                continue
+            try:
+                answer = await asyncio.wait_for(
+                    ask(
+                        "read_attribute",
+                        node_id=int(subject.split(":")[1]),
+                        attribute_path=list(COUNTERS.values()),
+                    ),
+                    READ_TIMEOUT_S,
+                )
+            except TimeoutError, RuntimeError:
+                continue
+            values = {name: (answer or {}).get(path) for name, path in COUNTERS.items()}
+            if not all(isinstance(v, int) for v in values.values()):
+                continue
+            reading = {**values, "at": now}
+            if subject in readings and (rated := rates(readings[subject], reading)):
+                measured[subject] = rated
+            readings[subject] = reading
+        await self.ctx.store.set_state("thread.counters", readings)
+        await self.ctx.store.set_state(
+            "thread.interference", {"at": now, "devices": measured}
+        )
+        if measured:
+            await self.ctx.emit(
+                kinds.THREAD_INTERFERENCE,
+                "matter_server",
+                devices=[{"subject": s, **r} for s, r in sorted(measured.items())],
+            )
 
     async def tree(self, topology: dict[str, Any]) -> None:
         """Keep the mesh as a tree for the page, and who hung on whom."""
@@ -224,9 +388,23 @@ class ThreadTransport(Transport):
         row, so one incomplete answer does not report the whole house as lost.
         """
         current: dict[str, dict[str, Any]] = {}
+        seen = [
+            raw["lastSeen"]
+            for raw in announced or []
+            if isinstance(raw.get("lastSeen"), int)
+        ]
+        newest = max(seen, default=None)
         for raw in announced or []:
             ext = str(raw.get("extAddressHex") or "").lower()
             if not ext:
+                continue
+            last = raw.get("lastSeen")
+            if (
+                newest is not None
+                and isinstance(last, int)
+                and newest - last > SILENT_AFTER.total_seconds() * 1000
+            ):
+                # Unplugged: it stopped announcing itself, the list keeps it.
                 continue
             name = border_router_name(raw)
             current[name] = {
@@ -241,6 +419,8 @@ class ThreadTransport(Transport):
                 "addresses": [
                     a for a in raw.get("addresses") or [] if isinstance(a, str)
                 ],
+                "role": announced_role(raw),
+                "partition": str(raw.get("partitionIdHex") or "").lower() or None,
             }
             self.ctx.names.set(f"br:{ext}", current[name]["name"])
         home = await self.home_network(current.values())
@@ -265,6 +445,11 @@ class ThreadTransport(Transport):
         await self.ctx.store.set_state(
             "border_routers", sorted(self._border_routers.values(), key=_by_name)
         )
+        parts = partitions(self._border_routers.values())
+        await self.ctx.store.set_state("thread.partitions", parts)
+        if parts != self._parts:
+            self._parts = parts
+            await self.ctx.emit(kinds.THREAD_PARTITIONS, "matter_server", parts=parts)
 
     async def home_network(self, routers: Iterable[dict[str, Any]]) -> str | None:
         """Return the Extended PAN ID of the Thread network Home Assistant uses.
@@ -288,7 +473,7 @@ class ThreadTransport(Transport):
         details = {
             key: value
             for key, value in info.items()
-            if key not in ("subject", "addresses")
+            if key not in ("subject", "addresses", "role", "partition")
         }
         await self.ctx.emit(kind, "matter_server", info["subject"], **details)
 
@@ -299,12 +484,30 @@ class ThreadTransport(Transport):
         mine: dict[str, str] = await self.ctx.store.get_state("matter.transports") or {}
         routers = await self.ctx.store.get_state("border_routers") or []
         addresses = {r["subject"]: r.get("addresses") or [] for r in routers}
+        announced = {r["subject"]: r for r in routers}
+        parts = await self.ctx.store.get_state("thread.partitions") or []
+        main = parts[0]["partition"] if len(parts) > 1 else None
+        roles: dict[str, int] = await self.ctx.store.get_state("thread.roles") or {}
+        radio = await self.ctx.store.get_state("thread.interference") or {}
+        busy = {s: r.get("cca_per_hour") for s, r in radio.get("devices", {}).items()}
         entries = []
         for raw in tree.get("nodes", []):
             entry = dict(raw)
             entry["kind"] = KIND.get(str(raw.get("kind")), "unknown")
+            subject = str(raw.get("subject"))
             if entry["kind"] == "gateway":
-                entry["addresses"] = addresses.get(str(raw.get("subject")), [])
+                entry["addresses"] = addresses.get(subject, [])
+                router = announced.get(subject, {})
+                entry["role"] = router.get("role")
+                # In another partition than Home Assistant's border router.
+                entry["apart"] = main is not None and router.get("partition") not in (
+                    None,
+                    main,
+                )
+            else:
+                entry["role"] = "leader" if roles.get(subject) == LEADER_ROLE else None
+            if busy.get(subject) is not None:
+                entry["channel_busy_per_hour"] = busy[subject]
             link = dict(raw.get("link") or {})
             link["quality"] = link_quality(link)
             entry["link"] = link

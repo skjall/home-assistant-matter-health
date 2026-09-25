@@ -66,6 +66,8 @@ class MeshRule(Rule):
     """Tells the story of a lost leader or split mesh, with its likely cause."""
 
     name: ClassVar[str] = "mesh"
+    #: The mesh falling apart at the start of a split that lasts.
+    part_of: ClassVar[frozenset[str]] = frozenset({"partitions"})
     #: A switch turned off a little before the split, and a vanished border
     #: router reported a little after it, still belong to this story.
     story_margin: ClassVar[tuple[timedelta, timedelta] | None] = (

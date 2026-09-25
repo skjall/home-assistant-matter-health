@@ -92,6 +92,12 @@ export interface TopologyNode {
   bridged?: boolean;
   /** How it reaches the home network, where network equipment tells. */
   uplink?: Uplink | null;
+  /** Thread: its role in the mesh (leader, router, child, disabled). */
+  role?: string | null;
+  /** Thread: in another partition than Home Assistant's border router. */
+  apart?: boolean;
+  /** Thread: how often it found the channel busy lately, per hour. */
+  channel_busy_per_hour?: number;
 }
 
 /** A gateway's connection to the home network, as an integration tells it. */

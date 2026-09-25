@@ -33,6 +33,9 @@ class FlakyRule(Rule):
     """Reports devices that lose their connection again and again."""
 
     name: ClassVar[str] = "flaky"
+    part_of: ClassVar[frozenset[str]] = frozenset(
+        {"partitions", "interference", "radio"}
+    )
     listens: ClassVar[frozenset[str]] = frozenset({kinds.MATTER_NODE_AVAILABLE})
 
     def __init__(self, ctx: Context) -> None:

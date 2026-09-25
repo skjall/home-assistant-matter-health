@@ -29,6 +29,7 @@ from matter_health.config import Options
 from matter_health.engine import RULES, Context, Engine, utcnow
 from matter_health.enrichers import Client, Knowledge, state_key
 from matter_health.store import Store
+from matter_health.transports.thread.transport import partitions
 from matter_health.transports.thread.tree import build_tree
 from matter_health.transports.wifi.transport import WifiTransport
 from matter_health.web import create_app
@@ -55,13 +56,50 @@ NAMES = {
     "br:3d4e5f6071829304": "Home Assistant",
 }
 
+#: The bedroom speaker has ended up in a partition of its own.
 BORDER_ROUTERS = [
-    {"subject": s, "name": n, "vendor": v, "model": None, "addresses": [ip]}
-    for s, n, v, ip in (
-        ("br:3d4e5f6071829304", "Home Assistant", "Home Assistant", "192.0.2.2"),
-        ("br:2c3d4e5f60718293", "Bedroom Speaker", "Acme", "192.0.2.12"),
-        ("br:1b2c3d4e5f607182", "Kitchen Speaker", "Acme", "192.0.2.11"),
-        ("br:0a1b2c3d4e5f6071", "Living Room TV", "Acme", "192.0.2.10"),
+    {
+        "subject": s,
+        "name": n,
+        "vendor": v,
+        "model": None,
+        "addresses": [ip],
+        "role": role,
+        "partition": part,
+    }
+    for s, n, v, ip, role, part in (
+        (
+            "br:3d4e5f6071829304",
+            "Home Assistant",
+            "Home Assistant",
+            "192.0.2.2",
+            "router",
+            "5a17c0de",
+        ),
+        (
+            "br:2c3d4e5f60718293",
+            "Bedroom Speaker",
+            "Acme",
+            "192.0.2.12",
+            "leader",
+            "0bad5eed",
+        ),
+        (
+            "br:1b2c3d4e5f607182",
+            "Kitchen Speaker",
+            "Acme",
+            "192.0.2.11",
+            "router",
+            "5a17c0de",
+        ),
+        (
+            "br:0a1b2c3d4e5f6071",
+            "Living Room TV",
+            "Acme",
+            "192.0.2.10",
+            "leader",
+            "5a17c0de",
+        ),
     )
 ]
 
@@ -291,7 +329,45 @@ async def seed(engine: Engine, clock: Clock) -> None:
         ],
     )
 
+    # For the last hour: the bedroom speaker lost the rest of the mesh.
+    clock.at = utcnow() - timedelta(minutes=70)
+    await emit(kinds.THREAD_FOREIGN_PARTITION)
+    clock.go(seconds=25)
+    await emit(kinds.THREAD_PARTITION_CHANGED)
+    clock.go(minutes=8)
+    parts = partitions(BORDER_ROUTERS)
+    await emit(kinds.THREAD_PARTITIONS, parts=parts)
+    await tick(6)
+
+    # Every ten minutes the awake devices tell how often the channel was busy;
+    # only the kitchen plug hears something next to it.
+    radio = {"node:3": 140, "node:21": 6, "node:30": 2}
+    clock.at = utcnow() - timedelta(minutes=30)
+    for _ in range(3):
+        await emit(
+            kinds.THREAD_INTERFERENCE,
+            devices=[
+                {
+                    "subject": s,
+                    "cca_per_hour": r,
+                    "busy_per_hour": 0,
+                    "retry_share": 0.05,
+                }
+                for s, r in radio.items()
+            ],
+        )
+        clock.go(minutes=10)
+
     store = ctx.store
+    await store.set_state("thread.partitions", parts)
+    await store.set_state("thread.roles", {"node:3": 5, "node:21": 5, "node:30": 3})
+    await store.set_state(
+        "thread.interference",
+        {
+            "at": clock.at.isoformat(),
+            "devices": {s: {"cca_per_hour": r} for s, r in radio.items()},
+        },
+    )
     await store.set_state(
         "otbr.node",
         {
