@@ -71,6 +71,8 @@ COUNTERS = {"tx": "0/53/22", "retry": "0/53/33", "cca": "0/53/36", "busy": "0/53
 #: The cluster's routing role, and its feature map: bit 3 means the device
 #: keeps MAC counters.
 ROUTING_ROLE = "0/53/1"
+#: The channel the device's Thread network uses.
+CHANNEL = "0/53/0"
 DIAGNOSTICS_FEATURES = "0/53/65532"
 MAC_COUNTERS = 0b1000
 
@@ -282,7 +284,7 @@ class ThreadTransport(Transport):
     commands: ClassVar[frozenset[str]] = frozenset(
         {"get_thread_border_routers", "get_network_topology", "read_attribute"}
     )
-    clusters: ClassVar[tuple[str, ...]] = (ROUTING_ROLE, DIAGNOSTICS_FEATURES)
+    clusters: ClassVar[tuple[str, ...]] = (CHANNEL, ROUTING_ROLE, DIAGNOSTICS_FEATURES)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Start with nothing known."""
@@ -316,6 +318,15 @@ class ThreadTransport(Transport):
             if isinstance(attrs.get(ROUTING_ROLE), int)
         }
         await self.ctx.store.set_state("thread.roles", roles)
+        channels = Counter(
+            attrs[CHANNEL]
+            for attrs in attributes.values()
+            if isinstance(attrs.get(CHANNEL), int) and 11 <= attrs[CHANNEL] <= 26
+        )
+        if channels:
+            await self.ctx.store.set_state(
+                "thread.channel", channels.most_common(1)[0][0]
+            )
         self._measured = sorted(
             subject
             for subject, attrs in attributes.items()

@@ -86,7 +86,11 @@ partition they are in; one not heard for half an hour is taken as gone,
 though the Matter Server keeps listing it. Every ten minutes Thread also reads
 the MAC counters (`0/53/22`, `/33`, `/36`, `/38`) of devices that stay awake
 and keep them, with `read_attribute` - the cached values are not kept
-current - and turns the difference to the last reading into rates per hour.
+current - and turns the difference to the last reading into rates per hour. The
+Thread channel (`0/53/0`) is kept too. The Wi-Fi transport keeps its access
+points and their channels under the transport-neutral `access_points`, so the
+interference rule can name one whose channel shares Thread's without knowing
+the Wi-Fi transport.
 It answers two questions for the page, in
 words every transport shares: its part of the network `picture` (gateway,
 relay, device, sleepy, unknown; links rated strong, medium or weak) and a

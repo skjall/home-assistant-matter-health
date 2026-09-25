@@ -339,35 +339,9 @@ async def seed(engine: Engine, clock: Clock) -> None:
     await emit(kinds.THREAD_PARTITIONS, parts=parts)
     await tick(6)
 
-    # Every ten minutes the awake devices tell how often the channel was busy;
-    # only the kitchen plug hears something next to it.
-    radio = {"node:3": 140, "node:21": 6, "node:30": 2}
-    clock.at = utcnow() - timedelta(minutes=30)
-    for _ in range(3):
-        await emit(
-            kinds.THREAD_INTERFERENCE,
-            devices=[
-                {
-                    "subject": s,
-                    "cca_per_hour": r,
-                    "busy_per_hour": 0,
-                    "retries_per_frame": 0.05,
-                }
-                for s, r in radio.items()
-            ],
-        )
-        clock.go(minutes=10)
-
     store = ctx.store
     await store.set_state("thread.partitions", parts)
     await store.set_state("thread.roles", {"node:3": 5, "node:21": 5, "node:30": 3})
-    await store.set_state(
-        "thread.interference",
-        {
-            "at": clock.at.isoformat(),
-            "devices": {s: {"cca_per_hour": r} for s, r in radio.items()},
-        },
-    )
     await store.set_state(
         "otbr.node",
         {
@@ -415,6 +389,34 @@ async def seed(engine: Engine, clock: Clock) -> None:
         "matter.nodes",
         {"total": 30, "unavailable": ["node:30", "node:31", "node:42:5", "node:9"]},
     )
+    # Thread on channel 15, next to the access point's Wi-Fi channel 6.
+    await store.set_state("thread.channel", 15)
+    # Every ten minutes the awake devices tell how often the channel was busy;
+    # only the kitchen plug hears something next to it.
+    radio = {"node:3": 140, "node:21": 6, "node:30": 2}
+    clock.at = utcnow() - timedelta(minutes=30)
+    for _ in range(3):
+        await emit(
+            kinds.THREAD_INTERFERENCE,
+            devices=[
+                {
+                    "subject": s,
+                    "cca_per_hour": r,
+                    "busy_per_hour": 0,
+                    "retries_per_frame": 0.05,
+                }
+                for s, r in radio.items()
+            ],
+        )
+        clock.go(minutes=10)
+    await store.set_state(
+        "thread.interference",
+        {
+            "at": clock.at.isoformat(),
+            "devices": {s: {"cca_per_hour": r} for s, r in radio.items()},
+        },
+    )
+
     found = await store.findings()
     button = next(f for f in found if f.subjects == ["node:31"] and not f.ended_at)
     await store.set_state("dismissed", {button.key: button.started_at.isoformat()})

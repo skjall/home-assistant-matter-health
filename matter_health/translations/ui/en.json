@@ -183,7 +183,9 @@
     "interference_wide_cause": "Something sends on the same channel that can be heard all over your home – usually a Wi-Fi network on an overlapping channel, often a neighbour's.",
     "interference_local_cause": "Something near these devices sends on the same channel – an access point, a microwave oven or a Zigbee device.",
     "interference_wide": "{count} of {total} devices that relay keep finding the channel busy – {rate} times an hour on average.",
-    "interference_local": "{devices} keeps finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever. | {devices} keep finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever."
+    "interference_local": "{devices} keeps finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever. | {devices} keep finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever.",
+    "interference_access_point_overlaps": "{access_point} sends on Wi-Fi channel {wifi_channel}, which overlaps Thread channel {thread_channel}.",
+    "interference_access_point_borders": "{access_point} sends on Wi-Fi channel {wifi_channel}, right next to Thread channel {thread_channel}; up close it is still heard there."
   },
   "origin": {
     "person": "by {by}",
@@ -251,7 +253,8 @@
     },
     "weak_wifi": "Move {device} closer to an access point, or put an access point near {device}. Make sure the device is on the 2.4 GHz network – it reaches further than 5 GHz.",
     "thread_split": "The network usually comes back together by itself. If the split lasts, unplug {apart} for a moment; it will then join the main part again. | The network usually comes back together by itself. If the split lasts, unplug {apart} for a moment; they will then join the main part again.",
-    "interference_local": "Look for what sends near {devices}, and move it further away or to another channel."
+    "interference_local": "Look for what sends near {devices}, and move it further away or to another channel.",
+    "interference_access_point": "Try setting the 2.4 GHz channel of {access_point} to channel {suggest}, and see after the next readings whether the number goes down."
   },
   "phase": {
     "first_contact": {

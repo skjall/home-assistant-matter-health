@@ -183,7 +183,9 @@
     "interference_wide_cause": "Quelque chose émet sur le même canal et s'entend dans tout le logement – le plus souvent un Wi-Fi sur un canal voisin, souvent celui d'un voisin.",
     "interference_local_cause": "Quelque chose près de ces appareils émet sur le même canal – un point d'accès, un micro-ondes ou un appareil Zigbee.",
     "interference_wide": "{count} des {total} appareils qui relaient trouvent sans cesse le canal occupé – {rate} fois par heure en moyenne.",
-    "interference_local": "{devices} trouve sans cesse le canal occupé, {rate} fois par heure en moyenne ; les {rest} autres appareils mesurés presque jamais. | {devices} trouvent sans cesse le canal occupé, {rate} fois par heure en moyenne ; les {rest} autres appareils mesurés presque jamais."
+    "interference_local": "{devices} trouve sans cesse le canal occupé, {rate} fois par heure en moyenne ; les {rest} autres appareils mesurés presque jamais. | {devices} trouvent sans cesse le canal occupé, {rate} fois par heure en moyenne ; les {rest} autres appareils mesurés presque jamais.",
+    "interference_access_point_overlaps": "{access_point} émet sur le canal Wi-Fi {wifi_channel}, qui chevauche le canal Thread {thread_channel}.",
+    "interference_access_point_borders": "{access_point} émet sur le canal Wi-Fi {wifi_channel}, juste à côté du canal Thread {thread_channel} ; de près, on l'y entend encore."
   },
   "origin": {
     "person": "par {by}",
@@ -251,7 +253,8 @@
     },
     "weak_wifi": "Rapproche {device} d'un point d'accès, ou place un point d'accès près de {device}. Vérifie que l'appareil est sur le réseau 2,4 GHz – il porte plus loin que le 5 GHz.",
     "thread_split": "Le réseau se reforme généralement tout seul. Si la séparation dure, débranche {apart} un instant ; il rejoindra ensuite la partie principale. | Le réseau se reforme généralement tout seul. Si la séparation dure, débranche {apart} un instant ; ils rejoindront ensuite la partie principale.",
-    "interference_local": "Cherche ce qui émet près de {devices}, et éloigne-le ou mets-le sur un autre canal."
+    "interference_local": "Cherche ce qui émet près de {devices}, et éloigne-le ou mets-le sur un autre canal.",
+    "interference_access_point": "Essaie de régler le canal 2,4 GHz de {access_point} sur le canal {suggest}, puis regarde après les prochaines mesures si le nombre baisse."
   },
   "phase": {
     "first_contact": {

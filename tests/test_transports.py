@@ -18,7 +18,11 @@ from matter_health.transports.thread.transport import (
     rates,
 )
 from matter_health.transports.wifi.signal import WifiSignalRule
-from matter_health.transports.wifi.transport import WifiTransport, describe
+from matter_health.transports.wifi.transport import (
+    WifiTransport,
+    access_points,
+    describe,
+)
 
 #: 02:00:00:00:00:01, as a device reports its access point.
 BSSID = "AgAAAAAB"
@@ -307,9 +311,9 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
     awake = {"0/53/1": 5, "0/53/65532": 15}
     await transport.devices(
         {
-            "node:1": awake,
-            "node:2": {**awake, "0/53/1": 6},
-            "node:3": {"0/53/1": 2, "0/53/65532": 15},  # sleepy
+            "node:1": {**awake, "0/53/0": 20},
+            "node:2": {**awake, "0/53/1": 6, "0/53/0": 20},
+            "node:3": {"0/53/1": 2, "0/53/65532": 15, "0/53/0": 15},
             "node:4": {"0/53/1": 5, "0/53/65532": 0},  # keeps no counters
             "node:5": awake,
             "node:6": awake,
@@ -354,6 +358,8 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
         "node:6": 5,
         "node:7": 5,
     }
+    # The channel most devices report; a stray one does not decide.
+    assert await store.get_state("thread.channel") == 20
     radio = await store.get_state("thread.interference")
     assert radio["devices"]["node:1"] == {
         "cca_per_hour": 36,
@@ -416,3 +422,16 @@ async def test_the_thread_picture_tells_roles_parts_and_interference(
     assert (picture["br_2"]["role"], picture["br_2"]["apart"]) == ("child", True)
     assert picture["n1"]["role"] == "leader"
     assert picture["n1"]["channel_busy_per_hour"] == 75
+
+
+def test_access_points_are_gathered_from_their_devices() -> None:
+    ap = "02:00:00:00:00:01"
+    links = {
+        "node:1": {"bssid": ap, "channel": 6, "mac": "02:00:00:00:10:01"},
+        "node:2": {"bssid": ap, "channel": None, "mac": None},
+        "node:3": {"bssid": None},
+    }
+
+    assert access_points(links) == {
+        ap: {"channel": 6, "clients": [{"mac": "02:00:00:00:10:01", "addresses": []}]}
+    }

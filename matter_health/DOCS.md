@@ -41,7 +41,12 @@ in the other part are marked, and one finding names them and the bridge that
 coordinates the main part. When relaying devices keep finding the channel
 busy, a finding tells whether it happens everywhere - usually a Wi-Fi network
 on an overlapping channel, often a neighbour's - or around a few devices,
-which it names. Devices that drop out in the same time are listed under such
+which it names. The radio cannot tell who is sending; but when one of your
+access points uses a Wi-Fi channel that overlaps or borders the Thread
+channel - known from Matter devices on Wi-Fi - it is named as a possible
+cause, with a channel further away to try. Its name comes from a network
+integration such as UniFi Network; without one, its address is shown.
+Devices that drop out in the same time are listed under such
 a finding instead of each on its own.
 
 Good links stay grey. A weak link, a device that does not respond or a device

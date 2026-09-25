@@ -25,6 +25,11 @@ from ..registry import Registry
 #: The Network Commissioning cluster's feature map on the root endpoint.
 FEATURE_MAP = "0/49/65532"
 
+#: Access points by BSSID, as the devices on them report: ``{channel,
+#: clients: [{mac, addresses}]}``. Another transport's radio may share
+#: their band.
+ACCESS_POINTS = "access_points"
+
 #: Where each device hangs in the network picture while nothing is known.
 ROOT = "home"
 

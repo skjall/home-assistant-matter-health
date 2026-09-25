@@ -183,7 +183,9 @@
     "interference_wide_cause": "Algo emite en el mismo canal y se oye en toda la casa – normalmente una Wi-Fi en un canal que se solapa, a menudo la de un vecino.",
     "interference_local_cause": "Algo cerca de estos dispositivos emite en el mismo canal – un punto de acceso, un microondas o un dispositivo Zigbee.",
     "interference_wide": "{count} de {total} dispositivos que reenvían encuentran el canal ocupado una y otra vez – {rate} veces por hora de media.",
-    "interference_local": "{devices} encuentra el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca. | {devices} encuentran el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca."
+    "interference_local": "{devices} encuentra el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca. | {devices} encuentran el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca.",
+    "interference_access_point_overlaps": "{access_point} emite en el canal Wi-Fi {wifi_channel}, que se solapa con el canal Thread {thread_channel}.",
+    "interference_access_point_borders": "{access_point} emite en el canal Wi-Fi {wifi_channel}, justo al lado del canal Thread {thread_channel}; de cerca aún se oye allí."
   },
   "origin": {
     "person": "por {by}",
@@ -251,7 +253,8 @@
     },
     "weak_wifi": "Acerca {device} a un punto de acceso, o pon un punto de acceso cerca de {device}. Comprueba que el dispositivo esté en la red de 2,4 GHz: llega más lejos que la de 5 GHz.",
     "thread_split": "Normalmente la red vuelve a unirse sola. Si la separación dura, desenchufa {apart} un momento; después se unirá de nuevo a la parte principal. | Normalmente la red vuelve a unirse sola. Si la separación dura, desenchufa {apart} un momento; después se unirán de nuevo a la parte principal.",
-    "interference_local": "Busca qué emite cerca de {devices} y aléjalo o ponlo en otro canal."
+    "interference_local": "Busca qué emite cerca de {devices} y aléjalo o ponlo en otro canal.",
+    "interference_access_point": "Prueba a poner el canal de 2,4 GHz de {access_point} en el canal {suggest} y mira tras las próximas mediciones si el número baja."
   },
   "phase": {
     "first_contact": {

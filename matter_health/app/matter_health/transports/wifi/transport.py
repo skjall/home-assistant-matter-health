@@ -18,7 +18,7 @@ import binascii
 from typing import Any, ClassVar
 
 from ... import kinds
-from .. import ROOT, TRANSPORTS, Transport, quality
+from .. import ACCESS_POINTS, ROOT, TRANSPORTS, Transport, quality
 
 #: Wi-Fi Network Diagnostics on the root endpoint.
 BSSID = "0/54/0"
@@ -104,6 +104,23 @@ def describe(attributes: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def access_points(links: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Each access point with its channel and the devices on it."""
+    points: dict[str, dict[str, Any]] = {}
+    for link in links.values():
+        bssid = link.get("bssid")
+        if not bssid:
+            continue
+        point = points.setdefault(bssid, {"channel": None, "clients": []})
+        if isinstance(link.get("channel"), int):
+            point["channel"] = link["channel"]
+        if link.get("mac"):
+            point["clients"].append(
+                {"mac": link["mac"], "addresses": link.get("addresses") or []}
+            )
+    return points
+
+
 @TRANSPORTS.register("wifi")
 class WifiTransport(Transport):
     """Access points and the devices associated with them."""
@@ -132,6 +149,7 @@ class WifiTransport(Transport):
                 link = {**stored[subject], "rssi": None}
             stored[subject] = link
         await self.ctx.store.set_state(STATE, stored)
+        await self.ctx.store.set_state(ACCESS_POINTS, access_points(stored))
         rated = {
             subject: quality(link["rssi"], STRONG_RSSI, WEAK_RSSI)
             for subject, link in stored.items()

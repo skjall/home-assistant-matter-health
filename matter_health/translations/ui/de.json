@@ -183,7 +183,9 @@
     "interference_wide_cause": "Etwas sendet auf demselben Kanal, das im ganzen Zuhause zu hören ist – meist ein WLAN auf einem überlappenden Kanal, oft das eines Nachbarn.",
     "interference_local_cause": "Etwas in der Nähe dieser Geräte sendet auf demselben Kanal – ein Access Point, eine Mikrowelle oder ein Zigbee-Gerät.",
     "interference_wide": "{count} von {total} Geräten, die weiterleiten, finden den Kanal immer wieder belegt – im Mittel {rate}-mal pro Stunde.",
-    "interference_local": "{devices} findet den Kanal immer wieder belegt, im Mittel {rate}-mal pro Stunde; die übrigen {rest} gemessenen Geräte kaum. | {devices} finden den Kanal immer wieder belegt, im Mittel {rate}-mal pro Stunde; die übrigen {rest} gemessenen Geräte kaum."
+    "interference_local": "{devices} findet den Kanal immer wieder belegt, im Mittel {rate}-mal pro Stunde; die übrigen {rest} gemessenen Geräte kaum. | {devices} finden den Kanal immer wieder belegt, im Mittel {rate}-mal pro Stunde; die übrigen {rest} gemessenen Geräte kaum.",
+    "interference_access_point_overlaps": "{access_point} sendet auf WLAN-Kanal {wifi_channel}, der den Thread-Kanal {thread_channel} überlappt.",
+    "interference_access_point_borders": "{access_point} sendet auf WLAN-Kanal {wifi_channel}, direkt neben dem Thread-Kanal {thread_channel}; aus der Nähe ist er dort noch zu hören."
   },
   "origin": {
     "person": "von {by}",
@@ -251,7 +253,8 @@
     },
     "weak_wifi": "Stell {device} näher an einen Access Point, oder setz einen Access Point in die Nähe von {device}. Achte darauf, dass das Gerät im 2,4-GHz-Netz ist – das reicht weiter als 5 GHz.",
     "thread_split": "Meist findet das Netz von selbst wieder zusammen. Hält die Trennung an, trenne {apart} kurz vom Strom; danach schließt es sich dem Hauptteil wieder an. | Meist findet das Netz von selbst wieder zusammen. Hält die Trennung an, trenne {apart} kurz vom Strom; danach schließen sie sich dem Hauptteil wieder an.",
-    "interference_local": "Schau, was in der Nähe von {devices} funkt, und stell es weiter weg oder auf einen anderen Kanal."
+    "interference_local": "Schau, was in der Nähe von {devices} funkt, und stell es weiter weg oder auf einen anderen Kanal.",
+    "interference_access_point": "Stell den 2,4-GHz-Kanal von {access_point} probeweise auf Kanal {suggest} und sieh nach den nächsten Messungen, ob die Zahl sinkt."
   },
   "phase": {
     "first_contact": {
