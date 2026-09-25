@@ -117,10 +117,10 @@
       "title": "Dein Thread-Netz ist in {count} Teile zerfallen"
     },
     "interference_wide": {
-      "title": "Auf dem Thread-Kanal funkt überall etwas dazwischen"
+      "title": "Fast alle Thread-Geräte finden ihren Funkkanal belegt"
     },
     "interference_local": {
-      "title": "Um {devices} herum funkt etwas dazwischen"
+      "title": "Einige Thread-Geräte finden ihren Funkkanal belegt"
     }
   },
   "link": {

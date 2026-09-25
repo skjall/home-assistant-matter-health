@@ -117,10 +117,10 @@
       "title": "Ton réseau Thread s'est scindé en {count} parties"
     },
     "interference_wide": {
-      "title": "Quelque chose perturbe le canal Thread partout"
+      "title": "Presque tous les appareils Thread trouvent leur canal radio occupé"
     },
     "interference_local": {
-      "title": "Quelque chose perturbe le canal autour de {devices}"
+      "title": "Certains appareils Thread trouvent leur canal radio occupé"
     }
   },
   "link": {

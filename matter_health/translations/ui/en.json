@@ -117,10 +117,10 @@
       "title": "Your Thread network has fallen into {count} parts"
     },
     "interference_wide": {
-      "title": "Something interferes with the Thread channel everywhere"
+      "title": "Nearly all Thread devices find their radio channel busy"
     },
     "interference_local": {
-      "title": "Something interferes around {devices}"
+      "title": "Some Thread devices find their radio channel busy"
     }
   },
   "link": {

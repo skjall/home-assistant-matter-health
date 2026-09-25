@@ -117,10 +117,10 @@
       "title": "Tu red Thread se ha dividido en {count} partes"
     },
     "interference_wide": {
-      "title": "Algo interfiere en el canal Thread en todas partes"
+      "title": "Casi todos los dispositivos Thread encuentran su canal de radio ocupado"
     },
     "interference_local": {
-      "title": "Algo interfiere alrededor de {devices}"
+      "title": "Algunos dispositivos Thread encuentran su canal de radio ocupado"
     }
   },
   "link": {
