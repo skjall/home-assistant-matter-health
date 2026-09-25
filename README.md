@@ -3,6 +3,9 @@
 A Home Assistant add-on that explains why Matter and Thread devices
 misbehave, in words anyone can follow.
 
+> **Experimental.** It has been used on one home so far. What it tells is
+> meant to be right; where it is not, an issue with what you saw helps most.
+
 Matter over Thread fails quietly. A plug refuses to pair at "Configuring", a
 sensor drops out every other night, a switch reacts a second late. Home
 Assistant shows that something is wrong, rarely why. Matter Health watches the
@@ -19,18 +22,18 @@ time, connects what happens across them and tells you:
 Technical detail is one click away, for whoever wants it.
 
 <p align="center">
-  <img src="docs/images/findings.png" width="640" alt="Findings: a Thread network split, told from cause to fix, with the failed pairing and the vanished border router shown as its consequences">
+  <img src="docs/images/findings.png" width="640" alt="Findings: a lasting Thread network split, naming the bridge apart and the one coordinating the main part, with the short split at its start folded in as a consequence; next to it, radio interference measured around one device">
   &nbsp;
   <img src="docs/images/mobile-dark.png" width="200" alt="The same page on a phone in dark mode">
 </p>
 
 <p align="center">
-  <img src="docs/images/network.png" width="840" alt="The network, one tree per transport: Thread with its border routers and relaying devices, Wi-Fi with its access point, Ethernet; a weak link and an unreachable device marked">
+  <img src="docs/images/network.png" width="840" alt="The network as one tree: Thread bridges, a Wi-Fi access point and a Matter bridge on the home network, relaying devices and the devices on them; a bridge cut off from the mesh, a weak link and unreachable devices marked">
 </p>
 
-The network is drawn as it is used, one picture per transport - Thread,
-Wi-Fi, Ethernet: every device on the one way it takes in, so a weak link or
-a device gone shows where it hangs.
+The network is drawn as one picture, whatever connects it - Thread, Wi-Fi,
+Ethernet, Matter bridges: every device on the one way it takes in, so a weak
+link or a device gone shows where it hangs.
 
 The screenshots show invented data from `scripts/demo.py`.
 
@@ -43,6 +46,8 @@ The screenshots show invented data from `scripts/demo.py`.
 | Adding a device fails             | the step in plain words, and what usually helps there    |
 | A device has a weak connection    | the device, its nearest neighbour and the signal         |
 | A device stays unreachable        | whether the network or the power is the likelier reason  |
+| The Thread network stays split    | the bridges cut off, and which one coordinates the rest  |
+| The radio channel is busy         | measured by the devices: everywhere or around a few, and an own access point on a neighbouring Wi-Fi channel |
 
 Every rule is its own module. New knowledge becomes a new rule, without
 touching the rest; see [docs/architecture.md](docs/architecture.md).
