@@ -1,5 +1,5 @@
 name: Matter Health
-version: "0.1.0"
+version: 0.2.0
 slug: matter_health
 description: Explains why Matter and Thread devices misbehave, in words anyone can follow.
 url: https://github.com/skjall/home-assistant-matter-health
@@ -10,19 +10,13 @@ stage: experimental
 startup: application
 boot: auto
 init: false
-
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:heart-pulse
 panel_title: Matter Health
-
-# Reads the Matter Server and OpenThread Border Router add-on logs and their
-# APIs. Reading another add-on's log needs the manager role; nothing here
-# changes any add-on.
 hassio_api: true
 hassio_role: manager
 homeassistant_api: true
-
 options:
   retention_days: 30
   log_level: info
