@@ -1,5 +1,12 @@
 # Matter Health
 
+[![Open your Home Assistant instance and show the add add-on repository dialog with this repository pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fskjall%2Fhome-assistant-matter-health)
+
+[![GitHub Release](https://img.shields.io/github/v/release/skjall/home-assistant-matter-health?style=flat-square)](https://github.com/skjall/home-assistant-matter-health/releases)
+[![Quality](https://img.shields.io/github/actions/workflow/status/skjall/home-assistant-matter-health/quality.yml?branch=main&label=quality&style=flat-square)](https://github.com/skjall/home-assistant-matter-health/actions/workflows/quality.yml)
+[![License](https://img.shields.io/github/license/skjall/home-assistant-matter-health?style=flat-square)](LICENSE)
+![Stage](https://img.shields.io/badge/stage-experimental-orange?style=flat-square)
+
 A Home Assistant add-on that explains why Matter and Thread devices
 misbehave, in words anyone can follow.
 
@@ -22,9 +29,9 @@ time, connects what happens across them and tells you:
 Technical detail is one click away, for whoever wants it.
 
 <p align="center">
-  <img src="docs/images/findings.png" width="640" alt="Findings: a lasting Thread network split, naming the bridge apart and the one coordinating the main part, with the short split at its start folded in as a consequence; next to it, radio interference measured around one device">
+  <img src="docs/images/findings.png" width="620" alt="Findings: a lasting Thread network split, told from what happened to what to do, naming the bridge cut off and the one coordinating the rest; next to it, radio interference measured around one device">
   &nbsp;
-  <img src="docs/images/mobile-dark.png" width="200" alt="The same page on a phone in dark mode">
+  <img src="docs/images/mobile-dark.png" width="210" alt="The same finding on a phone in dark mode">
 </p>
 
 <p align="center">
@@ -60,8 +67,8 @@ touching the rest; see [docs/architecture.md](docs/architecture.md).
 
 ## Installation
 
-1. In Home Assistant, open **Settings → Add-ons → Add-on Store**, then
-   **⋮ → Repositories**, and add
+1. Click the **Add repository** button at the top, or in Home Assistant open
+   **Settings → Add-ons → Add-on Store**, then **⋮ → Repositories**, and add
    `https://github.com/skjall/home-assistant-matter-health`.
 2. Install **Matter Health** and start it.
 3. Open it from the sidebar.
