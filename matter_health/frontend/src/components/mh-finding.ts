@@ -48,6 +48,7 @@ export class MhFinding extends LitElement {
     nested: { type: Boolean, reflect: true },
     open: { type: Boolean, reflect: true },
     details: { state: true },
+    consequences: { state: true },
   };
 
   finding!: Finding;
@@ -56,6 +57,8 @@ export class MhFinding extends LitElement {
   nested = false;
   open = false;
   details = false;
+  /** Whether the consequences are shown; the cause comes first. */
+  consequences = false;
 
   static override styles = [
     base,
@@ -294,8 +297,24 @@ export class MhFinding extends LitElement {
         margin: 0 0 14px 50px;
       }
       .related .label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        justify-self: start;
+        padding: 0;
+        border: 0;
+        background: none;
         color: var(--mh-muted);
-        margin: 0 0 2px;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .related .label svg.icon {
+        width: 18px;
+        height: 18px;
+        transition: transform 0.15s;
+      }
+      .related .label[aria-expanded="true"] svg.icon {
+        transform: rotate(180deg);
       }
       :host([nested]) article {
         box-shadow: none;
@@ -503,10 +522,19 @@ export class MhFinding extends LitElement {
             </ol>
             ${this.related.length
               ? html`<div class="related">
-                  <div class="label">${t("finding.related_title")}</div>
-                  ${this.related.map(
-                    (f) => html`<mh-finding nested .finding=${f}></mh-finding>`,
-                  )}
+                  <button
+                    class="label"
+                    aria-expanded=${this.consequences ? "true" : "false"}
+                    @click=${() => (this.consequences = !this.consequences)}
+                  >
+                    ${t("finding.related_title")} (${this.related.length})
+                    ${icon(mdiChevronDown)}
+                  </button>
+                  ${this.consequences
+                    ? this.related.map(
+                        (f) => html`<mh-finding nested .finding=${f}></mh-finding>`,
+                      )
+                    : nothing}
                 </div>`
               : nothing}
             <div class="actions">
