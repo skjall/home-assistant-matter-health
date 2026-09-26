@@ -126,6 +126,9 @@
     "stranded": {
       "title": "1 dispositivo a pilas no ha vuelto tras un cambio en la red | {count} dispositivos a pilas no han vuelto tras un cambio en la red"
     },
+    "reboots": {
+      "title": "{device} se reinicia una y otra vez"
+    },
     "border_router_cut_off": {
       "title": "{apart} está aislado de la red Thread | {apart} están aislados de la red Thread"
     }
@@ -204,7 +207,13 @@
     "stranded_radio_quiet": "El canal de radio ya vuelve a estar tranquilo: una interferencia ya no explica que falten.",
     "stranded_radio_local": "El canal de radio solo está ocupado alrededor de algunos dispositivos que retransmiten; eso no explica que falten dispositivos en toda la casa.",
     "stranded_weak_battery": "La pila de {devices} estaba baja en la última lectura (menos de 1,3 V por celda).",
-    "stranded_impact": "Lo que informan estos dispositivos ya no llega a Home Assistant. Rara vez vuelven solos."
+    "stranded_impact": "Lo que informan estos dispositivos ya no llega a Home Assistant. Rara vez vuelven solos.",
+    "reboots": "{device} se reinició {count} veces en los últimos {days} días.",
+    "reboots_cause": "Los reinicios frecuentes suelen venir de una pila cuya tensión cae cuando el dispositivo transmite: una pila vieja, o una recargable que da menos por celda que una pila nueva. Con menos frecuencia es el firmware.",
+    "reboots_weak_battery": "La pila está débil: {volts} V por celda en la última lectura. Cuando el dispositivo transmite, la tensión cae y se reinicia.",
+    "reboots_brown_out": "El dispositivo indica él mismo el motivo: su tensión cayó. Casi siempre es la pila.",
+    "reboots_watchdog": "El dispositivo indica él mismo el motivo: su firmware se colgó y se reinició.",
+    "reboots_impact": "Tras cada reinicio tiene que volver a unirse a la red. Lo que ocurre mientras tanto no llega a Home Assistant, y los reinicios gastan la pila aún más rápido."
   },
   "origin": {
     "person": "por {by}",
@@ -275,7 +284,9 @@
     "interference_local": "Busca qué emite cerca de {devices} y aléjalo o ponlo en otro canal.",
     "interference_access_point": "Prueba a poner el canal de 2,4 GHz de {access_point} en el canal {suggest} y mira tras las próximas mediciones si el número baja.",
     "stranded": "Quita la pila de uno de los dispositivos unos 10 segundos y vuelve a ponerla; así se une de nuevo a la red. Si vuelve, haz lo mismo con los demás. Pulsar un botón o activar el dispositivo no basta.",
-    "stranded_weak_battery": "Aprovecha para poner una pila nueva en {devices}."
+    "stranded_weak_battery": "Aprovecha para poner una pila nueva en {devices}.",
+    "reboots": "Pon una pila nueva, no una recargable. Si {device} sigue reiniciándose después, comprueba si hay una actualización de firmware.",
+    "reboots_firmware": "Comprueba si hay una actualización de firmware para {device} e instálala."
   },
   "phase": {
     "first_contact": {
@@ -316,6 +327,7 @@
     "matter.node_removed": "Se quitó {name}",
     "matter.node_available": "{name} vuelve a estar accesible",
     "matter.node_unavailable": "{name} dejó de responder",
+    "matter.node_rebooted": "{name} se reinició | {name} se reinició {count} veces",
     "ha.power_off": "{name} se apagó",
     "ha.power_on": "{name} se encendió",
     "thread.leader_lost": "La red Thread perdió su coordinador",

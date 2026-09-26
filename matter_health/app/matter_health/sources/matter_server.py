@@ -22,7 +22,7 @@ from typing import Any, ClassVar
 
 import aiohttp
 
-from .. import batteries, bridges, kinds
+from .. import batteries, bridges, kinds, reboots
 from ..config import MATTER_SERVER_PORT, MATTER_SERVER_SLUG
 from ..engine import SOURCES, Source
 from ..supervisor import Supervisor
@@ -51,6 +51,7 @@ def wanted(path: str) -> bool:
         path == FEATURE_MAP
         or bridges.wanted(path)
         or batteries.wanted(path)
+        or reboots.wanted(path)
         or any(
             path.startswith(prefix)
             for transport in TRANSPORTS
@@ -187,7 +188,23 @@ class MatterServerSource(Source):
         await self.ctx.store.set_state(
             batteries.BATTERIES, batteries.batteries(self._attributes)
         )
+        await self._reboots_counted()
         await self._save_availability()
+
+    async def _reboots_counted(self) -> None:
+        """Tell each device that restarted since its count was last kept."""
+        known = await self.ctx.store.get_state(reboots.COUNTS) or {}
+        counts, found = reboots.rises(known, self._attributes)
+        if counts != known:
+            await self.ctx.store.set_state(reboots.COUNTS, counts)
+        for rise in found:
+            subject = rise.pop("subject")
+            await self.emit(
+                kinds.MATTER_NODE_REBOOTED,
+                subject,
+                name=self.ctx.names.get(subject),
+                **rise,
+            )
 
     async def _bridges_seen(self) -> None:
         """Follow the devices behind bridges: added, removed, reachable or not.

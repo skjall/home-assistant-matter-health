@@ -126,6 +126,9 @@
     "stranded": {
       "title": "1 appareil sur pile n'est pas revenu après un changement du réseau | {count} appareils sur pile ne sont pas revenus après un changement du réseau"
     },
+    "reboots": {
+      "title": "{device} redémarre sans cesse"
+    },
     "border_router_cut_off": {
       "title": "{apart} est coupé du réseau Thread | {apart} sont coupés du réseau Thread"
     }
@@ -204,7 +207,13 @@
     "stranded_radio_quiet": "Le canal radio est de nouveau calme – une perturbation n'explique plus leur absence.",
     "stranded_radio_local": "Le canal radio n'est occupé qu'autour de quelques appareils relais – cela n'explique pas que des appareils manquent dans toute la maison.",
     "stranded_weak_battery": "La pile de {devices} était faible au dernier relevé (moins de 1,3 V par élément).",
-    "stranded_impact": "Ce que ces appareils signalent n'arrive plus à Home Assistant. Ils reviennent rarement d'eux-mêmes."
+    "stranded_impact": "Ce que ces appareils signalent n'arrive plus à Home Assistant. Ils reviennent rarement d'eux-mêmes.",
+    "reboots": "{device} a redémarré {count} fois ces {days} derniers jours.",
+    "reboots_cause": "Les redémarrages fréquents viennent le plus souvent d'une pile dont la tension chute quand l'appareil émet – une pile usée, ou un accu qui fournit moins par élément qu'une pile neuve. Plus rarement, c'est le micrologiciel.",
+    "reboots_weak_battery": "La pile est faible : {volts} V par élément au dernier relevé. Quand l'appareil émet, la tension chute et il redémarre.",
+    "reboots_brown_out": "L'appareil indique lui-même la raison : sa tension a chuté. C'est presque toujours la pile.",
+    "reboots_watchdog": "L'appareil indique lui-même la raison : son micrologiciel s'est bloqué et a été redémarré.",
+    "reboots_impact": "Après chaque redémarrage, il doit rejoindre le réseau à nouveau. Ce qui se passe entre-temps n'arrive pas à Home Assistant, et les redémarrages vident la pile encore plus vite."
   },
   "origin": {
     "person": "par {by}",
@@ -275,7 +284,9 @@
     "interference_local": "Cherche ce qui émet près de {devices}, et éloigne-le ou mets-le sur un autre canal.",
     "interference_access_point": "Essaie de régler le canal 2,4 GHz de {access_point} sur le canal {suggest}, puis regarde après les prochaines mesures si le nombre baisse.",
     "stranded": "Retire la pile de l'un des appareils pendant environ 10 secondes et remets-la ; il rejoint alors le réseau à nouveau. S'il revient, fais de même avec les autres. Appuyer sur un bouton ou déclencher l'appareil ne suffit pas.",
-    "stranded_weak_battery": "Mets au passage une pile neuve dans {devices}."
+    "stranded_weak_battery": "Mets au passage une pile neuve dans {devices}.",
+    "reboots": "Mets une pile neuve, pas un accu. Si {device} redémarre encore ensuite, vérifie s'il existe une mise à jour du micrologiciel.",
+    "reboots_firmware": "Vérifie s'il existe une mise à jour du micrologiciel pour {device}, et installe-la."
   },
   "phase": {
     "first_contact": {
@@ -316,6 +327,7 @@
     "matter.node_removed": "{name} a été retiré",
     "matter.node_available": "{name} est de nouveau joignable",
     "matter.node_unavailable": "{name} ne répond plus",
+    "matter.node_rebooted": "{name} a redémarré | {name} a redémarré {count} fois",
     "ha.power_off": "{name} a été éteint",
     "ha.power_on": "{name} a été allumé",
     "thread.leader_lost": "Le réseau Thread a perdu son coordinateur",

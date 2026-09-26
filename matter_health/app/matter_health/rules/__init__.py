@@ -3,6 +3,6 @@
 Rules about one transport live with it, in ``matter_health.transports``.
 """
 
-from . import flaky, offline, pairing, server
+from . import flaky, offline, pairing, reboots, server
 
-__all__ = ["flaky", "offline", "pairing", "server"]
+__all__ = ["flaky", "offline", "pairing", "reboots", "server"]

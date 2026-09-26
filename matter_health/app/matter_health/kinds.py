@@ -69,6 +69,9 @@ MATTER_NODE_UNAVAILABLE: Final = "matter.node_unavailable"
 MATTER_NODE_ADDED: Final = "matter.node_added"
 #: subject: ``node:<id>``. data: name
 MATTER_NODE_REMOVED: Final = "matter.node_removed"
+#: A device restarted since it was last heard. subject: ``node:<id>``. data:
+#: name, count (restarts since), total (its own count), reason (of the last)
+MATTER_NODE_REBOOTED: Final = "matter.node_rebooted"
 #: The Matter Server knew devices before and now knows none. data: previous
 MATTER_NODES_LOST: Final = "matter.nodes_lost"
 #: The Matter Server has no route to a device's address. subject:

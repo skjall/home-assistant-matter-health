@@ -518,7 +518,13 @@ async def test_an_empty_server_that_was_empty_before_is_fine(
 async def test_each_transport_gets_its_devices(
     ctx: Context, store: Store, aiohttp_server: AiohttpServer
 ) -> None:
-    wifi = {"0/49/65532": 1, "0/54/0": "AgAAAAAB", "0/54/4": -50, "0/40/5": "x"}
+    wifi = {
+        "0/49/65532": 1,
+        "0/54/0": "AgAAAAAB",
+        "0/54/4": -50,
+        "0/40/5": "x",
+        "0/51/1": 5,
+    }
     fake = FakeMatterServer(
         {
             "start_listening": [
@@ -540,6 +546,8 @@ async def test_each_transport_gets_its_devices(
                 [
                     {"event": "attribute_updated", "data": [1, "0/54/4", -80]},
                     {"event": "attribute_updated", "data": [1, "0/6/0", True]},
+                    {"event": "attribute_updated", "data": [1, "0/51/4", 2]},
+                    {"event": "attribute_updated", "data": [1, "0/51/1", 8]},
                     {"event": "attribute_updated", "data": ["bad"]},
                     {
                         "event": "node_updated",
@@ -572,6 +580,12 @@ async def test_each_transport_gets_its_devices(
     assert stored["node:1"]["bssid"] == "02:00:00:00:00:01"
     links = [e for e in await store.events() if e.kind == kinds.WIFI_LINKS]
     assert [e.data["devices"][0]["quality"] for e in links] == ["strong", "weak"]
+    # The first count is where counting starts; a rise is a restart.
+    restarts = [e for e in await store.events() if e.kind == kinds.MATTER_NODE_REBOOTED]
+    assert [(e.subject, e.data["count"], e.data["reason"]) for e in restarts] == [
+        ("node:1", 3, "brown_out")
+    ]
+    assert await store.get_state("matter.reboot_counts") == {"node:1": 8}
 
 
 def test_the_thread_picture_leaves_other_networks_out() -> None:

@@ -102,6 +102,10 @@ interference rule can name one whose channel shares Thread's without knowing
 the Wi-Fi transport. The Matter Server source keeps what devices last said
 about their battery (Power Source, `47/11` voltage and `47/27` cells) in
 `batteries.py`, known even for a device that went away.
+It also keeps every device's own restart count (`0/51/1`) in `reboots.py`
+and tells each rise as an event, with the reason given (`0/51/4`): the count
+covers a device's whole life, so only its rises say how often it restarts
+now.
 It answers two questions for the page, in
 words every transport shares: its part of the network `picture` (gateway,
 relay, device, sleepy, unknown; links rated strong, medium or weak) and a
@@ -169,6 +173,7 @@ something updated the day before?".
 | `offline`       | core      | a device stays unreachable                             |
 | `flaky`         | core      | a device keeps dropping out for a moment               |
 | `pairing`       | core      | how far adding a device got, why it stopped, what to try |
+| `reboots`       | core      | a device restarts again and again, counted over the last days |
 | `server`        | core      | the Matter Server forgot its devices                   |
 | `mesh`          | thread    | the mesh lost its leader or fell apart                 |
 | `partitions`    | thread    | border routers stay in different partitions: the mesh is split |

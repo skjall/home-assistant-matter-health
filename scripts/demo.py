@@ -387,8 +387,21 @@ async def seed(engine: Engine, clock: Clock) -> None:
     # The balcony door's battery was worn when it last reported.
     await store.set_state(
         batteries.BATTERIES,
-        {"node:14": batteries.battery({"1/47/11": 1210})},
+        {
+            "node:14": batteries.battery({"1/47/11": 1210}),
+            "node:12": batteries.battery({"1/47/11": 1245}),
+        },
     )
+    # The hallway sensor, on a worn battery, restarts again and again.
+    for hours in (70, 52, 40, 30, 22, 14, 9, 5, 3):
+        clock.at = utcnow() - timedelta(hours=hours)
+        await emit(
+            kinds.MATTER_NODE_REBOOTED,
+            "node:12",
+            name=NAMES["node:12"],
+            count=2 if hours in (40, 9) else 1,
+            reason="power_on",
+        )
     await store.set_state(
         "otbr.node",
         {

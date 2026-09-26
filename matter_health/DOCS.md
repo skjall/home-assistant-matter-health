@@ -92,6 +92,14 @@ a time.
 Findings build up over time. Right after installing, the page is quiet
 until something happens.
 
+## Devices that restart
+
+Every restart of a device is noted in the timeline. A device that restarts
+ten times or more within a week is reported, usually because its battery
+cannot hold the voltage when it sends - an old battery, or a rechargeable
+one. Restarts before Matter Health was installed do not count; the report
+ends once the device has not restarted for two days.
+
 ## Devices that come and go
 
 Some devices are meant to be away now and then: an appliance plugged in only

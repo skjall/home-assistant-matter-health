@@ -43,6 +43,7 @@ TIMELINE_KINDS: tuple[str, ...] = (
     kinds.MATTER_NODE_REMOVED,
     kinds.MATTER_NODE_AVAILABLE,
     kinds.MATTER_NODE_UNAVAILABLE,
+    kinds.MATTER_NODE_REBOOTED,
     kinds.HA_POWER_OFF,
     kinds.HA_POWER_ON,
     kinds.THREAD_LEADER_LOST,
