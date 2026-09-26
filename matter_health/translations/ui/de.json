@@ -196,6 +196,7 @@
     "border_router_cut_off_impact": "Das übrige Netz ist davon nicht betroffen. Nur Geräte, die direkt an {apart} hängen, erreicht Home Assistant nicht. | Das übrige Netz ist davon nicht betroffen. Nur Geräte, die direkt an einer dieser Brücken hängen, erreicht Home Assistant nicht.",
     "thread_split_ended_joined": "{apart} hat sich dem Hauptteil wieder angeschlossen. | {apart} haben sich dem Hauptteil wieder angeschlossen.",
     "thread_split_ended_gone": "Die Trennung endete, weil {apart} verstummt ist – nicht, weil es sich wieder angeschlossen hat. | Die Trennung endete, weil {apart} verstummt sind – nicht, weil sie sich wieder angeschlossen haben.",
+    "thread_split_ended_heard": "{apart} war gar nicht getrennt: Die Geräte des Hauptteils hören es als Nachbarn. Nur seine Ankündigung nannte einen anderen Teil. | {apart} waren gar nicht getrennt: Die Geräte des Hauptteils hören sie als Nachbarn. Nur ihre Ankündigung nannte einen anderen Teil.",
     "stranded_cause": "Batteriegeräte schlafen fast immer und sprechen nur mit dem Router, an dem sie hängen. Ändert sich das Netz, während sie schlafen, findet Home Assistant sie danach oft nicht mehr – und sie selbst merken davon nichts.",
     "stranded_trigger": "Das Thread-Netz hat sich verändert.",
     "stranded": "{devices} ist danach weggefallen und nicht zurückgekommen. | {devices} sind danach nacheinander weggefallen und nicht zurückgekommen.",

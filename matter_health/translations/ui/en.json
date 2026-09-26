@@ -196,6 +196,7 @@
     "border_router_cut_off_impact": "The rest of the network is not affected. Only devices hanging directly on {apart} cannot be reached by Home Assistant. | The rest of the network is not affected. Only devices hanging directly on one of these bridges cannot be reached by Home Assistant.",
     "thread_split_ended_joined": "{apart} joined the main part again. | {apart} joined the main part again.",
     "thread_split_ended_gone": "The split ended because {apart} went quiet – not because it joined again. | The split ended because {apart} went quiet – not because they joined again.",
+    "thread_split_ended_heard": "{apart} was never apart: the devices of the main part hear it as their neighbour. Only its announcement named another part. | {apart} were never apart: the devices of the main part hear them as their neighbours. Only their announcement named another part.",
     "stranded_cause": "Battery devices sleep nearly all the time and talk only to the router they hang on. When the network changes while they sleep, Home Assistant often cannot find them afterwards – and they do not notice.",
     "stranded_trigger": "The Thread network changed.",
     "stranded": "{devices} dropped out afterwards and has not come back. | {devices} dropped out one after another afterwards and have not come back.",

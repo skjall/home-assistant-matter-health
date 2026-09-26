@@ -14,6 +14,7 @@ from matter_health.transports.thread.transport import (
     ThreadTransport,
     announced_role,
     link_quality,
+    neighbours,
     partitions,
     rates,
 )
@@ -221,6 +222,43 @@ def test_border_routers_are_grouped_by_partition() -> None:
     assert [r["name"] for r in parts[1]["border_routers"]] == ["Hall", "Kitchen"]
 
 
+def test_a_border_router_is_where_the_devices_hear_it() -> None:
+    routers = [
+        {
+            "subject": "br:01",
+            "name": "HA",
+            "partition": "aa",
+            "vendor": "Home Assistant",
+        },
+        {"subject": "br:02", "name": "TV", "partition": "bb"},
+        {"subject": "br:03", "name": "Hall", "partition": "cc"},
+    ]
+
+    parts = partitions(routers, {"02": "aa", "07": "cc"})
+
+    # TV is heard in Home Assistant's part; Hall, heard by none, keeps its word.
+    assert [p["partition"] for p in parts] == ["aa", "cc"]
+    assert parts[0]["border_routers"][1] == {
+        "subject": "br:02",
+        "name": "TV",
+        "role": None,
+        "announced": "bb",
+    }
+    assert "announced" not in parts[1]["border_routers"][0]
+
+
+def test_neighbours_heard_recently() -> None:
+    table = [
+        {"0": 0x1636E4CD29816721, "1": 15},
+        {"0": 0x2A, "1": 900},  # long gone
+        {"0": "odd", "1": 1},
+        "odd",
+    ]
+
+    assert neighbours(table) == ["1636e4cd29816721"]
+    assert neighbours(None) == []
+
+
 def test_counter_rates_per_hour() -> None:
     before = {"tx": 1000, "retry": 100, "cca": 10, "busy": 1, "at": T0.isoformat()}
     later = (T0 + timedelta(minutes=30)).isoformat()
@@ -327,7 +365,7 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
         paths[node] = args["attribute_path"]
         assert command == "read_attribute"
         if node == 4:
-            return {"0/53/9": 0x752E1DB9}
+            return {"0/53/9": 0x752E1DB9, "0/53/7": [{"0": 10, "1": 5}]}
         if node == 5:
             raise RuntimeError("0: gone")
         if node == 6:
@@ -339,6 +377,7 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
             "0/53/36": counts[node] // 100,
             "0/53/38": 0,
             "0/53/9": 0x752E1DB9 if node == 1 else 0xBB,
+            "0/53/7": [{"0": 10, "1": 20}],
         }
 
     await transport.measure(ask)
@@ -350,12 +389,14 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
     await transport.measure(ask)
 
     assert asked == [1, 2, 4, 5, 6] * 2
-    # Without counters, only the partition is asked for.
-    assert paths[4] == ["0/53/9"]
+    # Without counters, only the partition and neighbours are asked for.
+    assert paths[4] == ["0/53/9", "0/53/7"]
     assert await store.get_state("thread.router_partitions") == {
         "752e1db9": 2,
         "000000bb": 1,
     }
+    # Each neighbour is in the partition of most of those that hear it.
+    assert await store.get_state("thread.heard") == {"000000000000000a": "752e1db9"}
     assert await store.get_state("thread.roles") == {
         "node:1": 5,
         "node:2": 6,
@@ -416,7 +457,11 @@ async def test_the_thread_picture_tells_roles_parts_and_interference(
         ],
     )
     await store.set_state(
-        "thread.partitions", [{"partition": "aa"}, {"partition": "bb"}]
+        "thread.partitions",
+        [
+            {"partition": "aa", "border_routers": [{"subject": "br:1"}]},
+            {"partition": "bb", "border_routers": [{"subject": "br:2"}]},
+        ],
     )
     await store.set_state("thread.roles", {"node:1": 6})
     await store.set_state(

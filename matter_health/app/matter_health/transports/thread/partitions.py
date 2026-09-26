@@ -17,7 +17,9 @@ The devices that stay awake are asked which partition they are in: when
 none of them is in the other part, the mesh is whole and only that border
 router is cut off from it. A split ends either way the announcements agree
 again - the router rejoined, or it went quiet and dropped out - and the
-finding says which.
+finding says which. A third way is no end of a split at all: the devices'
+neighbour tables showed that the router was in the main part all along, and
+only its announcement named another.
 """
 
 from __future__ import annotations
@@ -88,18 +90,27 @@ class PartitionRule(Rule):
                     r["name"] for p in state["parts"][1:] for r in p["border_routers"]
                 }
                 silent = sorted(apart & set(event.data.get("gone") or []))
+                misspoke = sorted(
+                    apart
+                    & {
+                        r["name"]
+                        for p in parts
+                        for r in p["border_routers"]
+                        if r.get("announced")
+                    }
+                )
+                key, told = "link.thread_split_ended_joined", sorted(apart)
+                if silent:
+                    key, told = "link.thread_split_ended_gone", silent
+                elif misspoke:
+                    key, told = "link.thread_split_ended_heard", misspoke
                 finding = self.describe(state)
                 finding.chain.insert(
                     -2,
                     Link(
                         Role.EFFECT,
-                        "link.thread_split_ended_gone"
-                        if silent
-                        else "link.thread_split_ended_joined",
-                        {
-                            "apart": ", ".join(silent or sorted(apart)),
-                            "count": len(silent or apart),
-                        },
+                        key,
+                        {"apart": ", ".join(told), "count": len(told)},
                         at=event.at,
                     ),
                 )

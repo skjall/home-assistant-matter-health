@@ -130,3 +130,20 @@ async def test_a_border_router_alone_in_its_part_is_cut_off(
     assert ended.ended_at == at(60)
     assert chain_keys(ended)[2] == "link.thread_split_ended_gone"
     assert ended.chain[2].params == {"apart": "TV", "count": 1}
+
+
+async def test_a_router_the_main_part_hears_was_never_apart(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 0, kinds.THREAD_PARTITIONS, parts=SPLIT)
+    await tick_at(engine, clock, 6)
+    # The devices' neighbour tables put both in the main part.
+    heard = part("aa", "Home Assistant", "Kitchen", "TV", "Hall", leader="Kitchen")
+    for router in heard["border_routers"][2:]:
+        router["announced"] = "bb"
+    await emit_at(ctx, clock, 20, kinds.THREAD_PARTITIONS, parts=[heard])
+
+    ended = await only_finding(store)
+    assert ended.ended_at == at(20)
+    assert chain_keys(ended)[2] == "link.thread_split_ended_heard"
+    assert ended.chain[2].params == {"apart": "Hall, TV", "count": 2}

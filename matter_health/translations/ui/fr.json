@@ -196,6 +196,7 @@
     "border_router_cut_off_impact": "Le reste du réseau n'est pas touché. Seuls les appareils reliés directement à {apart} sont injoignables pour Home Assistant. | Le reste du réseau n'est pas touché. Seuls les appareils reliés directement à l'un de ces ponts sont injoignables pour Home Assistant.",
     "thread_split_ended_joined": "{apart} a rejoint la partie principale. | {apart} ont rejoint la partie principale.",
     "thread_split_ended_gone": "La séparation a pris fin parce que {apart} s'est tu – pas parce qu'il a rejoint le réseau. | La séparation a pris fin parce que {apart} se sont tus – pas parce qu'ils ont rejoint le réseau.",
+    "thread_split_ended_heard": "{apart} n'était pas séparé : les appareils de la partie principale l'entendent comme voisin. Seule son annonce indiquait une autre partie. | {apart} n'étaient pas séparés : les appareils de la partie principale les entendent comme voisins. Seule leur annonce indiquait une autre partie.",
     "stranded_cause": "Les appareils sur pile dorment presque tout le temps et ne parlent qu'au routeur auquel ils sont reliés. Si le réseau change pendant leur sommeil, Home Assistant ne les retrouve souvent plus ensuite – et eux ne s'en aperçoivent pas.",
     "stranded_trigger": "Le réseau Thread a changé.",
     "stranded": "{devices} a décroché ensuite et n'est pas revenu. | {devices} ont décroché l'un après l'autre ensuite et ne sont pas revenus.",

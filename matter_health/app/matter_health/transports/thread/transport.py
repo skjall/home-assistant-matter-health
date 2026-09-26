@@ -22,6 +22,12 @@ the channel busy since the last reading shows where on the channel something
 else is sending: everywhere alike, or around a few devices. The partitions
 tell how much of the mesh a border router's part really holds; the Matter
 Server's cached values of them are not kept current.
+
+A border router's announcement of its partition is not to be trusted on its
+own: some keep announcing a partition they left long ago, even across a
+restart. What the devices' neighbour tables say is: a router lists another
+as its neighbour only when both are in the same partition. A border router
+heard by the devices of one partition is in that one, whatever it announces.
 """
 
 from __future__ import annotations
@@ -76,6 +82,13 @@ COUNTERS = {"tx": "0/53/22", "retry": "0/53/33", "cca": "0/53/36", "busy": "0/53
 #: The partition a device is in.
 PARTITION = "0/53/9"
 
+#: The routers and children a device currently hears, by extended address.
+NEIGHBOURS = "0/53/7"
+
+#: A neighbour heard this recently is still there; routers hear each other
+#: every half minute or so.
+HEARD_WITHIN_S = 180
+
 #: The cluster's routing role, and its feature map: bit 3 means the device
 #: keeps MAC counters.
 ROUTING_ROLE = "0/53/1"
@@ -125,17 +138,26 @@ def announced_role(raw: dict[str, Any]) -> str | None:
     return ANNOUNCED_ROLES[(bitmap >> 9) & 0b11]
 
 
-def partitions(routers: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+def partitions(
+    routers: Iterable[dict[str, Any]], heard: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
     """Group the border routers of the home network by the partition they are in.
 
-    Home Assistant's own border router's partition comes first, then the
-    others by size. Each part names its leader, where one of its border
-    routers leads it.
+    A border router heard by the devices of a partition is in that one; only
+    one no device heard is taken at its word. Home Assistant's own border
+    router's partition comes first, then the others by size. Each part names
+    its leader, where one of its border routers leads it.
     """
     parts: dict[str, list[dict[str, Any]]] = {}
     for router in routers:
-        if router.get("own") is not False and router.get("partition"):
-            parts.setdefault(str(router["partition"]), []).append(router)
+        announced = router.get("partition")
+        ext = str(router.get("subject") or "").removeprefix("br:")
+        partition = (heard or {}).get(ext) or announced
+        if router.get("own") is not False and partition:
+            member = dict(router)
+            if announced and announced != partition:
+                member["announced"] = announced
+            parts.setdefault(str(partition), []).append(member)
 
     def order(item: tuple[str, list[dict[str, Any]]]) -> tuple[bool, int, str]:
         ours = any(r.get("vendor") == "Home Assistant" for r in item[1])
@@ -148,12 +170,29 @@ def partitions(routers: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                 (r["name"] for r in members if r.get("role") == "leader"), None
             ),
             "border_routers": [
-                {"subject": r["subject"], "name": r["name"], "role": r.get("role")}
+                {
+                    "subject": r["subject"],
+                    "name": r["name"],
+                    "role": r.get("role"),
+                    **({"announced": r["announced"]} if "announced" in r else {}),
+                }
                 for r in sorted(members, key=_by_name)
             ],
         }
         for partition, members in sorted(parts.items(), key=order)
     ]
+
+
+def neighbours(table: Any) -> list[str]:
+    """Return the extended addresses a device heard recently, in hex."""
+    found = []
+    for entry in table if isinstance(table, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        ext, age = entry.get("0"), entry.get("1")
+        if isinstance(ext, int) and isinstance(age, int) and age <= HEARD_WITHIN_S:
+            found.append(f"{ext:016x}")
+    return found
 
 
 def rates(
@@ -350,11 +389,12 @@ class ThreadTransport(Transport):
         }
 
     async def measure(self, ask: Ask) -> None:
-        """Read the radio counters and partition of the devices that stay awake.
+        """Read the radio counters, partition and neighbours of awake devices.
 
         What they counted since the last reading, per hour, is kept for the
-        page and reported to the rules; how many are in each partition goes
-        with the border routers' partitions.
+        page and reported to the rules; how many are in each partition, and
+        which partition hears each neighbour, go with the border routers'
+        partitions.
         """
         nodes = await self.ctx.store.get_state("matter.nodes") or {}
         away = set(nodes.get("unavailable", []))
@@ -364,11 +404,14 @@ class ThreadTransport(Transport):
         now = self.ctx.now().isoformat()
         measured: dict[str, dict[str, Any]] = {}
         partitions_of: Counter[str] = Counter()
+        heard: dict[str, Counter[str]] = {}
         for subject in self._awake:
             if subject in away:
                 continue
             counting = subject in self._measured
-            paths = [*COUNTERS.values(), PARTITION] if counting else [PARTITION]
+            paths = [*COUNTERS.values(), PARTITION, NEIGHBOURS]
+            if not counting:
+                paths = [PARTITION, NEIGHBOURS]
             try:
                 answer = await asyncio.wait_for(
                     ask(
@@ -383,6 +426,8 @@ class ThreadTransport(Transport):
             partition = (answer or {}).get(PARTITION)
             if isinstance(partition, int):
                 partitions_of[f"{partition:08x}"] += 1
+                for ext in neighbours((answer or {}).get(NEIGHBOURS)):
+                    heard.setdefault(ext, Counter())[f"{partition:08x}"] += 1
             if not counting:
                 continue
             values = {name: (answer or {}).get(path) for name, path in COUNTERS.items()}
@@ -404,6 +449,12 @@ class ThreadTransport(Transport):
             )
         await self.ctx.store.set_state(
             "thread.router_partitions", dict(partitions_of) if partitions_of else None
+        )
+        await self.ctx.store.set_state(
+            "thread.heard",
+            {ext: count.most_common(1)[0][0] for ext, count in sorted(heard.items())}
+            if partitions_of
+            else None,
         )
         await self._announce_parts()
 
@@ -489,7 +540,8 @@ class ThreadTransport(Transport):
         border routers of Home Assistant's network that went quiet are named,
         so an end of the split can be told from a router gone silent.
         """
-        parts = partitions(self._border_routers.values())
+        heard = await self.ctx.store.get_state("thread.heard")
+        parts = partitions(self._border_routers.values(), heard)
         counts = await self.ctx.store.get_state("thread.router_partitions")
         for part in parts:
             part["routers"] = counts.get(part["partition"], 0) if counts else None
@@ -538,6 +590,9 @@ class ThreadTransport(Transport):
         announced = {r["subject"]: r for r in routers}
         parts = await self.ctx.store.get_state("thread.partitions") or []
         main = parts[0]["partition"] if len(parts) > 1 else None
+        part_of = {
+            r["subject"]: p["partition"] for p in parts for r in p["border_routers"]
+        }
         roles: dict[str, int] = await self.ctx.store.get_state("thread.roles") or {}
         radio = await self.ctx.store.get_state("thread.interference") or {}
         busy = {s: r.get("cca_per_hour") for s, r in radio.get("devices", {}).items()}
@@ -551,7 +606,7 @@ class ThreadTransport(Transport):
                 router = announced.get(subject, {})
                 entry["role"] = router.get("role")
                 # In another partition than Home Assistant's border router.
-                entry["apart"] = main is not None and router.get("partition") not in (
+                entry["apart"] = main is not None and part_of.get(subject) not in (
                     None,
                     main,
                 )

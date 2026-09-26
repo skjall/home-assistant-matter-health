@@ -196,6 +196,7 @@
     "border_router_cut_off_impact": "El resto de la red no está afectado. Solo los dispositivos conectados directamente a {apart} no son accesibles para Home Assistant. | El resto de la red no está afectado. Solo los dispositivos conectados directamente a uno de estos puentes no son accesibles para Home Assistant.",
     "thread_split_ended_joined": "{apart} se ha unido de nuevo a la parte principal. | {apart} se han unido de nuevo a la parte principal.",
     "thread_split_ended_gone": "La separación terminó porque {apart} dejó de anunciarse, no porque se haya unido de nuevo. | La separación terminó porque {apart} dejaron de anunciarse, no porque se hayan unido de nuevo.",
+    "thread_split_ended_heard": "{apart} nunca estuvo separado: los dispositivos de la parte principal lo oyen como vecino. Solo su anuncio indicaba otra parte. | {apart} nunca estuvieron separados: los dispositivos de la parte principal los oyen como vecinos. Solo su anuncio indicaba otra parte.",
     "stranded_cause": "Los dispositivos a pilas duermen casi siempre y solo hablan con el router al que están conectados. Si la red cambia mientras duermen, Home Assistant a menudo ya no los encuentra después, y ellos no se dan cuenta.",
     "stranded_trigger": "La red Thread ha cambiado.",
     "stranded": "{devices} se desconectó después y no ha vuelto. | {devices} se desconectaron uno tras otro después y no han vuelto.",

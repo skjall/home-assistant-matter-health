@@ -38,7 +38,9 @@ for relaying devices, how often they found the radio channel busy.
 
 When the mesh has split into parts that do not reach each other, the bridges
 in the other part are marked, and one finding names them and the bridge that
-coordinates the main part. If every relaying device is in the main part
+coordinates the main part. A bridge's own word on its part is checked
+against the devices around it: one they hear as their neighbour is in their
+part, whatever it announces. If every relaying device is in the main part
 and only a bridge is apart, that bridge is cut off: only devices hanging on it
 are affected. The finding ends saying whether the bridge rejoined or went
 quiet. A bridge is taken as gone when it has not announced itself for half an

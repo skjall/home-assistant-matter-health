@@ -90,7 +90,11 @@ minutes Thread also reads, with `read_attribute` - the cached values are not
 kept current - the partition (`0/53/9`) of every awake device and the MAC
 counters (`0/53/22`, `/33`, `/36`, `/38`) of those that relay, turns the
 counters' difference to the last reading into rates per hour, and counts the
-relaying devices per partition. A border router alone in its partition while
+relaying devices per partition. Their neighbour tables (`0/53/7`) tell which
+partition hears each border router: a router lists another as its neighbour
+only within one partition, so a border router heard there is in it, whatever
+it announces - some keep announcing a partition they left, even across a
+restart. A border router no device hears and alone in its partition while
 all relaying devices are in the main one is cut off, not the mesh split. The
 Thread channel (`0/53/0`) is kept too. The Wi-Fi transport keeps its access
 points and their channels under the transport-neutral `access_points`, so the
