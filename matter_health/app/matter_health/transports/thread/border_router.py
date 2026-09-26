@@ -2,10 +2,12 @@
 
 Border routers connect the Thread mesh to the home network. Each one that
 disappears removes a way in; the last one takes every Thread device offline.
-The transport reports a router gone only after half an hour of silence, so
-a restart or a pause never becomes a finding. The finding starts when the
-router last announced itself: that is when it went, and a switch turned off
-between that announcement and the next one due is what took its power.
+The transport reports a router gone only after it has been silent longer
+than it usually pauses, so a restart or a pause never becomes a finding.
+Its return closes the finding, even if the add-on restarted meanwhile. The
+finding starts when the router last announced itself: that is when it went,
+and a switch turned off between that announcement and the next one due is
+what took its power.
 
 Whether a border router is powered through a switch is not known anywhere; it
 can only be concluded from what happens. One coincidence proves nothing, so
@@ -22,10 +24,10 @@ from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
 from ... import kinds
-from ...engine import RULES, Context, Rule
+from ...engine import RULES, Rule
 from ...model import Confidence, Event, Finding, Link, Role, Severity
 from ...rules.common import power_off_link
-from .transport import SILENT_AFTER
+from .transport import SILENT_AT_MOST
 
 #: A switch turned off this shortly before the last announcement may still
 #: have taken the power: announcements are seen a poll or two late.
@@ -37,7 +39,7 @@ ANNOUNCED_EVERY = timedelta(minutes=20)
 
 #: After a suspected switch went off, its router is reported gone within
 #: this: its next announcement missed, then the silence waited out.
-REPORTED_WITHIN = ANNOUNCED_EVERY + SILENT_AFTER + timedelta(minutes=5)
+REPORTED_WITHIN = ANNOUNCED_EVERY + SILENT_AT_MOST + timedelta(minutes=5)
 
 #: A border router needs to boot and be seen by a poll again after its power
 #: returns; coming back later than this is not taken as proof.
@@ -68,12 +70,6 @@ class BorderRouterRule(Rule):
             return frozenset()
         return cls.part_of
 
-    def __init__(self, ctx: Context) -> None:
-        """Nothing is missing at start."""
-        super().__init__(ctx)
-        self.gone: dict[str, Event] = {}
-        self.reported: set[str] = set()
-
     async def on_event(self, event: Event) -> None:
         """Follow routers leaving and returning, and switches going off."""
         if event.kind == kinds.HA_POWER_OFF:
@@ -84,23 +80,26 @@ class BorderRouterRule(Rule):
             return
         name = str(event.data.get("name") or event.subject)
         if event.kind == kinds.BORDER_ROUTER_GONE:
-            self.gone[name] = event
             await self._router_gone(name, event)
             # Its silence has been waited out already.
-            self.reported.add(name)
             await self.ctx.publish(await self.describe(event))
             return
         await self._router_back(name, event)
-        vanished = self.gone.pop(name, None)
-        if vanished and name in self.reported:
-            self.reported.discard(name)
-            finding = await self.describe(vanished)
-            finding.ended_at = event.at
-            await self.ctx.publish(finding)
+        # Read back from the store: what is kept in memory does not survive a
+        # restart between leaving and returning.
+        for finding in await self.ctx.store.findings(event.at):
+            if (
+                finding.ended_at is None
+                and finding.rule == self.name
+                and finding.key.startswith(f"border_router:{name}:")
+            ):
+                finding.ended_at = event.at
+                await self.ctx.publish(finding)
 
     async def on_tick(self) -> None:
-        """Drop suspicions that did not hold."""
+        """Close what a returned router left open; drop suspicions that failed."""
         now = self.ctx.now()
+        await self._close_returned(now)
         suspects = await self._suspects()
         for pair_key, pair in list(suspects.items()):
             watch = pair.get("watch_until")
@@ -108,6 +107,28 @@ class BorderRouterRule(Rule):
                 # The switch went off and the router stayed.
                 await self._drop(suspects, pair_key, now)
         await self._save(suspects)
+
+    async def _close_returned(self, now: datetime) -> None:
+        """Close findings of routers heard again since they went.
+
+        Their return may have been missed - announced while the add-on was
+        not running, or before this was checked at all.
+        """
+        heard = {
+            r.get("name"): r.get("last_seen")
+            for r in await self.ctx.store.get_state("border_routers") or []
+        }
+        for finding in await self.ctx.store.findings(now):
+            last = heard.get(finding.params.get("border_router"))
+            if (
+                finding.ended_at is None
+                and finding.rule == self.name
+                and finding.key.startswith("border_router:")
+                and isinstance(last, str)
+                and datetime.fromisoformat(last) > finding.started_at
+            ):
+                finding.ended_at = now
+                await self.ctx.publish(finding)
 
     async def describe(self, event: Event) -> Finding:
         """Build the finding for a border router that stayed away."""

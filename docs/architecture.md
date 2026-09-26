@@ -85,7 +85,10 @@ border routers and radio links. Border routers announce their role and the
 partition they are in. Whether one is gone is judged by its own last
 announcement (`lastSeen`), not by the list: the Matter Server keeps listing an
 unplugged one, and drops a present one for minutes at night. One not heard
-for half an hour is gone, and it went when it was last heard. Every ten
+for longer than its own longest recent pause - at least half an hour, at
+most an hour and a half - is gone, and it went when it was last heard. Home
+Assistant's own border router counts as there while the OTBR add-on answers
+and takes part in the mesh. Every ten
 minutes Thread also reads, with `read_attribute` - the cached values are not
 kept current - the partition (`0/53/9`) of every awake device and the MAC
 counters (`0/53/22`, `/33`, `/36`, `/38`) of those that relay, turns the

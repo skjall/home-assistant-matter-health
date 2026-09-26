@@ -12,6 +12,7 @@ text; this add-on has no use for it and never asks.
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
 import aiohttp
@@ -28,6 +29,10 @@ POLL_S = 5.0
 
 #: The only endpoint read. Kept as a constant so a test can prove it.
 NODE_PATH = "/node"
+
+#: When the border router last answered; written at most this often.
+ALIVE = "otbr.alive"
+ALIVE_EVERY = timedelta(minutes=1)
 
 
 @SOURCES.register("otbr")
@@ -48,9 +53,16 @@ class OtbrSource(Source):
             previous: dict[str, Any] | None = await self.ctx.store.get_state(
                 "otbr.node"
             )
+            alive: datetime | None = None
             while True:
                 node = await self._read_node(session, base)
                 await self.connected()
+                now = self.ctx.now()
+                if alive is None or now - alive >= ALIVE_EVERY:
+                    # Its own word that it runs, for when its announcements
+                    # do not come through.
+                    await self.ctx.store.set_state(ALIVE, now.isoformat())
+                    alive = now
                 if node != previous:
                     await self._report(previous, node)
                     await self.ctx.store.set_state("otbr.node", node)

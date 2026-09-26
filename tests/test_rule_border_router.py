@@ -62,6 +62,43 @@ async def test_a_router_gone_is_told_from_its_last_announcement(
     assert finding.chain[1].at == at(-5)
 
 
+async def test_its_return_closes_it_after_a_restart_too(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 40, kinds.BORDER_ROUTER_GONE, TV_SUBJECT, **TV)
+    # The add-on restarts: the rule starts afresh.
+    make_engine(ctx, rules=[BorderRouterRule])
+    await emit_at(ctx, clock, 60, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
+
+    assert (await only_finding(store)).ended_at == at(60)
+
+
+async def test_a_return_missed_altogether_closes_it_on_a_tick(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(5).isoformat(),
+        **TV,
+    )
+    # Still listed as last heard when it went: nothing to close.
+    router = {"name": "Living Room TV", "last_seen": at(5).isoformat()}
+    await store.set_state("border_routers", [router, {"name": "Hub"}])
+    await tick_at(engine, clock, 41)
+    assert (await only_finding(store)).ended_at is None
+    # Heard again since.
+    await store.set_state(
+        "border_routers", [{**router, "last_seen": at(50).isoformat()}]
+    )
+    await tick_at(engine, clock, 60)
+
+    assert (await only_finding(store)).ended_at == at(60)
+
+
 async def test_a_long_absence_without_known_cause(
     ctx: Context, store: Store, clock: Clock, engine: Engine
 ) -> None:
@@ -254,13 +291,13 @@ async def test_staying_while_the_switch_went_off_closes_it(
 
     await power_off(ctx, clock, 200)
     # Its next announcement is missed, then the silence waited out.
-    await tick_at(engine, clock, 254)
+    await tick_at(engine, clock, 314)
     (open_still,) = switched(await store.findings())
     assert open_still.ended_at is None
-    await tick_at(engine, clock, 256)
+    await tick_at(engine, clock, 316)
 
     (finding,) = switched(await store.findings())
-    assert finding.ended_at == at(256)
+    assert finding.ended_at == at(316)
 
 
 async def test_a_single_hit_is_forgotten_quietly(

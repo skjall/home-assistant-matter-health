@@ -43,8 +43,8 @@ against the devices around it: one they hear as their neighbour is in their
 part, whatever it announces. If every relaying device is in the main part
 and only a bridge is apart, that bridge is cut off: only devices hanging on it
 are affected. The finding ends saying whether the bridge rejoined or went
-quiet. A bridge is taken as gone when it has not announced itself for half an
-hour; a plug switched off shortly before it was last heard is named. When
+quiet. A bridge is taken as gone when it has been silent longer than it usually
+pauses, at least half an hour; a plug switched off shortly before it was last heard is named. When
 relaying devices keep finding the channel
 busy, a finding tells whether it happens everywhere - usually a Wi-Fi network
 on an overlapping channel, often a neighbour's - or around a few devices,

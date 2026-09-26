@@ -6,11 +6,18 @@ the border routers every minute, so their disappearance can be tied to a
 switch turned off just before, and the radio links every ten minutes, since
 link quality changes slowly and the server takes a while to collect it.
 
-A border router is gone when it has not announced itself for half an hour.
-The Matter Server's list is no guide: entries drop out of it for minutes at
-a time, notably at night, and one that was unplugged stays in it. The last
+A border router is gone when it has not announced itself for longer than it
+usually pauses between two announcements - at least half an hour, at most an
+hour and a half. The pauses differ from router to router and some exceed
+half an hour now and then; each router's longest recent ones are kept. The
+Matter Server's list is no guide: entries drop out of it for minutes at a
+time, notably at night, and one that was unplugged stays in it. The last
 announcement also tells when a router went quiet, long before its silence
 could be told from a pause.
+
+Home Assistant's own border router is asked directly: while the
+OpenThread Border Router add-on answers and takes part in the mesh, it is
+there, whether or not its announcements come through.
 
 Border routers say more in their announcements than their name: their role
 in the mesh and the partition they belong to. Border routers of one network
@@ -41,6 +48,7 @@ from typing import Any, ClassVar
 
 from ... import kinds
 from .. import TRANSPORTS, Ask, Transport
+from .otbr import ALIVE
 from .tree import build_tree, remember_parents
 
 #: Link quality changes slowly; the topology is also expensive for the server
@@ -72,9 +80,22 @@ CONNECTED_ROLES = frozenset({"router", "leader", "child"})
 #: A border router's role in its announcement's state bitmap (bits 9-10).
 ANNOUNCED_ROLES = {0: "disabled", 1: "child", 2: "router", 3: "leader"}
 
-#: A border router that has not announced itself for this long is gone. Some
-#: pause for a quarter of an hour at night; one without power never returns.
+#: A border router that has not announced itself for this long is gone,
+#: unless it usually pauses longer; never later than ``SILENT_AT_MOST``.
 SILENT_AFTER = timedelta(minutes=30)
+SILENT_AT_MOST = timedelta(minutes=90)
+
+#: A router's usual pause is judged from this many recent ones, and only
+#: once there are a few; the longest counts, with some room to spare.
+PAUSES_KEPT = 30
+PAUSES_NEEDED = 5
+PAUSE_ROOM = 1.25
+
+#: The pauses between announcements, by router, across restarts.
+PAUSES = "thread.announcement_pauses"
+
+#: Home Assistant's border router answered this recently: it is there.
+ALIVE_WITHIN = timedelta(minutes=3)
 
 #: The radio counters of Thread Network Diagnostics, by what they count.
 COUNTERS = {"tx": "0/53/22", "retry": "0/53/33", "cca": "0/53/36", "busy": "0/53/38"}
@@ -341,6 +362,8 @@ class ThreadTransport(Transport):
         self._known: dict[str, dict[str, Any]] = {}
         #: When each last announced itself, in ms since the epoch.
         self._seen_at: dict[str, int] = {}
+        #: The recent pauses between announcements, in ms, by name.
+        self._pauses: dict[str, list[int]] | None = None
         #: Border routers of Home Assistant's network that went quiet.
         self._gone: set[str] = set()
         self._first_round = True
@@ -477,6 +500,9 @@ class ThreadTransport(Transport):
         recent; one listed with an old announcement has gone quiet.
         """
         now_ms = int(self.ctx.now().timestamp() * 1000)
+        if self._pauses is None:
+            self._pauses = dict(await self.ctx.store.get_state(PAUSES) or {})
+        paused = False
         for raw in announced or []:
             ext = str(raw.get("extAddressHex") or "").lower()
             if not ext:
@@ -486,6 +512,11 @@ class ThreadTransport(Transport):
             last = last if isinstance(last, int) else now_ms
             if last < self._seen_at.get(name, 0):
                 continue
+            pause = last - self._seen_at.get(name, last)
+            if 0 < pause <= SILENT_AT_MOST.total_seconds() * 1000:
+                # Longer is not a pause but an absence.
+                self._pauses[name] = [*self._pauses.get(name, []), pause][-PAUSES_KEPT:]
+                paused = True
             self._seen_at[name] = last
             self._known[name] = {
                 "subject": f"br:{ext}",
@@ -504,11 +535,14 @@ class ThreadTransport(Transport):
                 "last_seen": datetime.fromtimestamp(last / 1000, UTC).isoformat(),
             }
             self.ctx.names.set(f"br:{ext}", self._known[name]["name"])
-        quiet_ms = SILENT_AFTER.total_seconds() * 1000
+        if paused:
+            await self.ctx.store.set_state(PAUSES, self._pauses)
+        ours_alive = await self._ours_alive()
         current = {
             name: info
             for name, info in self._known.items()
-            if now_ms - self._seen_at[name] <= quiet_ms
+            if now_ms - self._seen_at[name] <= self.silent_after(name)
+            or (ours_alive and info.get("vendor") == "Home Assistant")
         }
         home = await self.home_network(current.values())
         for info in current.values():
@@ -532,6 +566,25 @@ class ThreadTransport(Transport):
             "border_routers", sorted(self._border_routers.values(), key=_by_name)
         )
         await self._announce_parts()
+
+    def silent_after(self, name: str) -> float:
+        """How long, in ms, a border router may be silent before it is gone."""
+        pauses = (self._pauses or {}).get(name, [])
+        least = SILENT_AFTER.total_seconds() * 1000
+        if len(pauses) < PAUSES_NEEDED:
+            return least
+        most = SILENT_AT_MOST.total_seconds() * 1000
+        return min(max(least, max(pauses) * PAUSE_ROOM), most)
+
+    async def _ours_alive(self) -> bool:
+        """Whether Home Assistant's border router answers and takes part."""
+        alive = await self.ctx.store.get_state(ALIVE)
+        node = await self.ctx.store.get_state("otbr.node") or {}
+        return (
+            isinstance(alive, str)
+            and self.ctx.now() - datetime.fromisoformat(alive) <= ALIVE_WITHIN
+            and node.get("role") in CONNECTED_ROLES
+        )
 
     async def _announce_parts(self) -> None:
         """Tell the rules how the border routers split up, when that changed.

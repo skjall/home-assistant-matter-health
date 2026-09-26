@@ -497,3 +497,51 @@ def test_access_points_are_gathered_from_their_devices() -> None:
         ap: {"channel": 6, "clients": [{"mac": "02:00:00:00:10:01", "addresses": []}]},
         "02:00:00:00:00:02": {"channel": None, "clients": []},
     }
+
+
+async def test_a_router_that_pauses_long_is_given_its_time(
+    ctx: Context, store: Store, clock: Clock
+) -> None:
+    make_engine(ctx, rules=[])
+    transport = ThreadTransport(ctx)
+
+    async def seen(now: int, last: int) -> None:
+        clock.set(T0 + timedelta(minutes=now))
+        await transport.border_routers_seen([announcement("0a", "TV", last)])
+
+    # It announces itself every 40 minutes; an unplugged day is no pause.
+    for minute in (-1440, 0, 40, 80, 120, 160, 200):
+        await seen(minute + 1, minute)
+    assert len((await store.get_state("thread.announcement_pauses"))["TV"]) == 5
+    # Half an hour of silence is its usual pause, not an absence.
+    await seen(245, 200)
+    gone = [e for e in await store.events() if e.kind == kinds.BORDER_ROUTER_GONE]
+    assert gone == []
+    # Longer than its longest pause, with room: gone.
+    await seen(251, 200)
+    gone = [e for e in await store.events() if e.kind == kinds.BORDER_ROUTER_GONE]
+    assert [e.data["name"] for e in gone] == ["TV"]
+    # However long its pauses, not later than an hour and a half.
+    transport._pauses = {"TV": [10**9] * 5}
+    assert transport.silent_after("TV") == 90 * 60 * 1000
+
+
+async def test_home_assistants_router_is_there_while_it_answers(
+    ctx: Context, store: Store, clock: Clock
+) -> None:
+    make_engine(ctx, rules=[])
+    transport = ThreadTransport(ctx)
+    ours = announcement("0a", "homeassistant-otbr", 0, vendorName="Home Assistant")
+    await store.set_state("otbr.node", {"role": "router"})
+
+    async def seen(now: int, alive: int) -> list[str]:
+        clock.set(T0 + timedelta(minutes=now))
+        await store.set_state("otbr.alive", (T0 + timedelta(minutes=alive)).isoformat())
+        await transport.border_routers_seen([ours])
+        return [e.kind for e in await store.events() if e.subject == "br:0a"]
+
+    await seen(1, 1)
+    # Its announcements do not come through, but the add-on answers.
+    assert await seen(60, 59) == []
+    # The add-on has not answered for a while: gone.
+    assert await seen(70, 59) == [kinds.BORDER_ROUTER_GONE]

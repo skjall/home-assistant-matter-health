@@ -106,6 +106,8 @@ async def test_reports_state_and_every_change(
         ),
     ]
     assert (await store.get_state("otbr.node"))["router_count"] == 4
+    # Its own word that it runs, not written on every poll.
+    assert await store.get_state("otbr.alive") == ctx.now().isoformat()
     assert source.ctx._engine is not None
     assert source.ctx._engine.status["otbr"]["ok"] is True
     # Only /node is ever read; never a dataset with the network key.
