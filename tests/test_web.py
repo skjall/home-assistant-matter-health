@@ -478,13 +478,20 @@ async def test_overview_tells_expected_and_known_absences_apart(
     translations: Path,
 ) -> None:
     await store.set_state(
-        "matter.nodes", {"total": 5, "unavailable": ["node:1", "node:2", "node:3"]}
+        "matter.nodes",
+        {"total": 5, "unavailable": ["node:1", "node:2", "node:3", "node:4"]},
     )
     await store.set_state(
         "offline.away",
-        {"node:1": {"since": at(0).isoformat(), "expected": True}},
+        {
+            "node:1": {"since": at(0).isoformat(), "expected": True},
+            "node:4": {"since": at(0).isoformat(), "expected": True},
+        },
     )
-    await store.set_state("devices.habits", {"node:1": True, "node:3": False})
+    # node:4 was just set to be always reported; the rule has not looked yet.
+    await store.set_state(
+        "devices.habits", {"node:1": True, "node:3": False, "node:4": False}
+    )
     known = offline_finding("node:2", 0)
     await store.put_finding(known, T0)
     await store.put_finding(offline_finding("node:3", 0), T0)
@@ -501,6 +508,7 @@ async def test_overview_tells_expected_and_known_absences_apart(
         "node:1": (True, False, True),
         "node:2": (False, True, None),
         "node:3": (False, False, False),
+        "node:4": (False, False, False),
     }
     assert body["open"] == {"problem": 0, "warning": 1, "info": 0}
 

@@ -171,7 +171,8 @@ async def overview(request: web.Request) -> web.Response:
             "subject": s,
             "name": engine.ctx.names.get(s),
             "device_id": engine.ctx.names.device(s),
-            "usual": s in usual,
+            # What the user said counts at once, before the rule's next look.
+            "usual": s in usual and habits.get(s) is not False,
             "known": s in known,
             "comes_and_goes": habits.get(s),
         }
