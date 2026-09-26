@@ -56,6 +56,7 @@ class NameBook:
         self._names: dict[str, str] = {}
         self._devices: dict[str, str] = {}
         self._registry: dict[str, str] = {}
+        self._areas: dict[str, str] = {}
 
     def set(self, subject: str, name: str | None) -> None:
         """Remember ``name`` for ``subject``; empty names are ignored."""
@@ -76,6 +77,17 @@ class NameBook:
     def device(self, subject: str | None) -> str | None:
         """Return the Home Assistant device id of ``subject``, if known."""
         return self._registry.get(subject) if subject else None
+
+    def set_area(self, subject: str, area: str | None) -> None:
+        """Remember the area ``subject`` is in; ``None`` forgets it."""
+        if area:
+            self._areas[subject] = area
+        else:
+            self._areas.pop(subject, None)
+
+    def area(self, subject: str | None) -> str | None:
+        """Return the name of the area ``subject`` is in, if known."""
+        return self._areas.get(subject) if subject else None
 
     def know_device(self, name: str | None) -> None:
         """Remember a device name so a mangled copy of it can be recognised."""

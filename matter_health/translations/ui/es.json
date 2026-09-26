@@ -68,6 +68,7 @@
       "title": "No se puede contactar con {device}"
     },
     "related_title": "También forma parte",
+    "no_area": "Sin área",
     "related_count": "{count} consecuencia | {count} consecuencias",
     "dismiss": "Marcar como resuelto",
     "undismiss": "Mostrar de nuevo",

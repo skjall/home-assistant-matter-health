@@ -68,6 +68,7 @@
       "title": "{device} ist nicht erreichbar"
     },
     "related_title": "Dazu gehört auch",
+    "no_area": "Ohne Bereich",
     "related_count": "{count} Folge | {count} Folgen",
     "dismiss": "Als erledigt markieren",
     "undismiss": "Wieder anzeigen",

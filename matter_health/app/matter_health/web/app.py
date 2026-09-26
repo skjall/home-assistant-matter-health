@@ -112,7 +112,8 @@ def with_names(engine: Engine, finding: dict[str, Any]) -> dict[str, Any]:
     book = engine.ctx.names
     names = {s: book.get(s) for s in subjects if book.get(s)}
     devices = {s: book.device(s) for s in subjects if book.device(s)}
-    return {**finding, "names": names, "devices": devices}
+    areas = {s: book.area(s) for s in subjects if book.area(s)}
+    return {**finding, "names": names, "devices": devices, "areas": areas}
 
 
 async def index(request: web.Request) -> web.StreamResponse:

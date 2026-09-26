@@ -120,14 +120,14 @@ class HomeAssistantSource(Source):
                 devices=await api.call({"type": "config/device_registry/list"}),
                 entities=await api.call({"type": "config/entity_registry/list"}),
                 states=await api.call({"type": "get_states"}),
+                areas=await api.call({"type": "config/area_registry/list"}),
             )
             await api.call({"type": "subscribe_events", "event_type": "state_changed"})
             await api.call(
                 {"type": "subscribe_events", "event_type": "automation_triggered"}
             )
-            await api.call(
-                {"type": "subscribe_events", "event_type": "device_registry_updated"}
-            )
+            for registry in ("device_registry_updated", "area_registry_updated"):
+                await api.call({"type": "subscribe_events", "event_type": registry})
             for raw in api.pending:
                 await self.on_event(raw["event"])
             api.pending.clear()
@@ -143,9 +143,10 @@ class HomeAssistantSource(Source):
         devices: list[dict[str, Any]],
         entities: list[dict[str, Any]],
         states: list[dict[str, Any]],
+        areas: list[dict[str, Any]] | None = None,
     ) -> None:
-        """Take names and power switches from the registries and states."""
-        self.learn_device_names(devices)
+        """Take names, areas and power switches from the registries and states."""
+        self.learn_device_names(devices, areas)
 
         attributes = {
             state["entity_id"]: state.get("attributes", {}) for state in states
@@ -176,7 +177,10 @@ class HomeAssistantSource(Source):
     async def on_event(self, event: dict[str, Any]) -> None:
         """Handle one event from the subscription."""
         data = event.get("data", {})
-        if event.get("event_type") == "device_registry_updated":
+        if event.get("event_type") in (
+            "device_registry_updated",
+            "area_registry_updated",
+        ):
             self._schedule_refresh()
             return
         if event.get("event_type") == "automation_triggered":
@@ -207,7 +211,7 @@ class HomeAssistantSource(Source):
         )
 
     def _schedule_refresh(self) -> None:
-        """Re-read device names soon; several updates in a row cost one read."""
+        """Re-read device names and areas soon; a burst of updates costs one read."""
         if self._refresh is None or self._refresh.done():
             self._refresh = asyncio.create_task(self.refresh_names())
             self._refresh.add_done_callback(_log_failure)
@@ -228,10 +232,16 @@ class HomeAssistantSource(Source):
             api = HomeAssistantApi(ws)
             await api.authenticate(token)
             devices = await api.call({"type": "config/device_registry/list"})
-        self.learn_device_names(devices)
+            areas = await api.call({"type": "config/area_registry/list"})
+        self.learn_device_names(devices, areas)
 
-    def learn_device_names(self, devices: list[dict[str, Any]]) -> None:
-        """Remember what the user calls each Matter device."""
+    def learn_device_names(
+        self, devices: list[dict[str, Any]], areas: list[dict[str, Any]] | None = None
+    ) -> None:
+        """Remember what the user calls each Matter device, and where it is."""
+        area_names = {
+            a.get("area_id"): a.get("name") for a in areas or [] if isinstance(a, dict)
+        }
         for device in devices:
             name = device.get("name_by_user") or device.get("name")
             self.ctx.names.know_device(name)
@@ -247,6 +257,9 @@ class HomeAssistantSource(Source):
                     )
                     self.ctx.names.set(subject, name)
                     self.ctx.names.set_device(subject, device.get("id"))
+                    self.ctx.names.set_area(
+                        subject, area_names.get(device.get("area_id"))
+                    )
 
     def origin(self, context: dict[str, Any]) -> tuple[str, str | None]:
         """Who caused a state change, as far as Home Assistant records it.

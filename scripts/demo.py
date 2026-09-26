@@ -59,6 +59,17 @@ NAMES = {
     "br:3d4e5f6071829304": "Home Assistant",
 }
 
+#: Where the devices are, as Home Assistant's areas say.
+AREAS = {
+    "node:3": "Kitchen",
+    "node:13": "Kitchen",
+    "node:14": "Living Room",
+    "node:15": "Hall",
+    "node:9": "Bathroom",
+    "node:12": "Hall",
+    "node:30": "Kitchen",
+}
+
 #: The bedroom speaker has ended up in a partition of its own.
 BORDER_ROUTERS = [
     {
@@ -215,6 +226,8 @@ async def seed(engine: Engine, clock: Clock) -> None:
     ctx = engine.ctx
     for subject, name in NAMES.items():
         ctx.names.set(subject, name)
+    for subject, area in AREAS.items():
+        ctx.names.set_area(subject, area)
 
     async def emit(kind: str, subject: str | None = None, **data: Any) -> None:
         await ctx.emit(kind, "demo", subject, **data)

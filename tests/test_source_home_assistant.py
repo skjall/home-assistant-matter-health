@@ -20,6 +20,7 @@ DEVICES = [
         "id": "device-plug",
         "name": "Smart Plug",
         "name_by_user": "Living Room Plug",
+        "area_id": "living_room",
         "identifiers": [
             ["matter", "deviceid_0000000000ABCDEF-000000000000002A-MatterNodeDevice"],
             ["other", "anything"],
@@ -29,6 +30,8 @@ DEVICES = [
     {"name": "Zigbee Button", "identifiers": [["zha", "deviceid_01-02-x"]]},
     {"name": "No Identifiers"},
 ]
+
+AREAS = [{"area_id": "living_room", "name": "Living Room"}, "odd"]
 
 ENTITIES = [
     {"entity_id": "switch.media_plug", "device_id": "dev-media"},
@@ -122,6 +125,7 @@ class FakeHomeAssistant:
             ),
             "config/entity_registry/list": ENTITIES,
             "get_states": STATES,
+            "config/area_registry/list": AREAS,
         }.get(command["type"])
 
     async def handle(self, request: web.Request) -> web.WebSocketResponse:
@@ -171,7 +175,7 @@ class FakeHomeAssistant:
             )
             if command["type"] == "subscribe_events":
                 subscriptions += 1
-                if subscriptions == 3:
+                if subscriptions == 4:
                     await self.push(ws, number)
                     break
         await ws.close()
@@ -217,7 +221,7 @@ async def test_learns_names_and_reports_power_switches(
             switched("switch.media_plug", "off", "unavailable", None),
             switched("switch.media_plug", None, "on", None),
             {"event_type": "device_registry_updated", "data": {"action": "update"}},
-            {"event_type": "device_registry_updated", "data": {"action": "update"}},
+            {"event_type": "area_registry_updated", "data": {"action": "update"}},
         ],
         binary_at_end=True,
     )
@@ -238,6 +242,7 @@ async def test_learns_names_and_reports_power_switches(
     assert source.power_switches == {"switch.media_plug", "switch.tv_outlet"}
     assert source.people == {"user-alex": "Alex", "user-guest": "person.guest"}
     assert ctx.names.get("node:42") == "Living Room Plug"
+    assert ctx.names.area("node:42") == "Living Room"
     assert ctx.names.device("node:42") == "device-plug"
     assert ctx.names.get("node:43") == "Kitchen Sensor"
     assert ctx.names.get("entity:switch.tv_outlet") == "TV Outlet"
@@ -279,10 +284,13 @@ async def test_learns_names_and_reports_power_switches(
         "config/device_registry/list",
         "config/entity_registry/list",
         "get_states",
+        "config/area_registry/list",
+        "subscribe_events",
         "subscribe_events",
         "subscribe_events",
         "subscribe_events",
         "config/device_registry/list",
+        "config/area_registry/list",
     ]
     assert fake.connections == 2
     assert source.ctx._engine is not None
@@ -422,3 +430,18 @@ def test_a_device_behind_a_bridge_is_named_apart_from_its_bridge(ctx: Context) -
     assert ctx.names.get("node:43") == "Hub"
     assert ctx.names.get("node:43:3") == "Balcony Light"
     assert ctx.names.device("node:43:3") == "dev-lamp"
+    # Without areas, none is known; a device moved out of one forgets it.
+    assert ctx.names.area("node:43:3") is None
+    ctx.names.set_area("node:43", "Hall")
+    source.learn_device_names(
+        [
+            {
+                "id": "dev-bridge",
+                "name": "Hub",
+                "identifiers": [["matter", "deviceid_ABCDEF-2B-MatterNodeDevice"]],
+            }
+        ],
+        [],
+    )
+    assert ctx.names.area("node:43") is None
+    assert ctx.names.area(None) is None

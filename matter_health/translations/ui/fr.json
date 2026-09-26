@@ -68,6 +68,7 @@
       "title": "{device} est injoignable"
     },
     "related_title": "Fait aussi partie de l'incident",
+    "no_area": "Sans pièce",
     "related_count": "{count} conséquence | {count} conséquences",
     "dismiss": "Marquer comme réglé",
     "undismiss": "Afficher à nouveau",

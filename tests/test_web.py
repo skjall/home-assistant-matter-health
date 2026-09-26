@@ -228,6 +228,7 @@ async def test_findings_of_the_last_days_with_current_names(
 ) -> None:
     ctx.names.set("node:7", "Living Room Plug")
     ctx.names.set_device("node:7", "device-plug")
+    ctx.names.set_area("node:7", "Living Room")
     days = 24 * 60
     await store.put_finding(finding("old", Severity.WARNING, -3 * days, True), T0)
     await store.put_finding(finding("new", Severity.WARNING, -1, True), T0)
@@ -245,6 +246,7 @@ async def test_findings_of_the_last_days_with_current_names(
     found = await (await client.get("/api/findings")).json()
     assert found[0]["names"] == {"node:7": "Living Room Plug"}
     assert found[0]["devices"] == {"node:7": "device-plug"}
+    assert found[0]["areas"] == {"node:7": "Living Room"}
     assert found[0]["chain"][0]["key"] == "link.cause_unknown"
 
 
