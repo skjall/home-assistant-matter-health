@@ -170,8 +170,11 @@ export class MhNetwork extends LitElement {
     // Only what is missing is worth a line; all present is the normal case.
     const missing = Object.entries(overview.sources).filter(([, status]) => !status.ok);
     const away = overview.devices.unavailable;
-    const known = away.filter((d) => d.known);
-    const usual = away.filter((d) => !d.known && (d.usual || d.comes_and_goes === true));
+    // What the user said about a device decides first.
+    const usual = away.filter(
+      (d) => d.comes_and_goes === true || (!d.known && d.usual),
+    );
+    const known = away.filter((d) => d.known && !usual.includes(d));
     const surprising = away.filter((d) => !known.includes(d) && !usual.includes(d));
     return html`
       <section class="card">
@@ -184,7 +187,16 @@ export class MhNetwork extends LitElement {
         <h2>${t("network.unreachable_title")}</h2>
         ${surprising.length
           ? html`<ul>
-              ${surprising.map((device) => this.device(device, mdiLinkVariantOff, "down"))}
+              ${surprising.map((device) =>
+                this.device(
+                  device,
+                  mdiLinkVariantOff,
+                  "down",
+                  html`<button class="link" @click=${() => this.habit(device, true)}>
+                    ${t("finding.comes_and_goes")}
+                  </button>`,
+                ),
+              )}
             </ul>`
           : html`<p class="empty">${t("network.unreachable_empty")}</p>`}
         ${usual.length
