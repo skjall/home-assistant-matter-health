@@ -1,9 +1,10 @@
 import asyncio
+from datetime import timedelta
 from typing import Any
 
 import pytest
 from aiohttp import web
-from conftest import source_for
+from conftest import T0, Clock, make_engine, source_for
 from pytest_aiohttp import AiohttpServer
 
 from matter_health import kinds
@@ -250,8 +251,11 @@ async def test_learns_names_and_reports_power_switches(
 
     found = [(e.kind, e.subject, e.data) for e in await store.events()]
 
-    def power(kind: str, entity: str, name: str, origin: str, by: str | None) -> Any:
-        return (kind, f"entity:{entity}", {"name": name, "origin": origin, "by": by})
+    def power(
+        kind: str, entity: str, name: str, origin: str, by: str | None, **extra: Any
+    ) -> Any:
+        data = {"name": name, "origin": origin, "by": by, **extra}
+        return (kind, f"entity:{entity}", data)
 
     assert found == [
         power(
@@ -269,15 +273,22 @@ async def test_learns_names_and_reports_power_switches(
             "automation",
             "Evening Off",
         ),
+        # Both were on only a moment: the clock does not move in this test.
         power(
             kinds.HA_POWER_OFF,
             "switch.media_plug",
             "switch.media_plug",
             "automation",
             None,
+            flicker=True,
         ),
         power(
-            kinds.HA_POWER_OFF, "switch.tv_outlet", "switch.tv_outlet", "unknown", None
+            kinds.HA_POWER_OFF,
+            "switch.tv_outlet",
+            "switch.tv_outlet",
+            "unknown",
+            None,
+            flicker=True,
         ),
     ]
     assert [c["type"] for c in fake.commands] == [
@@ -445,3 +456,23 @@ def test_a_device_behind_a_bridge_is_named_apart_from_its_bridge(ctx: Context) -
     )
     assert ctx.names.area("node:43") is None
     assert ctx.names.area(None) is None
+
+
+async def test_a_switch_on_for_a_moment_only_flickered(
+    ctx: Context, store: Store, clock: Clock
+) -> None:
+    make_engine(ctx, rules=[])
+    source = HomeAssistantSource(ctx)
+    source.power_switches = {"switch.plug"}
+
+    async def at(seconds: int, old: str, new: str) -> None:
+        clock.set(T0 + timedelta(seconds=seconds))
+        await source.on_event(switched("switch.plug", old, new, None))
+
+    await at(0, "off", "on")
+    await at(10, "on", "off")  # while a device is being added
+    await at(20, "off", "on")
+    await at(620, "on", "off")  # a real switch-off
+
+    offs = [e for e in await store.events() if e.kind == kinds.HA_POWER_OFF]
+    assert [e.data.get("flicker", False) for e in offs] == [True, False]

@@ -13,6 +13,7 @@ import asyncio
 import logging
 import re
 from collections import OrderedDict
+from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
 import aiohttp
@@ -39,6 +40,9 @@ REFRESH_DELAY_S = 5.0
 
 #: Automation runs remembered to tell which one switched something.
 AUTOMATION_MEMORY = 200
+
+#: A switch back off this soon after it went on only flickered.
+FLICKER = timedelta(seconds=30)
 
 
 class HomeAssistantApi:
@@ -101,6 +105,8 @@ class HomeAssistantSource(Source):
         self.people: dict[str, str] = {}
         self.automations: OrderedDict[str, str] = OrderedDict()
         self._refresh: asyncio.Task[None] | None = None
+        #: When each switch last went on, to tell a flicker from a switch-off.
+        self._on_at: dict[str, datetime] = {}
 
     async def run(self) -> None:
         """Connect, learn the installation, then follow state changes."""
@@ -202,12 +208,21 @@ class HomeAssistantSource(Source):
             return
         name = new_state.get("attributes", {}).get("friendly_name", entity_id)
         origin, by = self.origin(new_state.get("context") or {})
+        now = self.ctx.now()
+        extra: dict[str, Any] = {}
+        if new == "on":
+            self._on_at[entity_id] = now
+        elif now - self._on_at.pop(entity_id, now - FLICKER) < FLICKER:
+            # On for a moment only, as while a device is being added: whatever
+            # hangs on it was without power before, and is again.
+            extra["flicker"] = True
         await self.emit(
             kinds.HA_POWER_OFF if new == "off" else kinds.HA_POWER_ON,
             f"entity:{entity_id}",
             name=name,
             origin=origin,
             by=by,
+            **extra,
         )
 
     def _schedule_refresh(self) -> None:

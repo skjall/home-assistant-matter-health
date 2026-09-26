@@ -135,6 +135,7 @@
   },
   "link": {
     "power_off": "{switch} a été éteint {origin}.",
+    "border_router_not_switch": "Ce n'était pas {switch} : {border_router} est revenu alors que {switch} restait éteint. Il est probablement juste resté silencieux un moment.",
     "border_router_gone": "{border_router} a disparu du réseau.",
     "was_probably_leader": "{border_router} coordonnait ton réseau Thread. Quand le coordinateur disparaît, les autres appareils ont besoin d'un moment pour se mettre d'accord sur un nouveau.",
     "cause_unknown": "Aucune cause claire n'a été enregistrée. Rien n'a été éteint et aucune passerelle n'a disparu juste avant.",

@@ -135,6 +135,7 @@
   },
   "link": {
     "power_off": "{switch} was switched off {origin}.",
+    "border_router_not_switch": "It was not {switch}: {border_router} came back while {switch} stayed off. It most likely just went quiet for a while.",
     "border_router_gone": "{border_router} disappeared from the network.",
     "was_probably_leader": "{border_router} was coordinating your Thread network. When the coordinator disappears, the other devices need a while to agree on a new one.",
     "cause_unknown": "No clear cause was recorded. Nothing was switched off and no bridge disappeared right before.",

@@ -26,7 +26,7 @@ from typing import Any, ClassVar
 from ... import kinds
 from ...engine import RULES, Rule
 from ...model import Confidence, Event, Finding, Link, Role, Severity
-from ...rules.common import power_off_link
+from ...rules.common import power_off_link, switched_off
 from .transport import SILENT_AT_MOST
 
 #: A switch turned off this shortly before the last announcement may still
@@ -73,7 +73,8 @@ class BorderRouterRule(Rule):
     async def on_event(self, event: Event) -> None:
         """Follow routers leaving and returning, and switches going off."""
         if event.kind == kinds.HA_POWER_OFF:
-            await self._switch_off(event)
+            if not event.data.get("flicker"):
+                await self._switch_off(event)
             return
         if event.data.get("own") is False:
             # A router of another Thread network carries none of ours.
@@ -93,8 +94,7 @@ class BorderRouterRule(Rule):
                 and finding.rule == self.name
                 and finding.key.startswith(f"border_router:{name}:")
             ):
-                finding.ended_at = event.at
-                await self.ctx.publish(finding)
+                await self._close(finding, event.at)
 
     async def on_tick(self) -> None:
         """Close what a returned router left open; drop suspicions that failed."""
@@ -127,8 +127,41 @@ class BorderRouterRule(Rule):
                 and isinstance(last, str)
                 and datetime.fromisoformat(last) > finding.started_at
             ):
-                finding.ended_at = now
-                await self.ctx.publish(finding)
+                await self._close(finding, now)
+
+    async def _close(self, finding: Finding, back: datetime) -> None:
+        """End the finding of a returned router, taking back a switch disproved.
+
+        A router that returns while the switch named as the cause stayed off
+        was not powered through it.
+        """
+        finding.ended_at = back
+        offs = await self._offs_around(finding.started_at)
+        if finding.chain and finding.chain[0].key == "link.power_off" and offs:
+            off = offs[-1]
+            ons = await self.ctx.store.events(
+                (kinds.HA_POWER_ON,), since=off.at, until=back, subject=off.subject
+            )
+            if not ons:
+                finding.chain = [
+                    Link(
+                        Role.CAUSE,
+                        "link.border_router_not_switch",
+                        {
+                            "switch": finding.chain[0].params.get("switch"),
+                            "border_router": finding.params.get("border_router"),
+                        },
+                        at=back,
+                        confidence=Confidence.CERTAIN,
+                    ),
+                    *(
+                        Link(Role.FIX, "fix.check_border_router_power", link.params)
+                        if link.key == "fix.keep_border_router_powered"
+                        else link
+                        for link in finding.chain[1:]
+                    ),
+                ]
+        await self.ctx.publish(finding)
 
     async def describe(self, event: Event) -> Finding:
         """Build the finding for a border router that stayed away."""
@@ -183,10 +216,12 @@ class BorderRouterRule(Rule):
     # --- evidence for a router on a switch ---------------------------------
 
     async def _offs_around(self, went: datetime) -> list[Event]:
-        return await self.ctx.store.events(
-            (kinds.HA_POWER_OFF,),
-            since=went - POWER_WINDOW,
-            until=went + ANNOUNCED_EVERY,
+        return switched_off(
+            await self.ctx.store.events(
+                (kinds.HA_POWER_OFF,),
+                since=went - POWER_WINDOW,
+                until=went + ANNOUNCED_EVERY,
+            )
         )
 
     async def _suspects(self) -> dict[str, dict[str, Any]]:

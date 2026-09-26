@@ -135,6 +135,7 @@
   },
   "link": {
     "power_off": "{switch} wurde ausgeschaltet {origin}.",
+    "border_router_not_switch": "Es war nicht {switch}: {border_router} kam zurück, obwohl {switch} aus blieb. Es hat wohl nur eine Weile nichts von sich hören lassen.",
     "border_router_gone": "{border_router} ist aus dem Netz verschwunden.",
     "was_probably_leader": "{border_router} hat dein Thread-Netz koordiniert. Fällt der Koordinator weg, brauchen die übrigen Geräte eine Weile, um sich auf einen neuen zu einigen.",
     "cause_unknown": "Eine klare Ursache wurde nicht aufgezeichnet. Kurz davor wurde nichts ausgeschaltet und keine Brücke ist verschwunden.",

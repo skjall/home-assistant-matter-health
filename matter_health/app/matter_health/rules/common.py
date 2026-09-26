@@ -29,7 +29,13 @@ async def last_power_off(
     events = await ctx.store.events(
         (kinds.HA_POWER_OFF,), since=before - window, until=before
     )
-    return events[-1] if events else None
+    offs = switched_off(events)
+    return offs[-1] if offs else None
+
+
+def switched_off(events: list[Event]) -> list[Event]:
+    """Keep the switch-offs that took power, not a switch on for a moment only."""
+    return [e for e in events if not e.data.get("flicker")]
 
 
 async def last_border_router_gone(

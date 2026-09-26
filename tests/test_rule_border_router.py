@@ -371,3 +371,73 @@ async def test_routers_of_another_thread_network_are_ignored(
 
     assert await store.findings() == []
     assert not await store.get_state("border_router.suspects")
+
+
+async def test_back_while_the_named_switch_stayed_off_takes_the_cause_back(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await power_off(ctx, clock, 10)
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(0).isoformat(),
+        **TV,
+    )
+    assert chain_keys(await only_finding(store))[0] == "link.power_off"
+    await emit_at(ctx, clock, 50, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
+
+    ended = await only_finding(store)
+    assert ended.ended_at == at(50)
+    assert chain_keys(ended)[0] == "link.border_router_not_switch"
+    assert ended.chain[0].params == {
+        "switch": "Media Plug",
+        "border_router": "Living Room TV",
+    }
+    assert chain_keys(ended)[-1] == "fix.check_border_router_power"
+
+
+async def test_back_after_the_switch_went_on_keeps_the_cause(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await power_off(ctx, clock, 10)
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(0).isoformat(),
+        **TV,
+    )
+    await emit_at(ctx, clock, 45, kinds.HA_POWER_ON, "entity:switch.media_plug")
+    await emit_at(ctx, clock, 50, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
+
+    assert chain_keys(await only_finding(store))[0] == "link.power_off"
+
+
+async def test_a_switch_that_only_flickered_is_no_cause(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(
+        ctx,
+        clock,
+        10,
+        kinds.HA_POWER_OFF,
+        "entity:switch.media_plug",
+        name="Media Plug",
+        flicker=True,
+    )
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(0).isoformat(),
+        **TV,
+    )
+
+    assert chain_keys(await only_finding(store))[0] == "link.cause_unknown"

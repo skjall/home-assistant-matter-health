@@ -135,6 +135,7 @@
   },
   "link": {
     "power_off": "{switch} fue apagado {origin}.",
+    "border_router_not_switch": "No fue {switch}: {border_router} volvió aunque {switch} siguió apagado. Probablemente solo estuvo en silencio un rato.",
     "border_router_gone": "{border_router} desapareció de la red.",
     "was_probably_leader": "{border_router} estaba coordinando tu red Thread. Cuando el coordinador desaparece, los demás dispositivos necesitan un rato para ponerse de acuerdo en uno nuevo.",
     "cause_unknown": "No se registró ninguna causa clara. No se apagó nada y ningún puente desapareció justo antes.",
