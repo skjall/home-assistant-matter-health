@@ -14,7 +14,9 @@ from matter_health import bridges, kinds
 from matter_health.engine import Context, Engine
 from matter_health.enrichers import Client, Knowledge, state_key
 from matter_health.model import Finding, Link, Role, Severity
+from matter_health.rules.flaky import FlakyRule
 from matter_health.store import Store
+from matter_health.transports.thread.partitions import PartitionRule
 from matter_health.web import app as web_app
 from matter_health.web import create_app
 
@@ -372,6 +374,41 @@ async def test_dismissing_a_finding(
     await client.post("/api/dismiss", json={"key": "a"})
     await client.post("/api/dismiss", json={"key": "a", "dismissed": False})
     assert (await state())[1]["a"] is False
+
+
+async def test_dealing_with_a_story_deals_with_its_consequences(
+    aiohttp_client: AiohttpClient,
+    ctx: Context,
+    store: Store,
+    translations: Path,
+) -> None:
+    engine = make_engine(ctx, rules=[PartitionRule, FlakyRule])
+    split = finding("partitions:x", Severity.PROBLEM, 0, ended=True)
+    split.rule = "partitions"
+    split.ended_at = at(100)
+    flaky = finding("flaky:node:7", Severity.WARNING, 10, ended=False)
+    flaky.rule = "flaky"
+    for f in (split, flaky):
+        await store.put_finding(f, T0)
+    client = await aiohttp_client(build(engine, translations))
+
+    async def state() -> tuple[dict[str, int], dict[str, object]]:
+        overview = await (await client.get("/api/overview")).json()
+        found = await (await client.get("/api/findings")).json()
+        return overview["open"], {
+            f["key"]: (f["dismissed"], f["part_of"]) for f in found
+        }
+
+    assert await state() == (
+        {"problem": 0, "warning": 1, "info": 0},
+        {"partitions:x": (False, None), "flaky:node:7": (False, "partitions:x")},
+    )
+    await client.post("/api/dismiss", json={"key": "partitions:x"})
+    # Still going on, but told in a story the user has dealt with.
+    assert await state() == (
+        {"problem": 0, "warning": 0, "info": 0},
+        {"partitions:x": (True, None), "flaky:node:7": (True, "partitions:x")},
+    )
 
 
 @pytest.mark.parametrize(
