@@ -141,8 +141,16 @@ async def test_wifi_links_are_reported_when_a_rating_changes(
     assert reported[0][0]["neighbour"] == "ap:02:00:00:00:00:01"
     stored = await store.get_state("wifi.devices")
     assert stored["node:1"]["bssid"] == "02:00:00:00:00:01"
+    assert stored["node:1"]["stale"] is True
+    # Its access point may have changed channel meanwhile.
+    points = await store.get_state("access_points")
+    assert points["02:00:00:00:00:01"]["channel"] is None
     summary = await transport.summary(1)
     assert summary == {"gateways": 1, "connected": None}
+    # Removed, it leaves nothing behind.
+    await transport.devices({})
+    assert await store.get_state("wifi.devices") == {}
+    assert await store.get_state("access_points") == {}
 
 
 async def test_a_weak_wifi_link_opens_and_closes_a_finding(
@@ -482,8 +490,10 @@ def test_access_points_are_gathered_from_their_devices() -> None:
         "node:1": {"bssid": ap, "channel": 6, "mac": "02:00:00:00:10:01"},
         "node:2": {"bssid": ap, "channel": None, "mac": None},
         "node:3": {"bssid": None},
+        "node:4": {"bssid": "02:00:00:00:00:02", "channel": 11, "stale": True},
     }
 
     assert access_points(links) == {
-        ap: {"channel": 6, "clients": [{"mac": "02:00:00:00:10:01", "addresses": []}]}
+        ap: {"channel": 6, "clients": [{"mac": "02:00:00:00:10:01", "addresses": []}]},
+        "02:00:00:00:00:02": {"channel": None, "clients": []},
     }

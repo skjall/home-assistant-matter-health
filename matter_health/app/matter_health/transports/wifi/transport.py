@@ -105,14 +105,18 @@ def describe(attributes: dict[str, Any]) -> dict[str, Any]:
 
 
 def access_points(links: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """Each access point with its channel and the devices on it."""
+    """Each access point with its channel and the devices on it.
+
+    The channel is taken only from a device that reports it now: an access
+    point may have moved to another channel since a device went away.
+    """
     points: dict[str, dict[str, Any]] = {}
     for link in links.values():
         bssid = link.get("bssid")
         if not bssid:
             continue
         point = points.setdefault(bssid, {"channel": None, "clients": []})
-        if isinstance(link.get("channel"), int):
+        if isinstance(link.get("channel"), int) and not link.get("stale"):
             point["channel"] = link["channel"]
         if link.get("mac"):
             point["clients"].append(
@@ -138,15 +142,15 @@ class WifiTransport(Transport):
         """Keep each device's link; report the links when a rating changed.
 
         A device keeps its last access point while it is away, so the page
-        shows it where it was.
+        shows it where it was; that link is marked stale. A device no longer
+        paired leaves nothing behind.
         """
-        stored: dict[str, dict[str, Any]] = dict(
-            await self.ctx.store.get_state(STATE) or {}
-        )
+        before: dict[str, dict[str, Any]] = await self.ctx.store.get_state(STATE) or {}
+        stored: dict[str, dict[str, Any]] = {}
         for subject, attrs in attributes.items():
             link = describe(attrs)
-            if link["bssid"] is None and subject in stored:
-                link = {**stored[subject], "rssi": None}
+            if link["bssid"] is None and subject in before:
+                link = {**before[subject], "rssi": None, "stale": True}
             stored[subject] = link
         await self.ctx.store.set_state(STATE, stored)
         await self.ctx.store.set_state(ACCESS_POINTS, access_points(stored))
