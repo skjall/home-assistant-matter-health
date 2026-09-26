@@ -121,6 +121,12 @@
     },
     "interference_local": {
       "title": "Algunos dispositivos Thread encuentran su canal de radio ocupado"
+    },
+    "stranded": {
+      "title": "1 dispositivo a pilas no ha vuelto tras un cambio en la red | {count} dispositivos a pilas no han vuelto tras un cambio en la red"
+    },
+    "border_router_cut_off": {
+      "title": "{apart} está aislado de la red Thread | {apart} están aislados de la red Thread"
     }
   },
   "link": {
@@ -185,7 +191,18 @@
     "interference_wide": "{count} de {total} dispositivos que reenvían encuentran el canal ocupado una y otra vez – {rate} veces por hora de media.",
     "interference_local": "{devices} encuentra el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca. | {devices} encuentran el canal ocupado una y otra vez, {rate} veces por hora de media; los otros {rest} dispositivos medidos casi nunca.",
     "interference_access_point_overlaps": "{access_point} emite en el canal Wi-Fi {wifi_channel}, que se solapa con el canal Thread {thread_channel}.",
-    "interference_access_point_borders": "{access_point} emite en el canal Wi-Fi {wifi_channel}, justo al lado del canal Thread {thread_channel}; de cerca aún se oye allí."
+    "interference_access_point_borders": "{access_point} emite en el canal Wi-Fi {wifi_channel}, justo al lado del canal Thread {thread_channel}; de cerca aún se oye allí.",
+    "border_router_cut_off": "{apart} funciona solo en una parte de la red aparte: los {routers} dispositivos que retransmiten consultados están todos en la parte principal. | {apart} funcionan solos en una parte de la red aparte: los {routers} dispositivos que retransmiten consultados están todos en la parte principal.",
+    "border_router_cut_off_impact": "El resto de la red no está afectado. Solo los dispositivos conectados directamente a {apart} no son accesibles para Home Assistant. | El resto de la red no está afectado. Solo los dispositivos conectados directamente a uno de estos puentes no son accesibles para Home Assistant.",
+    "thread_split_ended_joined": "{apart} se ha unido de nuevo a la parte principal. | {apart} se han unido de nuevo a la parte principal.",
+    "thread_split_ended_gone": "La separación terminó porque {apart} dejó de anunciarse, no porque se haya unido de nuevo. | La separación terminó porque {apart} dejaron de anunciarse, no porque se hayan unido de nuevo.",
+    "stranded_cause": "Los dispositivos a pilas duermen casi siempre y solo hablan con el router al que están conectados. Si la red cambia mientras duermen, Home Assistant a menudo ya no los encuentra después, y ellos no se dan cuenta.",
+    "stranded_trigger": "La red Thread ha cambiado.",
+    "stranded": "{devices} se desconectó después y no ha vuelto. | {devices} se desconectaron uno tras otro después y no han vuelto.",
+    "stranded_radio_quiet": "El canal de radio ya vuelve a estar tranquilo: una interferencia ya no explica que falten.",
+    "stranded_radio_local": "El canal de radio solo está ocupado alrededor de algunos dispositivos que retransmiten; eso no explica que falten dispositivos en toda la casa.",
+    "stranded_weak_battery": "La pila de {devices} estaba baja en la última lectura (menos de 1,3 V por celda).",
+    "stranded_impact": "Lo que informan estos dispositivos ya no llega a Home Assistant. Rara vez vuelven solos."
   },
   "origin": {
     "person": "por {by}",
@@ -254,7 +271,9 @@
     "weak_wifi": "Acerca {device} a un punto de acceso, o pon un punto de acceso cerca de {device}. Comprueba que el dispositivo esté en la red de 2,4 GHz: llega más lejos que la de 5 GHz.",
     "thread_split": "Normalmente la red vuelve a unirse sola. Si la separación dura, desenchufa {apart} un momento; después se unirá de nuevo a la parte principal. | Normalmente la red vuelve a unirse sola. Si la separación dura, desenchufa {apart} un momento; después se unirán de nuevo a la parte principal.",
     "interference_local": "Busca qué emite cerca de {devices} y aléjalo o ponlo en otro canal.",
-    "interference_access_point": "Prueba a poner el canal de 2,4 GHz de {access_point} en el canal {suggest} y mira tras las próximas mediciones si el número baja."
+    "interference_access_point": "Prueba a poner el canal de 2,4 GHz de {access_point} en el canal {suggest} y mira tras las próximas mediciones si el número baja.",
+    "stranded": "Quita la pila de uno de los dispositivos unos 10 segundos y vuelve a ponerla; así se une de nuevo a la red. Si vuelve, haz lo mismo con los demás. Pulsar un botón o activar el dispositivo no basta.",
+    "stranded_weak_battery": "Aprovecha para poner una pila nueva en {devices}."
   },
   "phase": {
     "first_contact": {

@@ -32,6 +32,23 @@ def stories(
     for finding in findings:
         rule = by_name.get(finding.rule)
         wanted = rule.stories_for(finding) if rule else frozenset()
+        # A story that names the device tells it, whatever else overlaps in
+        # time: the one that took over once an earlier cause no longer held.
+        named = next(
+            (
+                story
+                for story in findings
+                if story.rule in wanted
+                and story.key != finding.key
+                and finding.subjects
+                and set(finding.subjects) <= set(story.subjects)
+                and (story.ended_at is None or story.ended_at >= finding.started_at)
+            ),
+            None,
+        )
+        if named is not None:
+            belongs[finding.key] = named.key
+            continue
         for story, before, after in tellers:
             if story.rule not in wanted or story.key == finding.key:
                 continue

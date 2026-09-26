@@ -121,6 +121,12 @@
     },
     "interference_local": {
       "title": "Some Thread devices find their radio channel busy"
+    },
+    "stranded": {
+      "title": "1 battery device has not come back after the network changed | {count} battery devices have not come back after the network changed"
+    },
+    "border_router_cut_off": {
+      "title": "{apart} is cut off from the Thread network | {apart} are cut off from the Thread network"
     }
   },
   "link": {
@@ -185,7 +191,18 @@
     "interference_wide": "{count} of {total} devices that relay keep finding the channel busy – {rate} times an hour on average.",
     "interference_local": "{devices} keeps finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever. | {devices} keep finding the channel busy, {rate} times an hour on average; the other {rest} devices measured hardly ever.",
     "interference_access_point_overlaps": "{access_point} sends on Wi-Fi channel {wifi_channel}, which overlaps Thread channel {thread_channel}.",
-    "interference_access_point_borders": "{access_point} sends on Wi-Fi channel {wifi_channel}, right next to Thread channel {thread_channel}; up close it is still heard there."
+    "interference_access_point_borders": "{access_point} sends on Wi-Fi channel {wifi_channel}, right next to Thread channel {thread_channel}; up close it is still heard there.",
+    "border_router_cut_off": "{apart} works alone in a part of the network of its own: all {routers} relaying devices asked are in the main part. | {apart} work alone in a part of the network of their own: all {routers} relaying devices asked are in the main part.",
+    "border_router_cut_off_impact": "The rest of the network is not affected. Only devices hanging directly on {apart} cannot be reached by Home Assistant. | The rest of the network is not affected. Only devices hanging directly on one of these bridges cannot be reached by Home Assistant.",
+    "thread_split_ended_joined": "{apart} joined the main part again. | {apart} joined the main part again.",
+    "thread_split_ended_gone": "The split ended because {apart} went quiet – not because it joined again. | The split ended because {apart} went quiet – not because they joined again.",
+    "stranded_cause": "Battery devices sleep nearly all the time and talk only to the router they hang on. When the network changes while they sleep, Home Assistant often cannot find them afterwards – and they do not notice.",
+    "stranded_trigger": "The Thread network changed.",
+    "stranded": "{devices} dropped out afterwards and has not come back. | {devices} dropped out one after another afterwards and have not come back.",
+    "stranded_radio_quiet": "The radio channel is quiet again by now – interference no longer explains why they are missing.",
+    "stranded_radio_local": "The radio channel is busy only around a few relaying devices – that does not explain devices missing all over the home.",
+    "stranded_weak_battery": "The battery of {devices} was last reported weak (below 1.3 V per cell).",
+    "stranded_impact": "What these devices report no longer reaches Home Assistant. They rarely come back by themselves."
   },
   "origin": {
     "person": "by {by}",
@@ -254,7 +271,9 @@
     "weak_wifi": "Move {device} closer to an access point, or put an access point near {device}. Make sure the device is on the 2.4 GHz network – it reaches further than 5 GHz.",
     "thread_split": "The network usually comes back together by itself. If the split lasts, unplug {apart} for a moment; it will then join the main part again. | The network usually comes back together by itself. If the split lasts, unplug {apart} for a moment; they will then join the main part again.",
     "interference_local": "Look for what sends near {devices}, and move it further away or to another channel.",
-    "interference_access_point": "Try setting the 2.4 GHz channel of {access_point} to channel {suggest}, and see after the next readings whether the number goes down."
+    "interference_access_point": "Try setting the 2.4 GHz channel of {access_point} to channel {suggest}, and see after the next readings whether the number goes down.",
+    "stranded": "Take the battery out of one of the devices for about 10 seconds and put it back; it then joins the network anew. If it comes back, do the same with the others. Pressing a button or triggering the device is not enough.",
+    "stranded_weak_battery": "Put a fresh battery into {devices} while you are at it."
   },
   "phase": {
     "first_contact": {

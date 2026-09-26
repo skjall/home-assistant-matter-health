@@ -15,10 +15,16 @@ def engine(ctx: Context) -> Engine:
     return make_engine(ctx, rules=[PartitionRule])
 
 
-def part(partition: str, *names: str, leader: str | None = None) -> dict[str, Any]:
+def part(
+    partition: str,
+    *names: str,
+    leader: str | None = None,
+    routers: int | None = None,
+) -> dict[str, Any]:
     return {
         "partition": partition,
         "leader": leader,
+        "routers": routers,
         "border_routers": [
             {"subject": f"br:{n.lower()}", "name": n, "role": "router"} for n in names
         ],
@@ -60,6 +66,7 @@ async def test_a_lasting_split_is_told_from_when_it_was_first_noticed(
         "count": 2,
         "apart": "TV, Hall",
         "leader": "Kitchen",
+        "routers": None,
     }
 
     # The parts change while it lasts; then the mesh is whole again.
@@ -74,7 +81,10 @@ async def test_a_lasting_split_is_told_from_when_it_was_first_noticed(
     assert changed.chain[0].params["apart"] == "TV"
     assert chain_keys(changed)[1] == "link.thread_split_no_leader"
     await emit_at(ctx, clock, 50, kinds.THREAD_PARTITIONS, parts=WHOLE)
-    assert (await only_finding(store)).ended_at == at(50)
+    ended = await only_finding(store)
+    assert ended.ended_at == at(50)
+    assert chain_keys(ended)[2] == "link.thread_split_ended_joined"
+    assert ended.chain[2].params == {"apart": "TV", "count": 1}
 
 
 async def test_a_short_split_is_left_to_the_mesh_rule(
@@ -87,3 +97,36 @@ async def test_a_short_split_is_left_to_the_mesh_rule(
 
     assert await store.findings() == []
     assert await store.get_state("partitions.split") == {}
+
+
+async def test_a_border_router_alone_in_its_part_is_cut_off(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 0, kinds.THREAD_PARTITIONS, parts=SPLIT)
+    await tick_at(engine, clock, 6)
+    # The devices asked are all in the main part.
+    alone = [
+        part("aa", "Home Assistant", "Kitchen", leader="Kitchen", routers=12),
+        part("bb", "TV", routers=0),
+    ]
+    await emit_at(ctx, clock, 10, kinds.THREAD_PARTITIONS, parts=alone)
+
+    finding = await only_finding(store)
+    assert finding.title == "finding.border_router_cut_off.title"
+    assert finding.params == {"apart": "TV", "count": 1}
+    assert chain_keys(finding) == [
+        "link.border_router_cut_off",
+        "link.thread_split_leader",
+        "link.border_router_cut_off_impact",
+        "fix.thread_split",
+    ]
+    assert finding.chain[0].params["routers"] == 12
+
+    # It ends because the router went quiet, not because it came back.
+    await emit_at(
+        ctx, clock, 60, kinds.THREAD_PARTITIONS, parts=[alone[0]], gone=["TV"]
+    )
+    ended = await only_finding(store)
+    assert ended.ended_at == at(60)
+    assert chain_keys(ended)[2] == "link.thread_split_ended_gone"
+    assert ended.chain[2].params == {"apart": "TV", "count": 1}

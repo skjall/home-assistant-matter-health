@@ -51,6 +51,7 @@ def test_plugins_register_themselves_on_import() -> None:
         "relay",
         "server",
         "signal",
+        "stranded",
         "wave",
         "wifi_signal",
     ]

@@ -246,12 +246,13 @@ def test_counter_rates_per_hour() -> None:
     assert rates(before, before) is None
 
 
-def announcement(ext: str, name: str, seen: int, **extra: Any) -> dict[str, Any]:
+def announcement(ext: str, name: str, minute: int, **extra: Any) -> dict[str, Any]:
+    """An announcement last heard ``minute`` minutes from the test's start."""
     return {
         "extAddressHex": ext,
         "hostname": f"{name}.local",
         "vendorName": "Acme",
-        "lastSeen": seen,
+        "lastSeen": int((T0 + timedelta(minutes=minute)).timestamp() * 1000),
         **extra,
     }
 
@@ -261,46 +262,41 @@ async def test_border_routers_tell_role_partition_and_silence(
 ) -> None:
     make_engine(ctx, rules=[])
     transport = ThreadTransport(ctx)
-    minute = 60_000
 
+    tv = {"stateBitmapHex": "00000FB1", "partitionIdHex": "AA"}
+    hall = {"stateBitmapHex": "00000AB1", "partitionIdHex": "BB"}
     await transport.border_routers_seen(
         [
-            announcement(
-                "0a", "TV", 100 * minute, stateBitmapHex="00000FB1", partitionIdHex="AA"
-            ),
-            announcement(
-                "0b",
-                "Hall",
-                99 * minute,
-                stateBitmapHex="00000AB1",
-                partitionIdHex="BB",
-            ),
+            announcement("0a", "TV", 0, **tv),
+            announcement("0b", "Hall", -1, **hall),
             # Unplugged long ago; the list still carries it.
-            announcement("0c", "Shower", 60 * minute, partitionIdHex="AA"),
+            announcement("0c", "Shower", -40, partitionIdHex="AA"),
         ]
     )
-    await transport.border_routers_seen(
-        [
-            announcement(
-                "0a", "TV", 101 * minute, stateBitmapHex="00000FB1", partitionIdHex="AA"
-            ),
-            announcement(
-                "0b",
-                "Hall",
-                100 * minute,
-                stateBitmapHex="00000AB1",
-                partitionIdHex="BB",
-            ),
-        ]
-    )
+    # Missing for a while, as happens at night: still there.
+    await transport.border_routers_seen([announcement("0a", "TV", 0, **tv)])
 
     stored = {r["name"]: r for r in await store.get_state("border_routers")}
     assert set(stored) == {"TV", "Hall"}
     assert (stored["TV"]["role"], stored["TV"]["partition"]) == ("leader", "aa")
+    assert stored["Hall"]["last_seen"] == (T0 - timedelta(minutes=1)).isoformat()
     reported = [e for e in await store.events() if e.kind == kinds.THREAD_PARTITIONS]
     # Told once, not again while nothing changed.
     assert len(reported) == 1
     assert [p["leader"] for p in reported[0].data["parts"]] == ["TV", None]
+    assert [p["routers"] for p in reported[0].data["parts"]] == [None, None]
+
+    # The devices asked say how big each part is.
+    await store.set_state("thread.router_partitions", {"aa": 3})
+    await transport.border_routers_seen([announcement("0a", "TV", 0, **tv)])
+    reported = [e for e in await store.events() if e.kind == kinds.THREAD_PARTITIONS]
+    assert [p["routers"] for p in reported[-1].data["parts"]] == [3, 0]
+
+    # An announcement older than the one known is ignored.
+    await transport.border_routers_seen([announcement("0b", "Hall", -20, **hall)])
+    assert (await store.get_state("border_routers"))[0]["last_seen"] == (
+        T0 - timedelta(minutes=1)
+    ).isoformat()
 
 
 async def test_radio_counters_are_read_from_devices_that_stay_awake(
@@ -323,11 +319,15 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
     await store.set_state("matter.nodes", {"unavailable": ["node:7"]})
     counts = {1: 1000, 2: 2000}
     asked: list[int] = []
+    paths: dict[int, list[str]] = {}
 
     async def ask(command: str, **args: Any) -> Any:
         node = args["node_id"]
         asked.append(node)
+        paths[node] = args["attribute_path"]
         assert command == "read_attribute"
+        if node == 4:
+            return {"0/53/9": 0x752E1DB9}
         if node == 5:
             raise RuntimeError("0: gone")
         if node == 6:
@@ -338,6 +338,7 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
             "0/53/33": 10,
             "0/53/36": counts[node] // 100,
             "0/53/38": 0,
+            "0/53/9": 0x752E1DB9 if node == 1 else 0xBB,
         }
 
     await transport.measure(ask)
@@ -348,7 +349,13 @@ async def test_radio_counters_are_read_from_devices_that_stay_awake(
     clock.set(T0 + timedelta(minutes=10))
     await transport.measure(ask)
 
-    assert asked == [1, 2, 5, 6] * 2
+    assert asked == [1, 2, 4, 5, 6] * 2
+    # Without counters, only the partition is asked for.
+    assert paths[4] == ["0/53/9"]
+    assert await store.get_state("thread.router_partitions") == {
+        "752e1db9": 2,
+        "000000bb": 1,
+    }
     assert await store.get_state("thread.roles") == {
         "node:1": 5,
         "node:2": 6,

@@ -2,8 +2,10 @@
 
 Border routers connect the Thread mesh to the home network. Each one that
 disappears removes a way in; the last one takes every Thread device offline.
-A border router that restarts comes back within a minute or two, so only an
-absence longer than that becomes a finding.
+The transport reports a router gone only after half an hour of silence, so
+a restart or a pause never becomes a finding. The finding starts when the
+router last announced itself: that is when it went, and a switch turned off
+between that announcement and the next one due is what took its power.
 
 Whether a border router is powered through a switch is not known anywhere; it
 can only be concluded from what happens. One coincidence proves nothing, so
@@ -23,13 +25,19 @@ from ... import kinds
 from ...engine import RULES, Context, Rule
 from ...model import Confidence, Event, Finding, Link, Role, Severity
 from ...rules.common import power_off_link
+from .transport import SILENT_AFTER
 
-#: Restarts of speakers and TV boxes take about this long.
-GONE_FOR = timedelta(minutes=5)
-
-#: The Matter Server reports a vanished border router up to two polls late;
-#: the switch may have been turned off this long before the report.
+#: A switch turned off this shortly before the last announcement may still
+#: have taken the power: announcements are seen a poll or two late.
 POWER_WINDOW = timedelta(minutes=4)
+
+#: A border router announces itself again within this; a switch turned off
+#: after its last announcement and before the next was due took its power.
+ANNOUNCED_EVERY = timedelta(minutes=20)
+
+#: After a suspected switch went off, its router is reported gone within
+#: this: its next announcement missed, then the silence waited out.
+REPORTED_WITHIN = ANNOUNCED_EVERY + SILENT_AFTER + timedelta(minutes=5)
 
 #: A border router needs to boot and be seen by a poll again after its power
 #: returns; coming back later than this is not taken as proof.
@@ -78,6 +86,9 @@ class BorderRouterRule(Rule):
         if event.kind == kinds.BORDER_ROUTER_GONE:
             self.gone[name] = event
             await self._router_gone(name, event)
+            # Its silence has been waited out already.
+            self.reported.add(name)
+            await self.ctx.publish(await self.describe(event))
             return
         await self._router_back(name, event)
         vanished = self.gone.pop(name, None)
@@ -88,13 +99,8 @@ class BorderRouterRule(Rule):
             await self.ctx.publish(finding)
 
     async def on_tick(self) -> None:
-        """Report routers away long enough; drop suspicions that did not hold."""
+        """Drop suspicions that did not hold."""
         now = self.ctx.now()
-        # Publishing awaits, and a border router may come or go meanwhile.
-        for name, event in list(self.gone.items()):
-            if name not in self.reported and now - event.at >= GONE_FOR:
-                self.reported.add(name)
-                await self.ctx.publish(await self.describe(event))
         suspects = await self._suspects()
         for pair_key, pair in list(suspects.items()):
             watch = pair.get("watch_until")
@@ -106,8 +112,9 @@ class BorderRouterRule(Rule):
     async def describe(self, event: Event) -> Finding:
         """Build the finding for a border router that stayed away."""
         name = event.data.get("name")
+        went = went_at(event)
         chain: list[Link] = []
-        offs = await self._offs_before(event.at)
+        offs = await self._offs_around(went)
         power = offs[-1] if offs else None
         if power:
             switches = {off.subject for off in offs}
@@ -124,7 +131,7 @@ class BorderRouterRule(Rule):
                 Role.EFFECT,
                 "link.border_router_gone",
                 {"border_router": name},
-                at=event.at,
+                at=went,
                 evidence=[event.id] if event.id else [],
             )
         )
@@ -142,21 +149,23 @@ class BorderRouterRule(Rule):
             )
         )
         return Finding(
-            key=f"border_router:{name}:{event.at.isoformat()}",
+            key=f"border_router:{name}:{went.isoformat()}",
             rule=self.name,
             severity=Severity.WARNING,
             title="finding.border_router_gone.title",
             params={"border_router": name},
-            started_at=event.at,
+            started_at=went,
             chain=chain,
             subjects=[event.subject] if event.subject else [],
         )
 
     # --- evidence for a router on a switch ---------------------------------
 
-    async def _offs_before(self, at: datetime) -> list[Event]:
+    async def _offs_around(self, went: datetime) -> list[Event]:
         return await self.ctx.store.events(
-            (kinds.HA_POWER_OFF,), since=at - POWER_WINDOW, until=at
+            (kinds.HA_POWER_OFF,),
+            since=went - POWER_WINDOW,
+            until=went + ANNOUNCED_EVERY,
         )
 
     async def _suspects(self) -> dict[str, dict[str, Any]]:
@@ -167,7 +176,8 @@ class BorderRouterRule(Rule):
 
     async def _router_gone(self, name: str, event: Event) -> None:
         suspects = await self._suspects()
-        offs = await self._offs_before(event.at)
+        went = went_at(event)
+        offs = await self._offs_around(went)
         switched = {off.subject: off for off in offs if off.subject}
         for pair_key, pair in list(suspects.items()):
             if pair["router"] != name:
@@ -188,7 +198,7 @@ class BorderRouterRule(Rule):
             pair.update(
                 switch_name=off.data.get("name"),
                 router_subject=event.subject,
-                gone_at=event.at.isoformat(),
+                gone_at=went.isoformat(),
                 watch_until=None,
             )
             pair["evidence"] = [*pair["evidence"], off.id, event.id][-12:]
@@ -222,7 +232,7 @@ class BorderRouterRule(Rule):
         suspects = await self._suspects()
         for pair in suspects.values():
             if pair["switch"] == event.subject and pair["hits"]:
-                pair["watch_until"] = (event.at + POWER_WINDOW).isoformat()
+                pair["watch_until"] = (event.at + REPORTED_WITHIN).isoformat()
         await self._save(suspects)
 
     async def _drop(
@@ -265,3 +275,9 @@ class BorderRouterRule(Rule):
             ],
             subjects=[s for s in (pair.get("router_subject"), pair["switch"]) if s],
         )
+
+
+def went_at(event: Event) -> datetime:
+    """When a border router reported gone last announced itself."""
+    last = event.data.get("last_seen")
+    return datetime.fromisoformat(last) if isinstance(last, str) else event.at

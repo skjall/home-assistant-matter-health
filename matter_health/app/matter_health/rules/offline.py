@@ -53,7 +53,7 @@ class OfflineRule(Rule):
 
     name: ClassVar[str] = "offline"
     part_of: ClassVar[frozenset[str]] = frozenset(
-        {"mesh", "wave", "relay", "partitions", "interference", "radio"}
+        {"mesh", "wave", "relay", "partitions", "interference", "radio", "stranded"}
     )
     listens: ClassVar[frozenset[str]] = frozenset(
         {

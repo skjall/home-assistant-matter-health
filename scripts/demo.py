@@ -24,7 +24,7 @@ from aiohttp import web
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "matter_health" / "app"))
 
-from matter_health import bridges, kinds, rules
+from matter_health import batteries, bridges, kinds, rules
 from matter_health.config import Options
 from matter_health.engine import RULES, Context, Engine, utcnow
 from matter_health.enrichers import Client, Knowledge, state_key
@@ -44,6 +44,9 @@ NAMES = {
     "node:21": "Desk Lamp Plug",
     "node:30": "Coffee Machine",
     "node:31": "Drawer Button",
+    "node:13": "Kitchen Window",
+    "node:14": "Balcony Door",
+    "node:15": "Hall Door Contact",
     "node:40": "Garage Plug",
     "node:41": "Garden Light",
     "node:42": "Hallway Hub",
@@ -158,6 +161,10 @@ TOPOLOGY: dict[str, Any] = {
         {"id": "12", "kind": "matter", "node_id": 12, "role": "sleepy_end_device"},
         {"id": "30", "kind": "matter", "node_id": 30, "role": "end_device"},
         {"id": "31", "kind": "matter", "node_id": 31, "role": "sleepy_end_device"},
+        *(
+            {"id": str(n), "kind": "matter", "node_id": n, "role": "sleepy_end_device"}
+            for n in (13, 14, 15)
+        ),
     ],
     "connections": [
         _link("3", "br_1B2C3D4E5F607182", 1),
@@ -168,6 +175,9 @@ TOPOLOGY: dict[str, Any] = {
         _link("12", "21", 0),
         _link("30", "3", 0, rssi=-55),
         _link("31", "21", 0),
+        _link("13", "3", 0),
+        _link("14", "21", 0),
+        _link("15", "21", 0),
     ],
 }
 
@@ -336,12 +346,36 @@ async def seed(engine: Engine, clock: Clock) -> None:
     await emit(kinds.THREAD_PARTITION_CHANGED)
     clock.go(minutes=8)
     parts = partitions(BORDER_ROUTERS)
-    await emit(kinds.THREAD_PARTITIONS, parts=parts)
+    # Asked, every device that relays is in the main part: the speaker alone
+    # is cut off.
+    for part in parts:
+        part["routers"] = 3 if part is parts[0] else 0
+    await emit(kinds.THREAD_PARTITIONS, parts=parts, gone=[])
     await tick(6)
+    # Afterwards, battery devices drop out one by one and stay away.
+    for minutes, subject in ((55, "node:13"), (50, "node:14"), (45, "node:15")):
+        clock.at = utcnow() - timedelta(minutes=minutes)
+        await emit(kinds.MATTER_NODE_UNAVAILABLE, subject, name=NAMES[subject])
 
     store = ctx.store
     await store.set_state("thread.partitions", parts)
-    await store.set_state("thread.roles", {"node:3": 5, "node:21": 5, "node:30": 3})
+    await store.set_state(
+        "thread.roles",
+        {
+            "node:3": 5,
+            "node:21": 5,
+            "node:30": 3,
+            "node:13": 2,
+            "node:14": 2,
+            "node:15": 2,
+        },
+    )
+    await store.set_state("thread.router_partitions", {parts[0]["partition"]: 3})
+    # The balcony door's battery was worn when it last reported.
+    await store.set_state(
+        batteries.BATTERIES,
+        {"node:14": batteries.battery({"1/47/11": 1210})},
+    )
     await store.set_state(
         "otbr.node",
         {
@@ -387,15 +421,27 @@ async def seed(engine: Engine, clock: Clock) -> None:
     await store.set_state(bridges.BRIDGED, {"node:42": bridges.bridged(42, behind)})
     await store.set_state(
         "matter.nodes",
-        {"total": 30, "unavailable": ["node:30", "node:31", "node:42:5", "node:9"]},
+        {
+            "total": 30,
+            "unavailable": [
+                "node:13",
+                "node:14",
+                "node:15",
+                "node:30",
+                "node:31",
+                "node:42:5",
+                "node:9",
+            ],
+        },
     )
     # Thread on channel 15, next to the access point's Wi-Fi channel 6.
     await store.set_state("thread.channel", 15)
     # Every ten minutes the awake devices tell how often the channel was busy;
-    # only the kitchen plug hears something next to it.
-    radio = {"node:3": 140, "node:21": 6, "node:30": 2}
-    clock.at = utcnow() - timedelta(minutes=30)
-    for _ in range(3):
+    # only the kitchen plug heard something next to it, and it has stopped.
+    busy = {"node:3": 140, "node:21": 6, "node:30": 2}
+    quiet = {"node:3": 8, "node:21": 6, "node:30": 2}
+    clock.at = utcnow() - timedelta(minutes=40)
+    for radio in (busy, busy, quiet, quiet):
         await emit(
             kinds.THREAD_INTERFERENCE,
             devices=[
@@ -416,6 +462,8 @@ async def seed(engine: Engine, clock: Clock) -> None:
             "devices": {s: {"cca_per_hour": r} for s, r in radio.items()},
         },
     )
+
+    await tick(1)
 
     found = await store.findings()
     button = next(f for f in found if f.subjects == ["node:31"] and not f.ended_at)

@@ -38,7 +38,12 @@ for relaying devices, how often they found the radio channel busy.
 
 When the mesh has split into parts that do not reach each other, the bridges
 in the other part are marked, and one finding names them and the bridge that
-coordinates the main part. When relaying devices keep finding the channel
+coordinates the main part. If every relaying device is in the main part
+and only a bridge is apart, that bridge is cut off: only devices hanging on it
+are affected. The finding ends saying whether the bridge rejoined or went
+quiet. A bridge is taken as gone when it has not announced itself for half an
+hour; a plug switched off shortly before it was last heard is named. When
+relaying devices keep finding the channel
 busy, a finding tells whether it happens everywhere - usually a Wi-Fi network
 on an overlapping channel, often a neighbour's - or around a few devices,
 which it names. The radio cannot tell who is sending; but when one of your
@@ -48,6 +53,12 @@ cause, with a channel further away to try. Its name comes from a network
 integration such as UniFi Network; without one, its address is shown.
 Devices that drop out in the same time are listed under such
 a finding instead of each on its own.
+
+Battery devices sleep and talk only to one router. When several of them stay
+away after the mesh changed while the channel is quiet again, one finding
+names them: taking the battery out for a few seconds makes a device join
+anew; pressing its button does not. Where a device last reported a weak
+battery, a fresh one is suggested.
 
 Good links stay grey. A weak link, a device that does not respond or a device
 with an open finding is coloured; **Problems only** hides everything else.
