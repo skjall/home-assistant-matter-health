@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/skjall/home-assistant-matter-health/compare/v0.2.0...v0.2.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* update dependency ruff to v0.17.0 ([#7](https://github.com/skjall/home-assistant-matter-health/issues/7)) ([26f6b7c](https://github.com/skjall/home-assistant-matter-health/commit/26f6b7ce00890b0a4502c42c62ddefdde33772d2))
+* update python dependencies ([#3](https://github.com/skjall/home-assistant-matter-health/issues/3)) ([84826d2](https://github.com/skjall/home-assistant-matter-health/commit/84826d23a530b8768a10417eb0e39dce315cbc8e))
+
 ## [0.2.0](https://github.com/skjall/home-assistant-matter-health/compare/v0.1.0...v0.2.0) (2026-09-25)
 
 
