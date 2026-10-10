@@ -1,5 +1,5 @@
 name: Matter Health
-version: 0.2.0
+version: 0.2.1
 slug: matter_health
 description: Explains why Matter and Thread devices misbehave, in words anyone can follow.
 url: https://github.com/skjall/home-assistant-matter-health
