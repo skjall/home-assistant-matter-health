@@ -48,9 +48,11 @@ def test_plugins_register_themselves_on_import() -> None:
         "pairing",
         "partitions",
         "radio",
+        "reboots",
         "relay",
         "server",
         "signal",
+        "stranded",
         "wave",
         "wifi_signal",
     ]

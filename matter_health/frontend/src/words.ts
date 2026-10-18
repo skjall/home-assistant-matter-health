@@ -73,7 +73,8 @@ export function happening(event: TimelineEvent): string {
   }
   const name = event.name ?? fallbackName(event.subject);
   const version = typeof event.data.current === "string" ? event.data.current : "";
-  return t(`timeline.${event.kind}`, { name, version });
+  const count = typeof event.data.count === "number" ? event.data.count : undefined;
+  return t(`timeline.${event.kind}`, { name, version, count });
 }
 
 function fallbackName(subject: string | null): string {

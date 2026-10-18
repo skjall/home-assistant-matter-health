@@ -68,6 +68,7 @@
       "title": "{device} est injoignable"
     },
     "related_title": "Fait aussi partie de l'incident",
+    "no_area": "Sans pièce",
     "related_count": "{count} conséquence | {count} conséquences",
     "dismiss": "Marquer comme réglé",
     "undismiss": "Afficher à nouveau",
@@ -121,10 +122,20 @@
     },
     "interference_local": {
       "title": "Certains appareils Thread trouvent leur canal radio occupé"
+    },
+    "stranded": {
+      "title": "1 appareil sur pile n'est pas revenu après un changement du réseau | {count} appareils sur pile ne sont pas revenus après un changement du réseau"
+    },
+    "reboots": {
+      "title": "{device} redémarre sans cesse"
+    },
+    "border_router_cut_off": {
+      "title": "{apart} est coupé du réseau Thread | {apart} sont coupés du réseau Thread"
     }
   },
   "link": {
     "power_off": "{switch} a été éteint {origin}.",
+    "border_router_not_switch": "Ce n'était pas {switch} : {border_router} est revenu alors que {switch} restait éteint. Il est probablement juste resté silencieux un moment.",
     "border_router_gone": "{border_router} a disparu du réseau.",
     "was_probably_leader": "{border_router} coordonnait ton réseau Thread. Quand le coordinateur disparaît, les autres appareils ont besoin d'un moment pour se mettre d'accord sur un nouveau.",
     "cause_unknown": "Aucune cause claire n'a été enregistrée. Rien n'a été éteint et aucune passerelle n'a disparu juste avant.",
@@ -185,7 +196,25 @@
     "interference_wide": "{count} des {total} appareils qui relaient trouvent sans cesse le canal occupé – {rate} fois par heure en moyenne.",
     "interference_local": "{devices} trouve sans cesse le canal occupé, {rate} fois par heure en moyenne ; les {rest} autres appareils mesurés presque jamais. | {devices} trouvent sans cesse le canal occupé, {rate} fois par heure en moyenne ; les {rest} autres appareils mesurés presque jamais.",
     "interference_access_point_overlaps": "{access_point} émet sur le canal Wi-Fi {wifi_channel}, qui chevauche le canal Thread {thread_channel}.",
-    "interference_access_point_borders": "{access_point} émet sur le canal Wi-Fi {wifi_channel}, juste à côté du canal Thread {thread_channel} ; de près, on l'y entend encore."
+    "interference_access_point_borders": "{access_point} émet sur le canal Wi-Fi {wifi_channel}, juste à côté du canal Thread {thread_channel} ; de près, on l'y entend encore.",
+    "border_router_cut_off": "{apart} fonctionne seul dans une partie du réseau à part : les {routers} appareils relais interrogés sont tous dans la partie principale. | {apart} fonctionnent seuls dans une partie du réseau à part : les {routers} appareils relais interrogés sont tous dans la partie principale.",
+    "border_router_cut_off_impact": "Le reste du réseau n'est pas touché. Seuls les appareils reliés directement à {apart} sont injoignables pour Home Assistant. | Le reste du réseau n'est pas touché. Seuls les appareils reliés directement à l'un de ces ponts sont injoignables pour Home Assistant.",
+    "thread_split_ended_joined": "{apart} a rejoint la partie principale. | {apart} ont rejoint la partie principale.",
+    "thread_split_ended_gone": "La séparation a pris fin parce que {apart} s'est tu – pas parce qu'il a rejoint le réseau. | La séparation a pris fin parce que {apart} se sont tus – pas parce qu'ils ont rejoint le réseau.",
+    "thread_split_ended_heard": "{apart} n'était pas séparé : les appareils de la partie principale l'entendent comme voisin. Seule son annonce indiquait une autre partie. | {apart} n'étaient pas séparés : les appareils de la partie principale les entendent comme voisins. Seule leur annonce indiquait une autre partie.",
+    "stranded_cause": "Les appareils sur pile dorment presque tout le temps et ne parlent qu'au routeur auquel ils sont reliés. Si le réseau change pendant leur sommeil, Home Assistant ne les retrouve souvent plus ensuite – et eux ne s'en aperçoivent pas.",
+    "stranded_trigger": "Le réseau Thread a changé.",
+    "stranded": "{devices} a décroché ensuite et n'est pas revenu. | {devices} ont décroché l'un après l'autre ensuite et ne sont pas revenus.",
+    "stranded_radio_quiet": "Le canal radio est de nouveau calme – une perturbation n'explique plus leur absence.",
+    "stranded_radio_local": "Le canal radio n'est occupé qu'autour de quelques appareils relais – cela n'explique pas que des appareils manquent dans toute la maison.",
+    "stranded_weak_battery": "La pile de {devices} était faible au dernier relevé (moins de 1,3 V par élément).",
+    "stranded_impact": "Ce que ces appareils signalent n'arrive plus à Home Assistant. Ils reviennent rarement d'eux-mêmes.",
+    "reboots": "{device} a redémarré {count} fois ces {days} derniers jours.",
+    "reboots_cause": "Les redémarrages fréquents viennent le plus souvent d'une pile dont la tension chute quand l'appareil émet – une pile usée, ou un accu qui fournit moins par élément qu'une pile neuve. Plus rarement, c'est le micrologiciel.",
+    "reboots_weak_battery": "La pile est faible : {volts} V par élément au dernier relevé. Quand l'appareil émet, la tension chute et il redémarre.",
+    "reboots_brown_out": "L'appareil indique lui-même la raison : sa tension a chuté. C'est presque toujours la pile.",
+    "reboots_watchdog": "L'appareil indique lui-même la raison : son micrologiciel s'est bloqué et a été redémarré.",
+    "reboots_impact": "Après chaque redémarrage, il doit rejoindre le réseau à nouveau. Ce qui se passe entre-temps n'arrive pas à Home Assistant, et les redémarrages vident la pile encore plus vite."
   },
   "origin": {
     "person": "par {by}",
@@ -254,7 +283,11 @@
     "weak_wifi": "Rapproche {device} d'un point d'accès, ou place un point d'accès près de {device}. Vérifie que l'appareil est sur le réseau 2,4 GHz – il porte plus loin que le 5 GHz.",
     "thread_split": "Le réseau se reforme généralement tout seul. Si la séparation dure, débranche {apart} un instant ; il rejoindra ensuite la partie principale. | Le réseau se reforme généralement tout seul. Si la séparation dure, débranche {apart} un instant ; ils rejoindront ensuite la partie principale.",
     "interference_local": "Cherche ce qui émet près de {devices}, et éloigne-le ou mets-le sur un autre canal.",
-    "interference_access_point": "Essaie de régler le canal 2,4 GHz de {access_point} sur le canal {suggest}, puis regarde après les prochaines mesures si le nombre baisse."
+    "interference_access_point": "Essaie de régler le canal 2,4 GHz de {access_point} sur le canal {suggest}, puis regarde après les prochaines mesures si le nombre baisse.",
+    "stranded": "Retire la pile de l'un des appareils pendant environ 10 secondes et remets-la ; il rejoint alors le réseau à nouveau. S'il revient, fais de même avec les autres. Appuyer sur un bouton ou déclencher l'appareil ne suffit pas.",
+    "stranded_weak_battery": "Mets au passage une pile neuve dans {devices}.",
+    "reboots": "Mets une pile neuve, pas un accu. Si {device} redémarre encore ensuite, vérifie s'il existe une mise à jour du micrologiciel.",
+    "reboots_firmware": "Vérifie s'il existe une mise à jour du micrologiciel pour {device}, et installe-la."
   },
   "phase": {
     "first_contact": {
@@ -295,6 +328,7 @@
     "matter.node_removed": "{name} a été retiré",
     "matter.node_available": "{name} est de nouveau joignable",
     "matter.node_unavailable": "{name} ne répond plus",
+    "matter.node_rebooted": "{name} a redémarré | {name} a redémarré {count} fois",
     "ha.power_off": "{name} a été éteint",
     "ha.power_on": "{name} a été allumé",
     "thread.leader_lost": "Le réseau Thread a perdu son coordinateur",

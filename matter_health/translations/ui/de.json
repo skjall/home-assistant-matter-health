@@ -68,6 +68,7 @@
       "title": "{device} ist nicht erreichbar"
     },
     "related_title": "Dazu gehört auch",
+    "no_area": "Ohne Bereich",
     "related_count": "{count} Folge | {count} Folgen",
     "dismiss": "Als erledigt markieren",
     "undismiss": "Wieder anzeigen",
@@ -121,10 +122,20 @@
     },
     "interference_local": {
       "title": "Einige Thread-Geräte finden ihren Funkkanal belegt"
+    },
+    "stranded": {
+      "title": "1 Batteriegerät kommt nach einer Änderung im Netz nicht zurück | {count} Batteriegeräte kommen nach einer Änderung im Netz nicht zurück"
+    },
+    "reboots": {
+      "title": "{device} startet immer wieder neu"
+    },
+    "border_router_cut_off": {
+      "title": "{apart} ist vom Thread-Netz abgeschnitten | {apart} sind vom Thread-Netz abgeschnitten"
     }
   },
   "link": {
     "power_off": "{switch} wurde ausgeschaltet {origin}.",
+    "border_router_not_switch": "Es war nicht {switch}: {border_router} kam zurück, obwohl {switch} aus blieb. Es hat wohl nur eine Weile nichts von sich hören lassen.",
     "border_router_gone": "{border_router} ist aus dem Netz verschwunden.",
     "was_probably_leader": "{border_router} hat dein Thread-Netz koordiniert. Fällt der Koordinator weg, brauchen die übrigen Geräte eine Weile, um sich auf einen neuen zu einigen.",
     "cause_unknown": "Eine klare Ursache wurde nicht aufgezeichnet. Kurz davor wurde nichts ausgeschaltet und keine Brücke ist verschwunden.",
@@ -185,7 +196,25 @@
     "interference_wide": "{count} von {total} Geräten, die weiterleiten, finden den Kanal immer wieder belegt – im Mittel {rate}-mal pro Stunde.",
     "interference_local": "{devices} findet den Kanal immer wieder belegt, im Mittel {rate}-mal pro Stunde; die übrigen {rest} gemessenen Geräte kaum. | {devices} finden den Kanal immer wieder belegt, im Mittel {rate}-mal pro Stunde; die übrigen {rest} gemessenen Geräte kaum.",
     "interference_access_point_overlaps": "{access_point} sendet auf WLAN-Kanal {wifi_channel}, der den Thread-Kanal {thread_channel} überlappt.",
-    "interference_access_point_borders": "{access_point} sendet auf WLAN-Kanal {wifi_channel}, direkt neben dem Thread-Kanal {thread_channel}; aus der Nähe ist er dort noch zu hören."
+    "interference_access_point_borders": "{access_point} sendet auf WLAN-Kanal {wifi_channel}, direkt neben dem Thread-Kanal {thread_channel}; aus der Nähe ist er dort noch zu hören.",
+    "border_router_cut_off": "{apart} arbeitet allein in einem eigenen Teil des Netzes: Alle {routers} befragten Geräte, die weiterleiten, sind im Hauptteil. | {apart} arbeiten allein in einem eigenen Teil des Netzes: Alle {routers} befragten Geräte, die weiterleiten, sind im Hauptteil.",
+    "border_router_cut_off_impact": "Das übrige Netz ist davon nicht betroffen. Nur Geräte, die direkt an {apart} hängen, erreicht Home Assistant nicht. | Das übrige Netz ist davon nicht betroffen. Nur Geräte, die direkt an einer dieser Brücken hängen, erreicht Home Assistant nicht.",
+    "thread_split_ended_joined": "{apart} hat sich dem Hauptteil wieder angeschlossen. | {apart} haben sich dem Hauptteil wieder angeschlossen.",
+    "thread_split_ended_gone": "Die Trennung endete, weil {apart} verstummt ist – nicht, weil es sich wieder angeschlossen hat. | Die Trennung endete, weil {apart} verstummt sind – nicht, weil sie sich wieder angeschlossen haben.",
+    "thread_split_ended_heard": "{apart} war gar nicht getrennt: Die Geräte des Hauptteils hören es als Nachbarn. Nur seine Ankündigung nannte einen anderen Teil. | {apart} waren gar nicht getrennt: Die Geräte des Hauptteils hören sie als Nachbarn. Nur ihre Ankündigung nannte einen anderen Teil.",
+    "stranded_cause": "Batteriegeräte schlafen fast immer und sprechen nur mit dem Router, an dem sie hängen. Ändert sich das Netz, während sie schlafen, findet Home Assistant sie danach oft nicht mehr – und sie selbst merken davon nichts.",
+    "stranded_trigger": "Das Thread-Netz hat sich verändert.",
+    "stranded": "{devices} ist danach weggefallen und nicht zurückgekommen. | {devices} sind danach nacheinander weggefallen und nicht zurückgekommen.",
+    "stranded_radio_quiet": "Der Funkkanal ist inzwischen wieder ruhig – eine Störung erklärt nicht mehr, dass sie fehlen.",
+    "stranded_radio_local": "Belegt ist der Funkkanal nur um einige Geräte, die weiterleiten – das erklärt nicht, dass Geräte im ganzen Haus fehlen.",
+    "stranded_weak_battery": "Bei {devices} war die Batterie zuletzt schwach (unter 1,3 V pro Zelle).",
+    "stranded_impact": "Was diese Geräte melden, kommt nicht mehr bei Home Assistant an. Von selbst melden sie sich meist nicht zurück.",
+    "reboots": "{device} ist in den letzten {days} Tagen {count}-mal neu gestartet.",
+    "reboots_cause": "Häufige Neustarts kommen meist von einer Batterie, deren Spannung beim Senden einbricht – einer alten oder einem Akku, der pro Zelle weniger liefert als eine frische Batterie. Seltener ist es die Firmware.",
+    "reboots_weak_battery": "Die Batterie ist schwach: zuletzt {volts} V pro Zelle. Beim Senden bricht die Spannung ein, und das Gerät startet neu.",
+    "reboots_brown_out": "Das Gerät nennt selbst den Grund: Die Spannung ist eingebrochen. Das liegt fast immer an der Batterie.",
+    "reboots_watchdog": "Das Gerät nennt selbst den Grund: Seine Firmware hing und wurde neu gestartet.",
+    "reboots_impact": "Nach jedem Neustart muss es sich neu im Netz anmelden. Was in dieser Zeit passiert, erfährt Home Assistant nicht, und die Neustarts leeren die Batterie noch schneller."
   },
   "origin": {
     "person": "von {by}",
@@ -254,7 +283,11 @@
     "weak_wifi": "Stell {device} näher an einen Access Point, oder setz einen Access Point in die Nähe von {device}. Achte darauf, dass das Gerät im 2,4-GHz-Netz ist – das reicht weiter als 5 GHz.",
     "thread_split": "Meist findet das Netz von selbst wieder zusammen. Hält die Trennung an, trenne {apart} kurz vom Strom; danach schließt es sich dem Hauptteil wieder an. | Meist findet das Netz von selbst wieder zusammen. Hält die Trennung an, trenne {apart} kurz vom Strom; danach schließen sie sich dem Hauptteil wieder an.",
     "interference_local": "Schau, was in der Nähe von {devices} funkt, und stell es weiter weg oder auf einen anderen Kanal.",
-    "interference_access_point": "Stell den 2,4-GHz-Kanal von {access_point} probeweise auf Kanal {suggest} und sieh nach den nächsten Messungen, ob die Zahl sinkt."
+    "interference_access_point": "Stell den 2,4-GHz-Kanal von {access_point} probeweise auf Kanal {suggest} und sieh nach den nächsten Messungen, ob die Zahl sinkt.",
+    "stranded": "Nimm bei einem der Geräte die Batterie etwa 10 Sekunden heraus und setz sie wieder ein; danach meldet es sich neu im Netz an. Kommt es zurück, mach es bei den anderen genauso. Eine Taste drücken oder das Gerät auslösen reicht nicht.",
+    "stranded_weak_battery": "Setz bei {devices} dabei gleich eine frische Batterie ein.",
+    "reboots": "Setz eine frische Batterie ein, keinen Akku. Startet {device} danach weiter neu, prüf, ob es ein Firmware-Update gibt.",
+    "reboots_firmware": "Prüf, ob es für {device} ein Firmware-Update gibt, und installier es."
   },
   "phase": {
     "first_contact": {
@@ -295,6 +328,7 @@
     "matter.node_removed": "{name} wurde entfernt",
     "matter.node_available": "{name} ist wieder erreichbar",
     "matter.node_unavailable": "{name} reagiert nicht mehr",
+    "matter.node_rebooted": "{name} ist neu gestartet | {name} ist {count}-mal neu gestartet",
     "ha.power_off": "{name} wurde ausgeschaltet",
     "ha.power_on": "{name} wurde eingeschaltet",
     "thread.leader_lost": "Das Thread-Netz hat seinen Koordinator verloren",

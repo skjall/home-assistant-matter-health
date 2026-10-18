@@ -26,6 +26,8 @@ export interface Finding {
   names: Record<string, string>;
   /** Home Assistant device ids of the subjects, where known. */
   devices?: Record<string, string>;
+  /** Home Assistant areas of the subjects, where known. */
+  areas?: Record<string, string>;
   chain: Link[];
   /** Key of the finding whose story this one is part of. */
   part_of?: string | null;

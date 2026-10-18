@@ -38,16 +38,29 @@ for relaying devices, how often they found the radio channel busy.
 
 When the mesh has split into parts that do not reach each other, the bridges
 in the other part are marked, and one finding names them and the bridge that
-coordinates the main part. When relaying devices keep finding the channel
+coordinates the main part. A bridge's own word on its part is checked
+against the devices around it: one they hear as their neighbour is in their
+part, whatever it announces. If every relaying device is in the main part
+and only a bridge is apart, that bridge is cut off: only devices hanging on it
+are affected. The finding ends saying whether the bridge rejoined or went
+quiet. A bridge is taken as gone when it has been silent longer than it usually
+pauses, at least half an hour; a plug switched off shortly before it was last heard is named. When
+relaying devices keep finding the channel
 busy, a finding tells whether it happens everywhere - usually a Wi-Fi network
 on an overlapping channel, often a neighbour's - or around a few devices,
 which it names. The radio cannot tell who is sending; but when one of your
 access points uses a Wi-Fi channel that overlaps or borders the Thread
-channel - known from Matter devices on Wi-Fi - it is named as a possible
+channel - known from Matter devices on Wi-Fi that are connected now; without one, no access point is named - it is named as a possible
 cause, with a channel further away to try. Its name comes from a network
 integration such as UniFi Network; without one, its address is shown.
 Devices that drop out in the same time are listed under such
 a finding instead of each on its own.
+
+Battery devices sleep and talk only to one router. When several of them stay
+away after the mesh changed while the channel is quiet again, one finding
+names them: taking the battery out for a few seconds makes a device join
+anew; pressing its button does not. Where a device last reported a weak
+battery, a fresh one is suggested.
 
 Good links stay grey. A weak link, a device that does not respond or a device
 with an open finding is coloured; **Problems only** hides everything else.
@@ -78,6 +91,14 @@ a time.
 
 Findings build up over time. Right after installing, the page is quiet
 until something happens.
+
+## Devices that restart
+
+Every restart of a device is noted in the timeline. A device that restarts
+ten times or more within a week is reported, usually because its battery
+cannot hold the voltage when it sends - an old battery, or a rechargeable
+one. Restarts before Matter Health was installed do not count; the report
+ends once the device has not restarted for two days.
 
 ## Devices that come and go
 

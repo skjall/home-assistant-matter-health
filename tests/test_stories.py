@@ -8,6 +8,7 @@ from matter_health.transports.thread.border_router import BorderRouterRule
 from matter_health.transports.thread.mesh import MeshRule
 from matter_health.transports.thread.partitions import PartitionRule
 from matter_health.transports.thread.signal import SignalRule
+from matter_health.transports.thread.stranded import StrandedRule
 
 T0 = datetime(2030, 1, 1, 20, 0, tzinfo=UTC)
 RULES = (
@@ -17,6 +18,7 @@ RULES = (
     OfflineRule,
     SignalRule,
     PartitionRule,
+    StrandedRule,
 )
 
 
@@ -94,4 +96,25 @@ def test_a_story_within_a_larger_one_hands_its_parts_up() -> None:
     assert stories(found, RULES, T0 + timedelta(hours=1)) == {
         "mesh:a": "partitions:a",
         "border_router:tv": "partitions:a",
+    }
+
+
+def test_a_story_that_names_the_device_takes_it_over() -> None:
+    stranded = finding("stranded:a", "stranded", 30, Severity.PROBLEM, lasted=None)
+    stranded.subjects = ["node:1"]
+    gone = finding("offline:node:1", "offline", 20)
+    gone.subjects = ["node:1"]
+    found = [
+        finding("partitions:a", "partitions", 0, Severity.PROBLEM, lasted=None),
+        stranded,
+        gone,
+    ]
+
+    assert stories(found, RULES, T0 + timedelta(hours=1)) == {
+        "offline:node:1": "stranded:a"
+    }
+    # A story that ended before the device went does not.
+    stranded.ended_at = T0 + timedelta(minutes=10)
+    assert stories(found, RULES, T0 + timedelta(hours=1)) == {
+        "offline:node:1": "partitions:a"
     }

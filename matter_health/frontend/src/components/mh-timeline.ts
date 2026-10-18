@@ -9,6 +9,7 @@ import {
   mdiPlusCircleOutline,
   mdiPowerPlugOffOutline,
   mdiPowerPlugOutline,
+  mdiRestart,
   mdiRouterWireless,
   mdiSourceBranch,
 } from "@mdi/js";
@@ -29,6 +30,7 @@ const LOOK: Record<string, [string, Tone]> = {
   "matter.node_removed": [mdiMinusCircleOutline, "neutral"],
   "matter.node_available": [mdiLinkVariant, "good"],
   "matter.node_unavailable": [mdiLinkVariantOff, "bad"],
+  "matter.node_rebooted": [mdiRestart, "neutral"],
   "ha.power_off": [mdiPowerPlugOffOutline, "neutral"],
   "ha.power_on": [mdiPowerPlugOutline, "neutral"],
   "thread.leader_lost": [mdiSourceBranch, "bad"],

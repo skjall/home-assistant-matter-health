@@ -31,17 +31,72 @@ async def power_off(ctx: Context, clock: Clock, minutes: float) -> None:
     )
 
 
-async def test_a_short_absence_is_no_finding(
+async def test_a_router_back_without_leaving_is_no_finding(
     ctx: Context, store: Store, clock: Clock, engine: Engine
 ) -> None:
-    await emit_at(ctx, clock, 0, kinds.BORDER_ROUTER_GONE, TV_SUBJECT, **TV)
-    await tick_at(engine, clock, 4)
-    await emit_at(ctx, clock, 4.5, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
-    await tick_at(engine, clock, 10)
-    # A border router nobody saw leave.
     await emit_at(ctx, clock, 11, kinds.BORDER_ROUTER_APPEARED, "br:ff", name="Hub")
 
     assert await store.findings() == []
+
+
+async def test_a_router_gone_is_told_from_its_last_announcement(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await power_off(ctx, clock, 0)
+    # Its silence is waited out before it is reported gone.
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(-5).isoformat(),
+        **TV,
+    )
+
+    finding = await only_finding(store)
+    assert finding.started_at == at(-5)
+    assert finding.key == f"border_router:Living Room TV:{at(-5).isoformat()}"
+    assert chain_keys(finding)[0] == "link.power_off"
+    assert finding.chain[0].confidence is Confidence.LIKELY
+    assert finding.chain[1].at == at(-5)
+
+
+async def test_its_return_closes_it_after_a_restart_too(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(ctx, clock, 40, kinds.BORDER_ROUTER_GONE, TV_SUBJECT, **TV)
+    # The add-on restarts: the rule starts afresh.
+    make_engine(ctx, rules=[BorderRouterRule])
+    await emit_at(ctx, clock, 60, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
+
+    assert (await only_finding(store)).ended_at == at(60)
+
+
+async def test_a_return_missed_altogether_closes_it_on_a_tick(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(5).isoformat(),
+        **TV,
+    )
+    # Still listed as last heard when it went: nothing to close.
+    router = {"name": "Living Room TV", "last_seen": at(5).isoformat()}
+    await store.set_state("border_routers", [router, {"name": "Hub"}])
+    await tick_at(engine, clock, 41)
+    assert (await only_finding(store)).ended_at is None
+    # Heard again since.
+    await store.set_state(
+        "border_routers", [{**router, "last_seen": at(50).isoformat()}]
+    )
+    await tick_at(engine, clock, 60)
+
+    assert (await only_finding(store)).ended_at == at(60)
 
 
 async def test_a_long_absence_without_known_cause(
@@ -195,7 +250,7 @@ async def test_a_switch_without_subject_is_not_counted(
         await emit_at(ctx, clock, minute + 1, kinds.BORDER_ROUTER_GONE, TV_SUBJECT)
         await emit_at(ctx, clock, minute + 2, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT)
 
-    assert await store.findings() == []
+    assert switched(await store.findings()) == []
 
 
 async def confirmed(ctx: Context, clock: Clock, engine: Engine, store: Store) -> None:
@@ -235,13 +290,14 @@ async def test_staying_while_the_switch_went_off_closes_it(
     await confirmed(ctx, clock, engine, store)
 
     await power_off(ctx, clock, 200)
-    await tick_at(engine, clock, 203)
+    # Its next announcement is missed, then the silence waited out.
+    await tick_at(engine, clock, 314)
     (open_still,) = switched(await store.findings())
     assert open_still.ended_at is None
-    await tick_at(engine, clock, 205)
+    await tick_at(engine, clock, 316)
 
     (finding,) = switched(await store.findings())
-    assert finding.ended_at == at(205)
+    assert finding.ended_at == at(316)
 
 
 async def test_a_single_hit_is_forgotten_quietly(
@@ -273,7 +329,6 @@ async def test_a_router_leaving_while_findings_are_published(
     engine: Engine,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    await emit_at(ctx, clock, 0, kinds.BORDER_ROUTER_GONE, TV_SUBJECT, **TV)
     emitted: list[str] = []
 
     async def another_one_leaves(topic: str, payload: dict[str, Any]) -> None:
@@ -282,11 +337,10 @@ async def test_a_router_leaving_while_findings_are_published(
             await ctx.emit(kinds.BORDER_ROUTER_GONE, "test", "br:ff", name="Hub")
 
     engine.subscribe(another_one_leaves)
-    await tick_at(engine, clock, 5)
-
-    assert "failed on tick" not in caplog.text
-    assert len(await store.findings()) == 1
+    await emit_at(ctx, clock, 0, kinds.BORDER_ROUTER_GONE, TV_SUBJECT, **TV)
     await tick_at(engine, clock, 10)
+
+    assert "failed" not in caplog.text
     assert len(await store.findings()) == 2
 
 
@@ -317,3 +371,73 @@ async def test_routers_of_another_thread_network_are_ignored(
 
     assert await store.findings() == []
     assert not await store.get_state("border_router.suspects")
+
+
+async def test_back_while_the_named_switch_stayed_off_takes_the_cause_back(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await power_off(ctx, clock, 10)
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(0).isoformat(),
+        **TV,
+    )
+    assert chain_keys(await only_finding(store))[0] == "link.power_off"
+    await emit_at(ctx, clock, 50, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
+
+    ended = await only_finding(store)
+    assert ended.ended_at == at(50)
+    assert chain_keys(ended)[0] == "link.border_router_not_switch"
+    assert ended.chain[0].params == {
+        "switch": "Media Plug",
+        "border_router": "Living Room TV",
+    }
+    assert chain_keys(ended)[-1] == "fix.check_border_router_power"
+
+
+async def test_back_after_the_switch_went_on_keeps_the_cause(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await power_off(ctx, clock, 10)
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(0).isoformat(),
+        **TV,
+    )
+    await emit_at(ctx, clock, 45, kinds.HA_POWER_ON, "entity:switch.media_plug")
+    await emit_at(ctx, clock, 50, kinds.BORDER_ROUTER_APPEARED, TV_SUBJECT, **TV)
+
+    assert chain_keys(await only_finding(store))[0] == "link.power_off"
+
+
+async def test_a_switch_that_only_flickered_is_no_cause(
+    ctx: Context, store: Store, clock: Clock, engine: Engine
+) -> None:
+    await emit_at(
+        ctx,
+        clock,
+        10,
+        kinds.HA_POWER_OFF,
+        "entity:switch.media_plug",
+        name="Media Plug",
+        flicker=True,
+    )
+    await emit_at(
+        ctx,
+        clock,
+        40,
+        kinds.BORDER_ROUTER_GONE,
+        TV_SUBJECT,
+        last_seen=at(0).isoformat(),
+        **TV,
+    )
+
+    assert chain_keys(await only_finding(store))[0] == "link.cause_unknown"

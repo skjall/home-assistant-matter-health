@@ -14,7 +14,9 @@ from matter_health import bridges, kinds
 from matter_health.engine import Context, Engine
 from matter_health.enrichers import Client, Knowledge, state_key
 from matter_health.model import Finding, Link, Role, Severity
+from matter_health.rules.flaky import FlakyRule
 from matter_health.store import Store
+from matter_health.transports.thread.partitions import PartitionRule
 from matter_health.web import app as web_app
 from matter_health.web import create_app
 
@@ -228,6 +230,7 @@ async def test_findings_of_the_last_days_with_current_names(
 ) -> None:
     ctx.names.set("node:7", "Living Room Plug")
     ctx.names.set_device("node:7", "device-plug")
+    ctx.names.set_area("node:7", "Living Room")
     days = 24 * 60
     await store.put_finding(finding("old", Severity.WARNING, -3 * days, True), T0)
     await store.put_finding(finding("new", Severity.WARNING, -1, True), T0)
@@ -245,6 +248,7 @@ async def test_findings_of_the_last_days_with_current_names(
     found = await (await client.get("/api/findings")).json()
     assert found[0]["names"] == {"node:7": "Living Room Plug"}
     assert found[0]["devices"] == {"node:7": "device-plug"}
+    assert found[0]["areas"] == {"node:7": "Living Room"}
     assert found[0]["chain"][0]["key"] == "link.cause_unknown"
 
 
@@ -372,6 +376,41 @@ async def test_dismissing_a_finding(
     assert (await state())[1]["a"] is False
 
 
+async def test_dealing_with_a_story_deals_with_its_consequences(
+    aiohttp_client: AiohttpClient,
+    ctx: Context,
+    store: Store,
+    translations: Path,
+) -> None:
+    engine = make_engine(ctx, rules=[PartitionRule, FlakyRule])
+    split = finding("partitions:x", Severity.PROBLEM, 0, ended=True)
+    split.rule = "partitions"
+    split.ended_at = at(100)
+    flaky = finding("flaky:node:7", Severity.WARNING, 10, ended=False)
+    flaky.rule = "flaky"
+    for f in (split, flaky):
+        await store.put_finding(f, T0)
+    client = await aiohttp_client(build(engine, translations))
+
+    async def state() -> tuple[dict[str, int], dict[str, object]]:
+        overview = await (await client.get("/api/overview")).json()
+        found = await (await client.get("/api/findings")).json()
+        return overview["open"], {
+            f["key"]: (f["dismissed"], f["part_of"]) for f in found
+        }
+
+    assert await state() == (
+        {"problem": 0, "warning": 1, "info": 0},
+        {"partitions:x": (False, None), "flaky:node:7": (False, "partitions:x")},
+    )
+    await client.post("/api/dismiss", json={"key": "partitions:x"})
+    # Still going on, but told in a story the user has dealt with.
+    assert await state() == (
+        {"problem": 0, "warning": 0, "info": 0},
+        {"partitions:x": (True, None), "flaky:node:7": (True, "partitions:x")},
+    )
+
+
 @pytest.mark.parametrize(
     ("body", "status"),
     [
@@ -439,13 +478,20 @@ async def test_overview_tells_expected_and_known_absences_apart(
     translations: Path,
 ) -> None:
     await store.set_state(
-        "matter.nodes", {"total": 5, "unavailable": ["node:1", "node:2", "node:3"]}
+        "matter.nodes",
+        {"total": 5, "unavailable": ["node:1", "node:2", "node:3", "node:4"]},
     )
     await store.set_state(
         "offline.away",
-        {"node:1": {"since": at(0).isoformat(), "expected": True}},
+        {
+            "node:1": {"since": at(0).isoformat(), "expected": True},
+            "node:4": {"since": at(0).isoformat(), "expected": True},
+        },
     )
-    await store.set_state("devices.habits", {"node:1": True, "node:3": False})
+    # node:4 was just set to be always reported; the rule has not looked yet.
+    await store.set_state(
+        "devices.habits", {"node:1": True, "node:3": False, "node:4": False}
+    )
     known = offline_finding("node:2", 0)
     await store.put_finding(known, T0)
     await store.put_finding(offline_finding("node:3", 0), T0)
@@ -462,6 +508,7 @@ async def test_overview_tells_expected_and_known_absences_apart(
         "node:1": (True, False, True),
         "node:2": (False, True, None),
         "node:3": (False, False, False),
+        "node:4": (False, False, False),
     }
     assert body["open"] == {"problem": 0, "warning": 1, "info": 0}
 

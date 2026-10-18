@@ -1,8 +1,9 @@
+from datetime import timedelta
 from typing import Any, cast
 
 import pytest
 from aiohttp import web
-from conftest import T0, FakeSupervisor, source_for, start_supervisor
+from conftest import T0, Clock, FakeSupervisor, source_for, start_supervisor
 from pytest_aiohttp import AiohttpServer
 
 from matter_health import bridges, kinds
@@ -11,6 +12,7 @@ from matter_health.sources import matter_server
 from matter_health.sources.matter_server import MatterServerSource
 from matter_health.store import Store
 from matter_health.transports.thread.transport import (
+    ThreadTransport,
     border_router_name,
     display_name,
     link_summary,
@@ -225,17 +227,32 @@ async def test_border_routers_of_another_thread_network(
     assert stored["Hub Mini"]["pan"] == "00bb00bb00bb00bb"
 
 
+def seen(entry: dict[str, Any], minute: int) -> dict[str, Any]:
+    """An announcement last heard at ``minute``."""
+    at_ms = int((T0 + timedelta(minutes=minute)).timestamp() * 1000)
+    return {**entry, "lastSeen": at_ms}
+
+
+def iso(minute: int) -> str:
+    return (T0 + timedelta(minutes=minute)).isoformat()
+
+
 async def test_border_routers_come_and_go(
-    ctx: Context, store: Store, aiohttp_server: AiohttpServer
+    ctx: Context,
+    store: Store,
+    clock: Clock,
+    aiohttp_server: AiohttpServer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # One round every twenty minutes.
     rounds: list[Reply] = [
-        [result([TV, HUB, router("")])],  # baseline, no events
-        [result([TV])],  # the hub is missing once: not yet gone
-        [result([TV])],  # twice: gone
-        [result([TV, HUB_RESTARTED])],  # back, with a new address
-        [result([])],
-        [result(None)],  # both gone
-        [result([TV])],  # the last one to leave comes back
+        [result([seen(TV, 0), seen(HUB, 0), router("")])],  # baseline, no events
+        [result([seen(TV, 20)])],  # the hub is missing, but heard lately
+        [result([seen(TV, 40)])],  # silent for 40 minutes: gone
+        [result([seen(TV, 60), seen(HUB_RESTARTED, 60)])],  # back, new address
+        [result([])],  # a list without them says nothing
+        [result(None)],  # both silent for 40 minutes: gone
+        [result([seen(TV, 120)])],  # the last one to leave comes back
     ]
     fake = FakeMatterServer(
         {
@@ -244,6 +261,14 @@ async def test_border_routers_come_and_go(
             "get_network_topology": [[result({})]],
         }
     )
+    minutes = iter(range(0, 200, 20))
+    original = ThreadTransport.border_routers_seen
+
+    async def in_rounds(self: ThreadTransport, announced: Any) -> None:
+        clock.set(T0 + timedelta(minutes=next(minutes)))
+        await original(self, announced)
+
+    monkeypatch.setattr(ThreadTransport, "border_routers_seen", in_rounds)
     source = source_for(
         MatterServerSource, ctx, matter_server_url=await serve(aiohttp_server, fake)
     )
@@ -263,15 +288,25 @@ async def test_border_routers_come_and_go(
     tv |= unknown
     hub = {"name": "Hub Mini", "vendor": "Acme", "model": "Hub Mini"} | unknown
     assert found[:2] == [
-        (kinds.BORDER_ROUTER_GONE, "br:1122334455667788", hub),
-        (kinds.BORDER_ROUTER_APPEARED, "br:8877665544332211", hub),
+        (kinds.BORDER_ROUTER_GONE, "br:1122334455667788", hub | {"last_seen": iso(0)}),
+        (
+            kinds.BORDER_ROUTER_APPEARED,
+            "br:8877665544332211",
+            hub | {"last_seen": iso(60)},
+        ),
     ]
     # Both leave in the same round, in no particular order.
     assert sorted(found[2:4]) == [
-        (kinds.BORDER_ROUTER_GONE, "br:0a1b2c3d4e5f6071", tv),
-        (kinds.BORDER_ROUTER_GONE, "br:8877665544332211", hub),
+        (kinds.BORDER_ROUTER_GONE, "br:0a1b2c3d4e5f6071", tv | {"last_seen": iso(60)}),
+        (kinds.BORDER_ROUTER_GONE, "br:8877665544332211", hub | {"last_seen": iso(60)}),
     ]
-    assert found[4:] == [(kinds.BORDER_ROUTER_APPEARED, "br:0a1b2c3d4e5f6071", tv)]
+    assert found[4:] == [
+        (
+            kinds.BORDER_ROUTER_APPEARED,
+            "br:0a1b2c3d4e5f6071",
+            tv | {"last_seen": iso(120)},
+        )
+    ]
     assert await store.get_state("border_routers") == [
         {
             "subject": "br:0a1b2c3d4e5f6071",
@@ -279,10 +314,15 @@ async def test_border_routers_come_and_go(
             "addresses": [],
             "role": None,
             "partition": None,
+            "last_seen": iso(120),
         }
     ]
     assert ctx.names.get("br:1122334455667788") == "Hub Mini"
     assert await store.get_state("matter.nodes") == {"total": 0, "unavailable": []}
+    parts = [e for e in await store.events() if e.kind == kinds.THREAD_PARTITIONS]
+    # Home Assistant's routers that went quiet are named with the parts.
+    assert parts[-2].data["gone"] == ["Hub Mini", "Living Room TV (Wall)"]
+    assert parts[-1].data["gone"] == ["Hub Mini"]
 
 
 async def test_a_refused_command_stops_the_run(
@@ -478,7 +518,13 @@ async def test_an_empty_server_that_was_empty_before_is_fine(
 async def test_each_transport_gets_its_devices(
     ctx: Context, store: Store, aiohttp_server: AiohttpServer
 ) -> None:
-    wifi = {"0/49/65532": 1, "0/54/0": "AgAAAAAB", "0/54/4": -50, "0/40/5": "x"}
+    wifi = {
+        "0/49/65532": 1,
+        "0/54/0": "AgAAAAAB",
+        "0/54/4": -50,
+        "0/40/5": "x",
+        "0/51/1": 5,
+    }
     fake = FakeMatterServer(
         {
             "start_listening": [
@@ -500,6 +546,8 @@ async def test_each_transport_gets_its_devices(
                 [
                     {"event": "attribute_updated", "data": [1, "0/54/4", -80]},
                     {"event": "attribute_updated", "data": [1, "0/6/0", True]},
+                    {"event": "attribute_updated", "data": [1, "0/51/4", 2]},
+                    {"event": "attribute_updated", "data": [1, "0/51/1", 8]},
                     {"event": "attribute_updated", "data": ["bad"]},
                     {
                         "event": "node_updated",
@@ -532,6 +580,12 @@ async def test_each_transport_gets_its_devices(
     assert stored["node:1"]["bssid"] == "02:00:00:00:00:01"
     links = [e for e in await store.events() if e.kind == kinds.WIFI_LINKS]
     assert [e.data["devices"][0]["quality"] for e in links] == ["strong", "weak"]
+    # The first count is where counting starts; a rise is a restart.
+    restarts = [e for e in await store.events() if e.kind == kinds.MATTER_NODE_REBOOTED]
+    assert [(e.subject, e.data["count"], e.data["reason"]) for e in restarts] == [
+        ("node:1", 3, "brown_out")
+    ]
+    assert await store.get_state("matter.reboot_counts") == {"node:1": 8}
 
 
 def test_the_thread_picture_leaves_other_networks_out() -> None:

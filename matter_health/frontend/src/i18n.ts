@@ -66,7 +66,11 @@ export function t(key: string, params: Params = {}): string {
   }
   return text.replace(/\{(\w+)\}/g, (whole, name: string) => {
     const value = params[name];
-    return value === null || value === undefined ? whole : String(value);
+    if (value === null || value === undefined) return whole;
+    // A fraction reads as the language writes it: 1,26 in German.
+    return typeof value === "number" && !Number.isInteger(value)
+      ? value.toLocaleString(language)
+      : String(value);
   });
 }
 

@@ -15,6 +15,7 @@ from . import (
     radio,
     relay,
     signal,
+    stranded,
     transport,
     wave,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "radio",
     "relay",
     "signal",
+    "stranded",
     "transport",
     "wave",
 ]

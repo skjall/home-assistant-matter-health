@@ -43,6 +43,7 @@ TIMELINE_KINDS: tuple[str, ...] = (
     kinds.MATTER_NODE_REMOVED,
     kinds.MATTER_NODE_AVAILABLE,
     kinds.MATTER_NODE_UNAVAILABLE,
+    kinds.MATTER_NODE_REBOOTED,
     kinds.HA_POWER_OFF,
     kinds.HA_POWER_ON,
     kinds.THREAD_LEADER_LOST,
@@ -112,7 +113,8 @@ def with_names(engine: Engine, finding: dict[str, Any]) -> dict[str, Any]:
     book = engine.ctx.names
     names = {s: book.get(s) for s in subjects if book.get(s)}
     devices = {s: book.device(s) for s in subjects if book.device(s)}
-    return {**finding, "names": names, "devices": devices}
+    areas = {s: book.area(s) for s in subjects if book.area(s)}
+    return {**finding, "names": names, "devices": devices, "areas": areas}
 
 
 async def index(request: web.Request) -> web.StreamResponse:
@@ -125,8 +127,21 @@ def is_dismissed(finding: Finding, dismissed: dict[str, str]) -> bool:
     return dismissed.get(finding.key) == finding.started_at.isoformat()
 
 
+def settled(
+    engine: Engine, findings: list[Finding], dismissed: dict[str, str]
+) -> tuple[dict[str, str], set[str]]:
+    """Which story each finding is part of, and the keys the user dealt with.
+
+    Dealing with a story deals with everything told in it: its consequences
+    have no button of their own and are not shown apart from it.
+    """
+    belongs = stories(findings, (type(rule) for rule in engine.rules), engine.ctx.now())
+    own = {f.key for f in findings if is_dismissed(f, dismissed)}
+    return belongs, own | {key for key, story in belongs.items() if story in own}
+
+
 async def absences(
-    store: Any, findings: list[Finding], dismissed: dict[str, str]
+    store: Any, findings: list[Finding], done: set[str]
 ) -> tuple[set[str], set[str]]:
     """Devices away as they usually are, and those whose absence the user knows."""
     away = await store.get_state("offline.away") or {}
@@ -134,7 +149,7 @@ async def absences(
     known = {
         subject
         for f in findings
-        if f.rule == "offline" and f.ended_at is None and is_dismissed(f, dismissed)
+        if f.rule == "offline" and f.ended_at is None and f.key in done
         for subject in f.subjects
     }
     return usual, known
@@ -146,18 +161,18 @@ async def overview(request: web.Request) -> web.Response:
     store = engine.ctx.store
     findings = await store.findings()
     dismissed = await store.get_state(DISMISSED) or {}
-    open_findings = [
-        f for f in findings if f.ended_at is None and not is_dismissed(f, dismissed)
-    ]
+    _, done = settled(engine, findings, dismissed)
+    open_findings = [f for f in findings if f.ended_at is None and f.key not in done]
     nodes = await store.get_state("matter.nodes") or {}
     habits = await store.get_state(HABITS) or {}
-    usual, known = await absences(store, findings, dismissed)
+    usual, known = await absences(store, findings, done)
     unavailable = [
         {
             "subject": s,
             "name": engine.ctx.names.get(s),
             "device_id": engine.ctx.names.device(s),
-            "usual": s in usual,
+            # What the user said counts at once, before the rule's next look.
+            "usual": s in usual and habits.get(s) is not False,
             "known": s in known,
             "comes_and_goes": habits.get(s),
         }
@@ -206,7 +221,9 @@ async def topology(request: web.Request) -> web.Response:
     nodes = await store.get_state("matter.nodes") or {}
     away = set(nodes.get("unavailable", []))
     dismissed = await store.get_state(DISMISSED) or {}
-    usual, known = await absences(store, await store.findings(), dismissed)
+    everything = await store.findings()
+    _, done = settled(engine, everything, dismissed)
+    usual, known = await absences(store, everything, done)
     # Devices behind a bridge hang on the bridge, not on a transport.
     nodes_away = {s for s in away if not bridges.is_bridged(s)}
     entries = []
@@ -242,8 +259,8 @@ async def findings(request: web.Request) -> web.Response:
     days = _int(request.query.get("days"), 7, 1, 365)
     since = engine.ctx.now() - timedelta(days=days)
     found = await engine.ctx.store.findings(since)
-    belongs = stories(found, (type(rule) for rule in engine.rules), engine.ctx.now())
     dismissed = await engine.ctx.store.get_state(DISMISSED) or {}
+    belongs, done = settled(engine, found, dismissed)
     return web.json_response(
         [
             with_names(
@@ -251,7 +268,7 @@ async def findings(request: web.Request) -> web.Response:
                 {
                     **f.as_dict(),
                     "part_of": belongs.get(f.key),
-                    "dismissed": is_dismissed(f, dismissed),
+                    "dismissed": f.key in done,
                 },
             )
             for f in found

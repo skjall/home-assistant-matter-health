@@ -482,8 +482,13 @@ export class MhApp extends LitElement {
 
   private findingList(): TemplateResult {
     const related = new Map<string, Finding[]>();
+    const byKey = new Map(this.findings.map((f) => [f.key, f]));
     for (const f of this.findings) {
-      if (f.part_of) related.set(f.part_of, [...(related.get(f.part_of) ?? []), f]);
+      if (!f.part_of) continue;
+      // Under a story still going on, only what is still going on: a device
+      // back leaves the list at once, not when the stories are regrouped.
+      if (f.ended_at && byKey.get(f.part_of)?.ended_at === null) continue;
+      related.set(f.part_of, [...(related.get(f.part_of) ?? []), f]);
     }
     const shown = this.findings.filter(
       (f) => !f.part_of || !this.findings.some((p) => p.key === f.part_of),

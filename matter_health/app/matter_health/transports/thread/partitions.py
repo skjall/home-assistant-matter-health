@@ -11,6 +11,15 @@ Many consequences follow - devices unreachable one after another, pairing
 failing - and they are told as part of this story. Home Assistant's border
 router often noticed the other part earlier in its log; the finding begins
 there.
+
+The border routers' announcements alone do not say how big each part is.
+The devices that stay awake are asked which partition they are in: when
+none of them is in the other part, the mesh is whole and only that border
+router is cut off from it. A split ends either way the announcements agree
+again - the router rejoined, or it went quiet and dropped out - and the
+finding says which. A third way is no end of a split at all: the devices'
+neighbour tables showed that the router was in the main part all along, and
+only its announcement named another.
 """
 
 from __future__ import annotations
@@ -72,11 +81,39 @@ class PartitionRule(Rule):
                     evidence=[i for i in (since.id, event.id) if i],
                 )
             state["parts"] = parts
+            state["gone"] = list(event.data.get("gone") or [])
             if state.get("reported"):
                 await self.ctx.publish(self.describe(state))
         elif state:
             if state.get("reported"):
+                apart = {
+                    r["name"] for p in state["parts"][1:] for r in p["border_routers"]
+                }
+                silent = sorted(apart & set(event.data.get("gone") or []))
+                misspoke = sorted(
+                    apart
+                    & {
+                        r["name"]
+                        for p in parts
+                        for r in p["border_routers"]
+                        if r.get("announced")
+                    }
+                )
+                key, told = "link.thread_split_ended_joined", sorted(apart)
+                if silent:
+                    key, told = "link.thread_split_ended_gone", silent
+                elif misspoke:
+                    key, told = "link.thread_split_ended_heard", misspoke
                 finding = self.describe(state)
+                finding.chain.insert(
+                    -2,
+                    Link(
+                        Role.EFFECT,
+                        key,
+                        {"apart": ", ".join(told), "count": len(told)},
+                        at=event.at,
+                    ),
+                )
                 finding.ended_at = event.at
                 await self.ctx.publish(finding)
             state.clear()
@@ -101,18 +138,31 @@ class PartitionRule(Rule):
         apart = [r for part in parts[1:] for r in part["border_routers"]]
         names = ", ".join(r["name"] for r in apart)
         main = parts[0]
-        params = {"count": len(apart), "apart": names, "leader": main.get("leader")}
+        params = {
+            "count": len(apart),
+            "apart": names,
+            "leader": main.get("leader"),
+            "routers": main.get("routers"),
+        }
+        # Asked, the devices all answered with the main part.
+        cut_off = bool(main.get("routers")) and all(
+            p.get("routers") == 0 for p in parts[1:]
+        )
         return Finding(
             key=f"partitions:{state['since']}",
             rule=self.name,
             severity=Severity.PROBLEM,
-            title="finding.thread_split.title",
-            params={"count": len(parts)},
+            title="finding.border_router_cut_off.title"
+            if cut_off
+            else "finding.thread_split.title",
+            params={"apart": names, "count": len(apart)}
+            if cut_off
+            else {"count": len(parts)},
             started_at=since,
             chain=[
                 Link(
                     Role.EFFECT,
-                    "link.thread_split",
+                    "link.border_router_cut_off" if cut_off else "link.thread_split",
                     params,
                     at=since,
                     evidence=list(state.get("evidence", [])),
@@ -124,7 +174,13 @@ class PartitionRule(Rule):
                     else "link.thread_split_no_leader",
                     params,
                 ),
-                Link(Role.IMPACT, "link.thread_split_impact"),
+                Link(
+                    Role.IMPACT,
+                    "link.border_router_cut_off_impact"
+                    if cut_off
+                    else "link.thread_split_impact",
+                    params,
+                ),
                 Link(Role.FIX, "fix.thread_split", params),
             ],
             subjects=[r["subject"] for r in apart],

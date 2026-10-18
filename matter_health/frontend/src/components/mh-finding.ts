@@ -16,7 +16,7 @@ import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
 
 import type { Finding, Link, Role, Severity } from "../api";
 import { DEVICE_TARGET, deviceHref } from "../ha";
-import { clock, duration, relative, t } from "../i18n";
+import { clock, duration, language, relative, t } from "../i18n";
 import { base } from "../theme";
 import { sentence, title } from "../words";
 
@@ -308,6 +308,12 @@ export class MhFinding extends LitElement {
         font-family: inherit;
         cursor: pointer;
       }
+      .related h4 {
+        margin: 6px 0 0;
+        color: var(--mh-muted);
+        font-size: 13px;
+        font-weight: 600;
+      }
       .related .label svg.icon {
         width: 18px;
         height: 18px;
@@ -356,6 +362,31 @@ export class MhFinding extends LitElement {
       }
     `,
   ];
+
+  /**
+   * The consequences grouped by the area they are in, so going through them
+   * means walking each room once. Those without an area come last.
+   */
+  private byArea(): TemplateResult[] {
+    const where = (f: Finding) => f.subjects.map((s) => f.areas?.[s]).find(Boolean) ?? "";
+    const who = (f: Finding) => f.names?.[f.subjects[0]] ?? f.subjects[0] ?? "";
+    const order = new Intl.Collator(language);
+    const sorted = [...this.related].sort(
+      (a, b) =>
+        Number(!where(a)) - Number(!where(b)) ||
+        order.compare(where(a), where(b)) ||
+        order.compare(who(a), who(b)),
+    );
+    const named = sorted.some((f) => where(f));
+    return sorted.map((f, i) => {
+      const area = where(f);
+      const heading =
+        named && (i === 0 || where(sorted[i - 1]) !== area)
+          ? html`<h4>${area || t("finding.no_area")}</h4>`
+          : nothing;
+      return html`${heading}<mh-finding nested .finding=${f}></mh-finding>`;
+    });
+  }
 
   /** The most serious of this finding and its consequences. */
   private severity(): Severity {
@@ -530,11 +561,7 @@ export class MhFinding extends LitElement {
                     ${t("finding.related_title")} (${this.related.length})
                     ${icon(mdiChevronDown)}
                   </button>
-                  ${this.consequences
-                    ? this.related.map(
-                        (f) => html`<mh-finding nested .finding=${f}></mh-finding>`,
-                      )
-                    : nothing}
+                  ${this.consequences ? this.byArea() : nothing}
                 </div>`
               : nothing}
             <div class="actions">
