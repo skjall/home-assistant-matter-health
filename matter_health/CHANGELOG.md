@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/skjall/home-assistant-matter-health/compare/v0.2.0...v0.3.0) (2026-10-23)
+
+
+### Features
+
+* tell restarts, stranded devices and silent border routers, grouped by area ([#14](https://github.com/skjall/home-assistant-matter-health/issues/14)) ([0917b79](https://github.com/skjall/home-assistant-matter-health/commit/0917b79a6b4c4ab7463df3bc5227bd9bbf710f87))
+
+
+### Bug Fixes
+
+* update dependency aiohttp to v3.14.5 ([#8](https://github.com/skjall/home-assistant-matter-health/issues/8)) ([ea68fef](https://github.com/skjall/home-assistant-matter-health/commit/ea68fef615d01f99a3a6d7206eece19fc7ff8c30))
+* update dependency ruff to v0.17.0 ([#7](https://github.com/skjall/home-assistant-matter-health/issues/7)) ([26f6b7c](https://github.com/skjall/home-assistant-matter-health/commit/26f6b7ce00890b0a4502c42c62ddefdde33772d2))
+* update dependency ruff to v0.17.1 ([#13](https://github.com/skjall/home-assistant-matter-health/issues/13)) ([e377eb0](https://github.com/skjall/home-assistant-matter-health/commit/e377eb084f9a8e9937e106ff4d74025603d2fb3c))
+* update dependency ruff to v0.17.2 ([#16](https://github.com/skjall/home-assistant-matter-health/issues/16)) ([a8fe0fd](https://github.com/skjall/home-assistant-matter-health/commit/a8fe0fd9517123ee096a31d4cf021bd719488a63))
+* update python dependencies ([#3](https://github.com/skjall/home-assistant-matter-health/issues/3)) ([84826d2](https://github.com/skjall/home-assistant-matter-health/commit/84826d23a530b8768a10417eb0e39dce315cbc8e))
+
 ## [0.2.0](https://github.com/skjall/home-assistant-matter-health/compare/v0.1.0...v0.2.0) (2026-09-25)
 
 
