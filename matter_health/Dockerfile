@@ -3,7 +3,7 @@ ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.14-alpine3.22
 # The page is plain JavaScript once built, so it is built once on the build
 # machine's own architecture; running node under emulation for another
 # architecture is slow and known to crash.
-FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:26-alpine AS frontend
 WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
